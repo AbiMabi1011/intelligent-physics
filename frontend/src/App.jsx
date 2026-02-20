@@ -1,0 +1,51 @@
+import { Routes, Route } from 'react-router-dom';
+import LoadingPage from './components/LoadingPage';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import SetPassword from './pages/SetPassword';
+
+// Admin Imports
+import { AuthProvider } from './context/AuthContext';
+import AdminLayout from './layouts/AdminLayout';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard'; // Reusing the one we made earlier, or switch to new one if preferred. Ideally we use the new structure.
+// Actually, let's use the new layout and redirect /admin-dashboard to /admin/dashboard
+import StudentsPage from './pages/admin/StudentsPage';
+import MarksPage from './pages/admin/MarksPage';
+import PapersPage from './pages/admin/PapersPage';
+import QuizzesPage from './pages/admin/QuizzesPage';
+import ResultsPage from './pages/admin/ResultsPage';
+import SettingsPage from './pages/admin/SettingsPage';
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<LoadingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Admin Auth */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Protected Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="students" element={<StudentsPage />} />
+          <Route path="marks" element={<MarksPage />} />
+          <Route path="papers" element={<PapersPage />} />
+          <Route path="quizzes" element={<QuizzesPage />} />
+          <Route path="results" element={<ResultsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          {/* Redirect root admin to dashboard */}
+          <Route index element={<AdminDashboard />} />
+        </Route>
+
+        {/* Legacy Redirect for compatibility with previous login logic */}
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
