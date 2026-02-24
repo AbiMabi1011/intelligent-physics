@@ -1,12 +1,3 @@
-import React from 'react';
-import {
-    LayoutDashboard,
-    ArrowUpRight,
-    ArrowDownRight,
-    Activity,
-    Users
-} from 'lucide-react';
-
 import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
@@ -48,7 +39,7 @@ const AdminDashboard = () => {
     return (
         <div className="space-y-6">
             {/* Welcome Banner */}
-            <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white shadow-lg animate-fade-in-up">
+            <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white shadow-lg">
                 <h2 className="text-3xl font-bold">Welcome back, Raakul</h2>
                 <p className="mt-2 opacity-90">Here is the overview of your academy's performance today.</p>
             </div>
@@ -85,7 +76,7 @@ const AdminDashboard = () => {
                                 <div className="h-2 w-full rounded-full bg-blue-500"></div>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-500 italic">API Endpoint: {API_URL}</p>
+                        <p className="text-xs text-gray-500 italic break-all">API: {API_URL}</p>
                     </div>
                 </div>
 
@@ -105,29 +96,29 @@ const AdminDashboard = () => {
 // --- Helper Components ---
 
 const KPICard = ({ title, value, color, icon }) => {
-    // Tailwind JIT cannot parse interpolated classes like bg-${color}-100
-    // We must provide the full utility classes
     const colorMap = {
-        blue: { bg: 'bg-blue-100', bar: 'bg-blue-500' },
-        green: { bg: 'bg-green-100', bar: 'bg-green-500' },
-        amber: { bg: 'bg-amber-100', bar: 'bg-amber-500' },
-        indigo: { bg: 'bg-indigo-100', bar: 'bg-indigo-500' }
+        blue: { bg: 'bg-blue-100', bar: 'bg-blue-500', text: 'text-blue-600' },
+        green: { bg: 'bg-green-100', bar: 'bg-green-500', text: 'text-green-600' },
+        amber: { bg: 'bg-amber-100', bar: 'bg-amber-500', text: 'text-amber-600' },
+        indigo: { bg: 'bg-indigo-100', bar: 'bg-indigo-500', text: 'text-indigo-600' }
     };
 
     const styles = colorMap[color] || colorMap.blue;
 
     return (
-        <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md">
+        <div className="rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md h-full">
             <div className="flex items-start">
-                <div>
-                    <h3 className="text-sm font-medium text-gray-500">{title}</h3>
-                    <p className="mt-2 text-3xl font-bold text-slate-800">{value}</p>
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{title}</h3>
+                    <p className="mt-2 text-2xl md:text-3xl font-bold text-slate-800">{value}</p>
                 </div>
-                {icon}
+                <div className={`p-2 rounded-lg ${styles.bg} ${styles.text}`}>
+                    {icon}
+                </div>
             </div>
-            <div className="mt-4 flex items-center">
-                <div className={`h-1 w-full rounded-full ${styles.bg}`}>
-                    <div className={`h-1 w-2/3 rounded-full ${styles.bar} opacity-60`}></div>
+            <div className="mt-6 flex items-center">
+                <div className={`h-1.5 w-full rounded-full bg-gray-100`}>
+                    <div className={`h-1.5 w-[70%] rounded-full ${styles.bar} opacity-60`}></div>
                 </div>
             </div>
         </div>
