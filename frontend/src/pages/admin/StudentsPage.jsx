@@ -175,8 +175,8 @@ const StudentsPage = () => {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
+            {/* Students Table */}
+            <div className="overflow-x-auto rounded-xl bg-white shadow-sm border border-gray-100">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>

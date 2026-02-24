@@ -54,7 +54,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
                 <KPICard title="Total Students" value={stats.students} icon={<Users className="ml-auto opacity-50" />} color="blue" />
                 <KPICard title="Total Quizzes" value={stats.quizzes} icon={<BookOpen className="ml-auto opacity-50" />} color="green" />
                 <KPICard title="Quiz Submissions" value={stats.submissions} icon={<Activity className="ml-auto opacity-50" />} color="amber" />
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Recent Activity / Content Placeholder */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 h-full">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-bold text-gray-800">System Monitoring</h3>

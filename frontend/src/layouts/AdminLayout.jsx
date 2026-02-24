@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
     const { token, logout } = useAuth();
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Default closed on mobile
 
     if (!token) {
         return <Navigate to="/admin/login" replace />;
@@ -14,26 +14,35 @@ const AdminLayout = () => {
 
     const handleLogout = () => {
         logout();
-        <Navigate to="/admin/login" replace />;
     };
 
     return (
-        <div className="flex h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-300">
+        <div className="flex h-screen bg-gray-50 overflow-hidden">
+            {/* Overlay for mobile when sidebar is open */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 lg:ml-${sidebarOpen ? '64' : '20'}`}>
                 {/* Header */}
                 <Topbar
                     onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-                    displayName="Raakul" // Could be dynamic from context
+                    displayName="Raakul"
                     onLogout={handleLogout}
                 />
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 pt-16 p-6">
-                    <Outlet /> {/* Renders the nested route content (Dashboard, Students, etc.) */}
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>

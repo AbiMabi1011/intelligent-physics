@@ -26,8 +26,10 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
 
     return (
         <aside
-            className={`${isOpen ? 'w-64' : 'w-20'
-                } bg-slate-900 text-white transition-all duration-300 flex flex-col shadow-xl z-20 h-screen fixed left-0 top-0`}
+            className={`
+                fixed inset-y-0 left-0 z-50 transform bg-slate-900 text-white transition-all duration-300 shadow-xl flex flex-col
+                ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 w-20'}
+            `}
         >
             {/* Header / Logo */}
             <div className="flex h-16 items-center justify-between px-4 border-b border-slate-700">

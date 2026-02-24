@@ -5,7 +5,7 @@ const Topbar = ({ onToggleSidebar, displayName, onLogout }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
     return (
-        <header className="flex h-16 items-center justify-between bg-white px-6 shadow-sm z-10 w-full fixed top-0 right-0 left-0 lg:left-64 lg:w-[calc(100%-16rem)] transition-all duration-300">
+        <header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between bg-white px-4 md:px-6 shadow-sm">
             {/* Left Controls */}
             <div className="flex items-center">
                 <button

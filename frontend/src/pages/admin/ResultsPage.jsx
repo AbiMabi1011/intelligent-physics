@@ -82,7 +82,7 @@ const ResultsPage = () => {
             </div>
 
             {/* Results Table */}
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
+            <div className="overflow-x-auto rounded-xl bg-white shadow-sm border border-gray-100">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
@@ -111,7 +111,7 @@ const ResultsPage = () => {
                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 font-semibold">{r.quiz.title}</td>
                                 <td className="whitespace-nowrap px-6 py-4">
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${(r.score / r.total_questions) >= 0.8 ? 'bg-green-100 text-green-800' :
-                                            (r.score / r.total_questions) >= 0.5 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
+                                        (r.score / r.total_questions) >= 0.5 ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'
                                         }`}>
                                         {((r.score / r.total_questions) * 100).toFixed(0)}% ({r.score}/{r.total_questions})
                                     </span>
