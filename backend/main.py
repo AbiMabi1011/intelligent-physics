@@ -52,6 +52,16 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.on_event("startup")
 def startup_populate():
+    # Auto-add 'role' column if missing (SQLite specific helper)
+    try:
+        from sqlalchemy import text
+        db = next(get_db())
+        db.execute(text("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'student'"))
+        db.commit()
+    except Exception:
+        # Column likely already exists or other error
+        pass
+
     db = next(get_db())
     # Ensure default admin exists
     admin_email = "raakul"
