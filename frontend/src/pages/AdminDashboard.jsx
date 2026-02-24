@@ -105,6 +105,17 @@ const AdminDashboard = () => {
 // --- Helper Components ---
 
 const KPICard = ({ title, value, color, icon }) => {
+    // Tailwind JIT cannot parse interpolated classes like bg-${color}-100
+    // We must provide the full utility classes
+    const colorMap = {
+        blue: { bg: 'bg-blue-100', bar: 'bg-blue-500' },
+        green: { bg: 'bg-green-100', bar: 'bg-green-500' },
+        amber: { bg: 'bg-amber-100', bar: 'bg-amber-500' },
+        indigo: { bg: 'bg-indigo-100', bar: 'bg-indigo-500' }
+    };
+
+    const styles = colorMap[color] || colorMap.blue;
+
     return (
         <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md">
             <div className="flex items-start">
@@ -115,8 +126,8 @@ const KPICard = ({ title, value, color, icon }) => {
                 {icon}
             </div>
             <div className="mt-4 flex items-center">
-                <div className={`h-1 w-full rounded-full bg-${color}-100`}>
-                    <div className={`h-1 w-2/3 rounded-full bg-${color}-500 opacity-60`}></div>
+                <div className={`h-1 w-full rounded-full ${styles.bg}`}>
+                    <div className={`h-1 w-2/3 rounded-full ${styles.bar} opacity-60`}></div>
                 </div>
             </div>
         </div>

@@ -30,7 +30,7 @@ const AdminLayout = () => {
             <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} onLogout={handleLogout} />
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 lg:ml-${sidebarOpen ? '64' : '20'}`}>
+            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
                 {/* Header */}
                 <Topbar
                     onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
