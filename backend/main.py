@@ -50,15 +50,42 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
+@app.on_event("startup")
+def startup_populate():
+    db = next(get_db())
+    # Ensure default admin exists
+    admin_email = "raakul"
+    admin = db.query(models.User).filter(models.User.email == admin_email).first()
+    if not admin:
+        hashed_pw = pwd_context.hash("12345")
+        new_admin = models.User(
+            email=admin_email,
+            hashed_password=hashed_pw,
+            role="admin",
+            full_name="Administrator"
+        )
+        db.add(new_admin)
+        db.commit()
+
 @app.post("/auth/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.username).first()
+    # Standardize input
+    search_email = user.username.strip().lower()
+    
+    db_user = db.query(models.User).filter(models.User.email == search_email).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
     if not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Incorrect email or password")
     
-    return {"status": "success", "user_id": db_user.id, "email": db_user.email}
+    return {
+        "status": "success", 
+        "user_id": db_user.id, 
+        "email": db_user.email,
+        "role": db_user.role,
+        "full_name": db_user.full_name
+    }
 
 # --- EMAIL CONFIGURATION ---
 import smtplib

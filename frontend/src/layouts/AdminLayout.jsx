@@ -5,11 +5,11 @@ import Topbar from '../components/admin/Topbar';
 import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
-    const { token, logout } = useAuth();
-    const [sidebarOpen, setSidebarOpen] = useState(false); // Default closed on mobile
+    const { user, logout } = useAuth();
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    if (!token) {
-        return <Navigate to="/admin/login" replace />;
+    if (!user || user.role !== 'admin') {
+        return <Navigate to="/login" replace />;
     }
 
     const handleLogout = () => {
@@ -34,7 +34,7 @@ const AdminLayout = () => {
                 {/* Header */}
                 <Topbar
                     onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-                    displayName="Raakul"
+                    displayName={user.full_name || user.email}
                     onLogout={handleLogout}
                 />
 

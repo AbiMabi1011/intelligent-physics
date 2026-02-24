@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { API_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -18,11 +20,6 @@ const Login = () => {
 
         const cleanUsername = username.trim().toLowerCase();
         const cleanPassword = password.trim();
-
-        if (cleanUsername === 'raakul' && cleanPassword === '12345') {
-            navigate('/admin/dashboard');
-            return;
-        }
 
         try {
             const response = await fetch(`${API_URL}/auth/login`, {
@@ -39,9 +36,14 @@ const Login = () => {
                 return;
             }
 
-            localStorage.setItem('currentUser', JSON.stringify(data));
-            localStorage.setItem('userEmail', cleanUsername);
-            navigate('/dashboard');
+            // Success - Use central AuthContext
+            login(data);
+
+            if (data.role === 'admin') {
+                navigate('/admin/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
 
         } catch (err) {
             console.error(err);
@@ -73,16 +75,15 @@ const Login = () => {
                             Email Address
                         </label>
                         <input
-                            type="email"
+                            type="text"
                             id="username"
                             className="block w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            placeholder="student@email.com"
+                            placeholder="Email or Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             autoCapitalize="none"
                             autoCorrect="off"
                             spellCheck="false"
-                            autoComplete="email"
                             required
                         />
                     </div>

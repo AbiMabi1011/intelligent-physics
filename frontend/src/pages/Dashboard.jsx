@@ -12,10 +12,11 @@ import {
 } from 'lucide-react';
 
 import { API_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const userEmail = localStorage.getItem('userEmail');
+    const { user, logout } = useAuth();
 
     // Tabs: 'overview', 'quizzes'
     const [activeTab, setActiveTab] = useState('overview');
@@ -30,10 +31,12 @@ const Dashboard = () => {
     const [quizResult, setQuizResult] = useState(null); // { score, total, percentage }
 
     useEffect(() => {
-        if (!userEmail) {
+        if (!user) {
             navigate('/login');
+        } else if (user.role === 'admin') {
+            navigate('/admin/dashboard');
         }
-    }, [userEmail, navigate]);
+    }, [user, navigate]);
 
     useEffect(() => {
         if (activeTab === 'quizzes') {
@@ -93,7 +96,7 @@ const Dashboard = () => {
         try {
             const payload = {
                 quiz_id: currentQuiz.id,
-                student_email: userEmail,
+                student_email: user?.email,
                 answers: answers
             };
 
@@ -117,8 +120,7 @@ const Dashboard = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('currentUser');
+        logout();
         navigate('/login');
     };
 
@@ -254,7 +256,7 @@ const Dashboard = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">Student</p>
-                            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                         </div>
                     </div>
                     <button onClick={handleLogout} className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">

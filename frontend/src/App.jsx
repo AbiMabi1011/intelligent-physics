@@ -7,8 +7,7 @@ import SetPassword from './pages/SetPassword';
 // Admin Imports
 import { AuthProvider } from './context/AuthContext';
 import AdminLayout from './layouts/AdminLayout';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard'; // Reusing the one we made earlier, or switch to new one if preferred. Ideally we use the new structure.
+import AdminDashboard from './pages/AdminDashboard';
 // Actually, let's use the new layout and redirect /admin-dashboard to /admin/dashboard
 import StudentsPage from './pages/admin/StudentsPage';
 import MarksPage from './pages/admin/MarksPage';
@@ -21,14 +20,12 @@ export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Public Routes */}
+// Public Routes
         <Route path="/" element={<LoadingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<Login />} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Admin Auth */}
-        <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>

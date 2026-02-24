@@ -1,39 +1,35 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    // Basic auth logic - replace with actual JWT/API integration
-    const [token, setToken] = useState(localStorage.getItem('adminToken') || null);
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('currentUser')) || null);
 
-    const login = (username, password) => {
-        // Placeholder check - replace with API call
-        if (username === 'raakul' && password === '12345') {
-            const token = 'fake-jwt-token';
-            localStorage.setItem('adminToken', token);
-            setToken(token);
-            return true;
-        }
-        return false;
+    const login = (userData) => {
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        localStorage.setItem('userEmail', userData.email);
+        localStorage.setItem('userRole', userData.role);
+        setUser(userData);
     };
 
     const logout = () => {
-        localStorage.removeItem('adminToken');
-        setToken(null);
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole');
+        setUser(null);
     };
 
     return (
-        <AuthContext.Provider value={{ token, login, logout }}>
+        <AuthContext.Provider value={{
+            user,
+            token: user ? 'logged-in' : null,
+            role: user?.role,
+            login,
+            logout
+        }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-export const ProtectedRoute = () => {
-    const { token } = useAuth();
-    if (!token) return <Navigate to="/admin/login" replace />;
-    return <Outlet />;
-};
