@@ -1,118 +1,174 @@
-import React, { useState } from 'react';
-import { Upload, FileText, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Upload, Search, Download, Trash2, Loader2, Globe } from 'lucide-react';
+import { API_URL } from '../../config';
 
-const PaperUploadPage = () => {
-    const [papers, setPapers] = useState([
-        { id: '1', title: 'Mid-Term 2025 Physics', subject: 'Physics', class: '12-A', date: '2025-02-10' },
-    ]);
-    const [uploading, setUploading] = useState(false);
-    const [progress, setProgress] = useState(0);
+const PapersPage = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [papers, setPapers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showModal, setShowModal] = useState(false);
 
-    const handleUpload = (e) => {
-        e.preventDefault();
-        setUploading(true);
-        // Fake progress
-        let p = 0;
-        const interval = setInterval(() => {
-            p += 10;
-            setProgress(p);
-            if (p >= 100) {
-                clearInterval(interval);
-                setUploading(false);
-                setProgress(0);
-                // Add fake file
-                setPapers([...papers, {
-                    id: Date.now().toString(),
-                    title: 'New Exam Paper',
-                    subject: 'Physics',
-                    class: '11-B',
-                    date: new Date().toISOString().split('T')[0]
-                }]);
-            }
-        }, 300);
+    // New Paper State
+    const [newPaper, setNewPaper] = useState({
+        title: '',
+        subject: 'Physics',
+        class_name: '11-A',
+        file_url: ''
+    });
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        fetchPapers();
+    }, []);
+
+    const fetchPapers = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/papers`);
+            if (res.ok) setPapers(await res.json());
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (!newPaper.title || !newPaper.file_url) return alert("Fill all fields");
+
+        setIsSaving(true);
+        try {
+            const res = await fetch(`${API_URL}/papers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newPaper)
+            });
+            if (res.ok) {
+                setShowModal(false);
+                setNewPaper({ title: '', subject: 'Physics', class_name: '11-A', file_url: '' });
+                fetchPapers();
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const filteredPapers = papers.filter(p =>
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.subject.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-gray-800">Exam Papers Repository</h1>
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold text-gray-800">Exam Papers Management</h1>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition"
+                >
+                    <Upload size={16} className="mr-2" /> Upload Link
+                </button>
+            </div>
 
-            {/* Upload Area */}
-            <div className="rounded-xl bg-white p-8 shadow-sm border border-dashed border-gray-300 transition-colors hover:border-blue-400">
-                <form onSubmit={handleUpload} className="flex flex-col items-center justify-center space-y-4 text-center">
-                    <div className="rounded-full bg-blue-50 p-4 text-blue-500">
-                        <Upload size={32} />
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-medium text-gray-900">Upload Examination Paper</h3>
-                        <p className="text-sm text-gray-500">PDF files only, max 10MB</p>
-                    </div>
+            {/* Search */}
+            <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                    type="text"
+                    placeholder="Search papers..."
+                    className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
 
-                    <div className="grid w-full max-w-lg grid-cols-2 gap-4 text-left">
-                        <div className="col-span-2">
-                            <input type="text" placeholder="Paper Title (e.g. Final Exam 2024)" className="w-full rounded-md border border-gray-300 p-2 text-sm" required />
-                        </div>
-                        <select className="rounded-md border border-gray-300 p-2 text-sm bg-white">
-                            <option>Physics 11</option>
-                            <option>Physics 12</option>
-                            <option>Mechanics 101</option>
-                        </select>
-                        <select className="rounded-md border border-gray-300 p-2 text-sm bg-white">
-                            <option>Class 11-A</option>
-                            <option>Class 12-B</option>
-                        </select>
-                        <div className="col-span-2">
-                            <input type="file" accept=".pdf" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required />
-                        </div>
-                    </div>
+            {/* Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                    <div className="col-span-full py-12 text-center text-gray-500">Loading papers...</div>
+                ) : filteredPapers.map((p) => (
+                    <PaperCard key={p.id} paper={p} />
+                ))}
+            </div>
 
-                    {uploading && (
-                        <div className="w-full max-w-lg">
-                            <div className="h-2 w-full rounded-full bg-gray-200">
-                                <div className="h-2 rounded-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl animate-scale-in">
+                        <h2 className="text-xl font-bold mb-4">Add Study Paper</h2>
+                        <form onSubmit={handleSave} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium">Title</label>
+                                <input
+                                    className="w-full border rounded p-2 text-sm"
+                                    value={newPaper.title}
+                                    onChange={e => setNewPaper({ ...newPaper, title: e.target.value })}
+                                    placeholder="e.g. 2024 Mid-term Paper"
+                                    required
+                                />
                             </div>
-                            <p className="mt-2 text-xs text-blue-600">Uploading... {progress}%</p>
-                        </div>
-                    )}
-
-                    {!uploading && (
-                        <button type="submit" className="rounded-lg bg-blue-600 px-8 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 transition-all">
-                            Start Upload
-                        </button>
-                    )}
-                </form>
-            </div>
-
-            {/* List */}
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-100">
-                <div className="border-b border-gray-100 bg-gray-50 px-6 py-4">
-                    <h3 className="font-semibold text-gray-800">Recent Uploads</h3>
+                            <div>
+                                <label className="block text-sm font-medium">PDF/Drive URL</label>
+                                <input
+                                    className="w-full border rounded p-2 text-sm"
+                                    value={newPaper.file_url}
+                                    onChange={e => setNewPaper({ ...newPaper, file_url: e.target.value })}
+                                    placeholder="https://drive.google.com/..."
+                                    required
+                                />
+                            </div>
+                            <div className="flex justify-end space-x-2 mt-6">
+                                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded hover:bg-gray-100 transition">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center transition">
+                                    {isSaving ? <Loader2 className="animate-spin mr-2" size={16} /> : <Upload className="mr-2" size={16} />}
+                                    Save Paper
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <table className="min-w-full divide-y divide-gray-200">
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                        {papers.map((paper) => (
-                            <tr key={paper.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center">
-                                        <FileText className="mr-3 text-red-500" size={20} />
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{paper.title}</p>
-                                            <p className="text-xs text-gray-500">{paper.subject} • {paper.class}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500">{paper.date}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="flex items-center text-sm font-medium text-blue-600 hover:bg-blue-50 px-3 py-1 rounded transition">
-                                        <Download size={16} className="mr-1" /> Download
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            )}
         </div>
     );
 };
 
-export default PaperUploadPage;
+const PaperCard = ({ paper }) => (
+    <div className="rounded-xl bg-white p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+        <div className="flex items-start justify-between">
+            <div className="rounded-lg bg-red-50 p-3 text-red-600">
+                <FileText size={24} />
+            </div>
+            <a
+                href={paper.file_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-gray-400 hover:text-blue-600 transition-colors"
+            >
+                <Globe size={18} />
+            </a>
+        </div>
+        <div className="mt-4">
+            <h3 className="font-bold text-gray-800 line-clamp-1">{paper.title}</h3>
+            <p className="text-sm text-gray-500 mt-1">{paper.subject} • {paper.class_name}</p>
+        </div>
+        <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-50">
+            <span className="text-xs text-gray-400">Added: {paper.created_at}</span>
+            <a
+                href={paper.file_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+            >
+                View PDF <ArrowUpRight size={14} className="ml-1" />
+            </a>
+        </div>
+    </div>
+);
+
+const ArrowUpRight = ({ size, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 17L17 7" /><path d="M7 7h10v10" /></svg>
+);
+
+export default PapersPage;

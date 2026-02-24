@@ -131,13 +131,61 @@ def invite_user(user: schemas.UserBase, background_tasks: BackgroundTasks, db: S
     db.commit()
     db.refresh(new_user)
     
-    # Generate Link (Assuming frontend runs on 5173 or 5174 - adjust if needed)
-    invite_link = f"http://127.0.0.1:5173/set-password?email={user.email}"
+    # Generate Link for live Netlify site
+    invite_link = f"https://intelligentphy.netlify.app/set-password?email={user.email}"
     
     # Send Email in Background
     background_tasks.add_task(send_invite_email, user.email, invite_link)
     
     return new_user
+
+@app.get("/results", response_model=List[schemas.FullQuizResult])
+def get_all_results(db: Session = Depends(get_db)):
+    return db.query(models.QuizResult).all()
+
+# --- MARKS ENDPOINTS ---
+
+@app.get("/marks", response_model=List[schemas.MarkResponse])
+def get_marks(db: Session = Depends(get_db)):
+    return db.query(models.Mark).all()
+
+@app.post("/marks", response_model=schemas.MarkResponse)
+def create_mark(mark: schemas.MarkCreate, db: Session = Depends(get_db)):
+    new_mark = models.Mark(**mark.dict())
+    db.add(new_mark)
+    db.commit()
+    db.refresh(new_mark)
+    return new_mark
+
+# --- PAPERS ENDPOINTS ---
+
+@app.get("/papers", response_model=List[schemas.PaperResponse])
+def get_papers(db: Session = Depends(get_db)):
+    return db.query(models.StudyPaper).all()
+
+@app.post("/papers", response_model=schemas.PaperResponse)
+def create_paper(paper: schemas.PaperCreate, db: Session = Depends(get_db)):
+    new_paper = models.StudyPaper(**paper.dict())
+    db.add(new_paper)
+    db.commit()
+    db.refresh(new_paper)
+    return new_paper
+
+# --- ADMIN STATS ---
+
+@app.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    student_count = db.query(models.User).filter(models.User.email != "raakul").count()
+    quiz_count = db.query(models.Quiz).count()
+    result_count = db.query(models.QuizResult).count()
+    paper_count = db.query(models.StudyPaper).count()
+    
+    return {
+        "students": student_count,
+        "quizzes": quiz_count,
+        "submissions": result_count,
+        "papers": paper_count
+    }
 
 @app.post("/auth/set-password")
 def set_password(data: schemas.PasswordSet, db: Session = Depends(get_db)): # 165

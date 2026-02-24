@@ -75,3 +75,49 @@ class QuizResultResponse(BaseModel):
     score: int
     total: int
     percentage: float
+
+class FullQuizResult(BaseModel):
+    id: int
+    quiz_id: int
+    user_id: int
+    score: int
+    total_questions: int
+    created_at: str
+    student: UserBase
+    quiz: QuizBase
+
+    class Config:
+        from_attributes = True
+
+class MarkBase(BaseModel):
+    user_id: int
+    subject: str
+    term: str
+    score: int
+    max_score: int = 100
+
+class MarkCreate(MarkBase):
+    pass
+
+class MarkResponse(MarkBase):
+    id: int
+    student: UserBase
+
+    class Config:
+        from_attributes = True
+
+class PaperBase(BaseModel):
+    title: str
+    subject: str
+    class_name: str
+    file_url: str
+
+class PaperCreate(PaperBase):
+    pass
+
+class PaperResponse(PaperBase):
+    id: int
+    created_at: str
+
+    class Config:
+        from_attributes = True

@@ -45,9 +45,29 @@ class QuizResult(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     score = Column(Integer)
     total_questions = Column(Integer)
+    created_at = Column(String, default=lambda: "2026-02-24") # Simple date
     
     quiz = relationship("Quiz", back_populates="results")
     student = relationship("User", back_populates="quiz_results")
+
+class Mark(Base):
+    __tablename__ = "marks"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    subject = Column(String)
+    term = Column(String) # Mid-term, Final
+    score = Column(Integer)
+    max_score = Column(Integer, default=100)
+    student = relationship("User")
+
+class StudyPaper(Base):
+    __tablename__ = "study_papers"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    subject = Column(String)
+    class_name = Column(String)
+    file_url = Column(String)
+    created_at = Column(String, default=lambda: "2026-02-24")
 
 class Item(Base):
     __tablename__ = "items"
