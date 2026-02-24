@@ -8,8 +8,7 @@ import {
     ChevronDown,
     ChevronUp
 } from 'lucide-react';
-
-const API_URL = ""; // Relative path -> Proxy
+import { API_URL } from '../../config';
 
 const QuizzesPage = () => {
     // Mode: 'list' or 'create'

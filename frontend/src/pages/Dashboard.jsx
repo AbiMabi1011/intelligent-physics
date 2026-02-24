@@ -11,7 +11,7 @@ import {
     Play
 } from 'lucide-react';
 
-const API_URL = "";
+import { API_URL } from '../config';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -181,8 +181,8 @@ const Dashboard = () => {
                                                 <label
                                                     key={optKey}
                                                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${isSelected
-                                                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                                                            : 'border-gray-200 hover:bg-gray-50'
+                                                        ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                                                        : 'border-gray-200 hover:bg-gray-50'
                                                         }`}
                                                 >
                                                     <input
