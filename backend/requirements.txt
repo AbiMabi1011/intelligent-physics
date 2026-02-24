@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+gunicorn
+sqlalchemy
+passlib[pbkdf2]
+python-dotenv
+email-validator
