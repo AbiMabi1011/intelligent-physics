@@ -14,11 +14,12 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        const cleanUsername = username.trim().toLowerCase();
+        const cleanPassword = password.trim();
 
         // --- 0. Admin Login Bypass (For Legacy/Admin) ---
-        // Ideally backend handles this too, but for now we keep the hardcoded admin
-        if (username === 'raakul' && password === '12345') {
-            navigate('/admin/dashboard'); // Fixed path to match App.jsx
+        if (cleanUsername === 'raakul' && cleanPassword === '12345') {
+            navigate('/admin/dashboard');
             return;
         }
 
@@ -27,7 +28,7 @@ const Login = () => {
             const response = await fetch(`${API_URL}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: username, password: password })
+                body: JSON.stringify({ username: cleanUsername, password: cleanPassword })
             });
 
             const data = await response.json();
