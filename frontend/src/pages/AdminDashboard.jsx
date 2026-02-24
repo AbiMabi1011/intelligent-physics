@@ -9,8 +9,10 @@ import {
     FileText
 } from 'lucide-react';
 import { API_URL } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         students: 0,
         quizzes: 0,
@@ -40,7 +42,7 @@ const AdminDashboard = () => {
         <div className="space-y-6">
             {/* Welcome Banner */}
             <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white shadow-lg">
-                <h2 className="text-3xl font-bold">Welcome back, Raakul</h2>
+                <h2 className="text-3xl font-bold">Welcome back, {user?.full_name || user?.email || 'Admin'}</h2>
                 <p className="mt-2 opacity-90">Here is the overview of your academy's performance today.</p>
             </div>
 
