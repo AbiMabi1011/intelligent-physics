@@ -13,6 +13,7 @@ import {
 
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.jpeg';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -225,8 +226,8 @@ const Dashboard = () => {
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex">
                 <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold">IP</span>
+                    <div className="w-10 h-10 flex items-center justify-center">
+                        <img src={logo} alt="Intelligent Physics Logo" className="w-full h-full object-contain" />
                     </div>
                     <span className="font-bold text-lg text-gray-800">Intelligent Physics</span>
                 </div>

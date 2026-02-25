@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.jpeg';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -56,8 +57,8 @@ const Login = () => {
         <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
             <div className="w-full max-w-md rounded-2xl bg-white p-6 md:p-10 shadow-xl border border-gray-100">
                 <div className="mb-8 text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 font-bold text-white text-xl">
-                        IP
+                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
+                        <img src={logo} alt="Intelligent Physics Logo" className="h-full w-full object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
                     <p className="text-gray-500 mt-2">Log in to access your academy</p>

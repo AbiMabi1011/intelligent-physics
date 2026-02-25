@@ -11,6 +11,7 @@ import {
     LogOut
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import logo from '../../assets/logo.jpeg';
 
 const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
 
@@ -34,8 +35,8 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
             {/* Header / Logo */}
             <div className="flex h-16 items-center justify-between px-4 border-b border-slate-700">
                 <div className="flex items-center space-x-2 overflow-hidden">
-                    <div className="h-8 w-8 min-w-[2rem] rounded-full bg-blue-500 flex items-center justify-center font-bold text-white">
-                        IP
+                    <div className="h-10 w-10 min-w-[2.5rem] flex items-center justify-center p-1 bg-white/10 rounded-lg">
+                        <img src={logo} alt="IP Logo" className="w-full h-full object-contain" />
                     </div>
                     {isOpen && (
                         <span className="text-lg font-bold tracking-wider whitespace-nowrap">Physics Admin</span>

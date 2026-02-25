@@ -1,146 +1,185 @@
-import React, { useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useRef, Suspense } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { ContactShadows, Text, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { Float, ContactShadows } from '@react-three/drei';
 
-// --- Professional Engineering: The "Quantum Lattice" ---
-// A representation of structure, stability, and infinite complexity.
-const QuantumLattice = () => {
-    const meshRef = useRef();
-    const wireframeRef = useRef();
+const Apple = ({ appleRef }) => (
+    <group ref={appleRef} position={[-4, 4, 0]}>
+        <mesh castShadow>
+            <sphereGeometry args={[0.4, 32, 32]} />
+            <meshStandardMaterial color="#e63946" roughness={0.2} metalness={0.1} />
+        </mesh>
+        {/* Stem */}
+        <mesh position={[0, 0.4, 0]}>
+            <cylinderGeometry args={[0.04, 0.04, 0.3]} />
+            <meshStandardMaterial color="#3E2723" />
+        </mesh>
+        {/* Leaf */}
+        <mesh position={[0.16, 0.4, 0]} rotation={[0, 0, Math.PI / 4]}>
+            <coneGeometry args={[0.1, 0.3, 4]} />
+            <meshStandardMaterial color="#2E8B57" />
+        </mesh>
+    </group>
+);
 
-    useFrame((state) => {
-        const t = state.clock.getElapsedTime();
+const AnimationScene = () => {
+    const appleRef = useRef();
+    const textRef = useRef();
 
-        // Sophisticated, non-linear rotation
-        // A "40+ year engineer" knows that linear rotation (+= delta) looks cheap.
-        // We use sine waves to create "breathing" motion where it slows down and speeds up subtly.
+    // Animation state
+    const stateRef = useRef({
+        phase: 'falling',
+        time: 0,
+        velocityY: 0,
+        positionX: -4,
+        rotationZ: 0
+    });
 
-        if (meshRef.current) {
-            meshRef.current.rotation.x = Math.sin(t * 0.2) * 0.2;
-            meshRef.current.rotation.y = t * 0.15; // Slow constant yaw
-            meshRef.current.rotation.z = Math.cos(t * 0.15) * 0.1;
+    useFrame((state, delta) => {
+        const s = stateRef.current;
+        s.time += delta;
+
+        // Cap delta to prevent huge jumps if tab is backgrounded
+        const dt = Math.min(delta, 0.1);
+
+        if (s.phase === 'falling') {
+            if (appleRef.current) {
+                // Gravity acceleration
+                s.velocityY += 15 * dt;
+                appleRef.current.position.y -= s.velocityY * dt;
+                appleRef.current.position.x = s.positionX;
+
+                // Ground collision (apple radius is roughly 0.4)
+                if (appleRef.current.position.y <= -0.6) {
+                    appleRef.current.position.y = -0.6;
+
+                    // Bounce
+                    if (s.velocityY > 2) {
+                        s.velocityY = -s.velocityY * 0.4; // Dampened bounce
+                    } else {
+                        // Stop bouncing, start rolling
+                        s.velocityY = 0;
+                        s.phase = 'rolling';
+                        s.time = 0;
+                    }
+                }
+            }
         }
+        else if (s.phase === 'rolling') {
+            if (appleRef.current) {
+                // Roll to the center (x = 0)
+                const rollSpeed = 4;
+                s.positionX += rollSpeed * dt;
 
-        if (wireframeRef.current) {
-            // Counter-rotation for the wireframe slightly creates depth parallax
-            wireframeRef.current.rotation.copy(meshRef.current.rotation);
-            wireframeRef.current.rotation.y += 0.05; // Slight offset
+                // Update position
+                appleRef.current.position.x = s.positionX;
 
-            // Pulse effect on scale
-            const scale = 1.05 + Math.sin(t * 1.5) * 0.02;
-            wireframeRef.current.scale.set(scale, scale, scale);
+                // Update rotation (speed / radius)
+                s.rotationZ -= (rollSpeed / 0.4) * dt;
+                appleRef.current.rotation.z = s.rotationZ;
+
+                // Slow down and stop at center
+                if (s.positionX >= 0) {
+                    s.positionX = 0;
+                    appleRef.current.position.x = 0;
+                    s.phase = 'textAppear';
+                    s.time = 0;
+                }
+            }
+        }
+        else if (s.phase === 'textAppear') {
+            if (textRef.current) {
+                // Zoom in text
+                textRef.current.scale.x = THREE.MathUtils.lerp(textRef.current.scale.x, 1, 0.1);
+                textRef.current.scale.y = THREE.MathUtils.lerp(textRef.current.scale.y, 1, 0.1);
+                textRef.current.scale.z = THREE.MathUtils.lerp(textRef.current.scale.z, 1, 0.1);
+
+                // Add soft floating motion to text after appearing
+                if (s.time > 1) {
+                    textRef.current.position.y = 1.5 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+                }
+            }
+
+            // Wait a few seconds before resetting
+            if (s.time > 5) {
+                s.phase = 'resetting';
+            }
+        }
+        else if (s.phase === 'resetting') {
+            // Reset all values to initial state
+            s.positionX = -4;
+            s.velocityY = 0;
+            s.rotationZ = 0;
+
+            if (appleRef.current) {
+                appleRef.current.position.set(s.positionX, 4, 0);
+                appleRef.current.rotation.set(0, 0, 0);
+            }
+            if (textRef.current) {
+                textRef.current.scale.set(0, 0, 0);
+                textRef.current.position.y = 1.5;
+            }
+
+            s.phase = 'falling';
+            s.time = 0;
         }
     });
 
     return (
         <group>
-            {/* 1. The Core Object: A Black Matte Dodecahedron (The "Mystery") */}
-            {/* Represents solid fundamental physics constants */}
-            <mesh ref={meshRef}>
-                <dodecahedronGeometry args={[2.0, 0]} />
-                <meshStandardMaterial
-                    color="#1a1a1a"    // Almost black
-                    roughness={0.2}     // Polished concrete/ceramic look
-                    metalness={0.8}     // Metallic undertone
-                    flatShading={false}
-                />
+            {/* Minimalist Floor */}
+            <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <planeGeometry args={[20, 10]} />
+                <meshStandardMaterial color="#1a202c" roughness={0.1} metalness={0.8} />
             </mesh>
 
-            {/* 2. The Lattice: A Glowing HUD Wireframe (The "Intelligence") */}
-            {/* Represents the data/AI analyzing the physics */}
-            <mesh ref={wireframeRef}>
-                <dodecahedronGeometry args={[2.0, 0]} />
-                <meshBasicMaterial
-                    color="#00d8ff"
-                    wireframe={true}
-                    transparent={true}
-                    opacity={0.15}
-                />
-            </mesh>
+            <Apple appleRef={appleRef} />
 
-            {/* 3. The Orbitals: Abstract Electrons */}
-            <ElectronRing radius={3.2} speed={0.4} color="#ffffff" axis={[1, 1, 0]} />
-            <ElectronRing radius={3.8} speed={-0.3} color="#ffffff" axis={[0, 1, 1]} />
-        </group>
-    );
-};
-
-// --- Helper: Minimalist Orbital Ring ---
-const ElectronRing = ({ radius, speed, color, axis }) => {
-    const ref = useRef();
-    useFrame((state, delta) => {
-        if (ref.current) {
-            ref.current.rotation.x += delta * speed * axis[0];
-            ref.current.rotation.y += delta * speed * axis[1];
-            ref.current.rotation.z += delta * speed * axis[2];
-        }
-    });
-
-    return (
-        <group ref={ref}>
-            {/* Minimalist thin orbit line */}
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <torusGeometry args={[radius, 0.01, 32, 100]} />
-                <meshBasicMaterial color={color} transparent opacity={0.2} />
-            </mesh>
-            {/* Single particle of knowledge */}
-            <mesh position={[radius, 0, 0]}>
-                <sphereGeometry args={[0.08, 16, 16]} />
-                <meshBasicMaterial color={color} />
-            </mesh>
+            {/* 3D Text */}
+            <group ref={textRef} position={[0, 1.5, 0]} scale={0}>
+                <Text
+                    fontSize={1.2}
+                    color="#ffffff"
+                    font="/fonts/Inter-Bold.ttf" // Use default sans-serif if not found
+                    outlineWidth={0.02}
+                    outlineColor="#4a5568"
+                    letterSpacing={0.05}
+                >
+                    Intelligent Physics
+                </Text>
+            </group>
         </group>
     );
 };
 
 const Logo3D = () => {
     return (
-        <div className="h-[600px] w-[600px] relative">
-            <Canvas camera={{ position: [0, 0, 14], fov: 35 }} gl={{ antialias: true, alpha: true }}>
-                {/* 
-                   "40+ Years Experience" Lighting Setup:
-                   We don't rely on chaotic HDRIs. We sculpt the light manually.
-                   This creates a 'Rembrandt' look for the object.
-                */}
-
-                {/* 1. Key Light: Main source, warm white, top-right */}
+        <div className="h-[400px] md:h-[500px] w-full max-w-[800px] relative">
+            <Canvas camera={{ position: [0, 1, 8], fov: 45 }} shadows gl={{ antialias: true }}>
+                {/* Lighting setup for dramatic effect */}
+                <ambientLight intensity={0.4} />
                 <spotLight
-                    position={[10, 15, 10]}
-                    angle={0.3}
-                    penumbra={1}
-                    intensity={2.0}
+                    position={[5, 10, 5]}
+                    angle={0.5}
+                    penumbra={0.8}
+                    intensity={2}
                     castShadow
-                    color="#ffffff"
+                    shadow-mapSize={[1024, 1024]}
                 />
-
-                {/* 2. Fill Light: Soft cool blue, left side, fills shadows */}
-                <pointLight position={[-10, 0, -5]} intensity={1.0} color="#b0e0e6" />
-
-                {/* 3. Rim Light: Sharp backlight to define edges/silhouette */}
-                <spotLight position={[0, 10, -10]} intensity={2.0} color="#00d8ff" angle={0.5} />
-
-                {/* 4. Bounce Light: Subtle ground reflection */}
-                <ambientLight intensity={0.2} />
+                <pointLight position={[-5, 2, -5]} intensity={0.5} color="#4fd1c5" />
 
                 <Suspense fallback={null}>
-                    <Float
-                        speed={1.5}
-                        rotationIntensity={0.2}
-                        floatIntensity={0.5}
-                        floatingRange={[-0.1, 0.1]}
-                    >
-                        <QuantumLattice />
-                    </Float>
-
-                    {/* Soft contact shadow to ground the object in space */}
+                    <AnimationScene />
                     <ContactShadows
-                        position={[0, -3.5, 0]}
-                        opacity={0.4}
-                        scale={10}
-                        blur={2.5}
-                        far={4.5}
+                        position={[0, -0.99, 0]}
+                        opacity={0.8}
+                        scale={20}
+                        blur={1.5}
+                        far={5}
                         color="#000000"
                     />
+                    {/* Add environment mapping for reflections on the shiny floor/apple */}
+                    <Environment preset="city" />
                 </Suspense>
             </Canvas>
         </div>
