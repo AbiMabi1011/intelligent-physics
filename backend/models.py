@@ -13,6 +13,7 @@ class User(Base):
     role = Column(String, default="student") # 'admin' or 'student'
     full_name = Column(String, nullable=True)
     class_name = Column(String, nullable=True)
+    approval_status = Column(String, default="approved") # 'pending', 'approved', 'rejected'
 
     items = relationship("Item", back_populates="owner")
     quiz_results = relationship("QuizResult", back_populates="student")
@@ -22,6 +23,10 @@ class Quiz(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True)
     description = Column(String, nullable=True)
+    class_name = Column(String, nullable=True)
+    is_published = Column(Boolean, default=False)
+    scheduled_time = Column(String, nullable=True)
+    duration_minutes = Column(Integer, default=30)
     
     questions = relationship("Question", back_populates="quiz", cascade="all, delete-orphan")
     results = relationship("QuizResult", back_populates="quiz")
@@ -35,7 +40,8 @@ class Question(Base):
     option_b = Column(String)
     option_c = Column(String)
     option_d = Column(String)
-    correct_option = Column(String) # 'A', 'B', 'C', 'D'
+    option_e = Column(String, nullable=True)
+    correct_option = Column(String) # 'A', 'B', 'C', 'D', 'E'
 
     quiz = relationship("Quiz", back_populates="questions")
 
@@ -67,7 +73,9 @@ class StudyPaper(Base):
     title = Column(String)
     subject = Column(String)
     class_name = Column(String)
+    paper_type = Column(String, default="Other")
     file_url = Column(String)
+    scheme_url = Column(String, nullable=True)
     created_at = Column(String, default=lambda: "2026-02-24")
 
 class Item(Base):
@@ -78,3 +86,10 @@ class Item(Base):
     description = Column(String, index=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="items")
+
+class Batch(Base):
+    __tablename__ = "batches"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    description = Column(String, nullable=True)

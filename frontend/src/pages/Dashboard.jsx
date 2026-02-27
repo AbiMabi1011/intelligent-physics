@@ -24,12 +24,14 @@ const Dashboard = () => {
 
     // Quiz State
     const [quizzes, setQuizzes] = useState([]);
+    const [takenQuizzes, setTakenQuizzes] = useState([]);
     const [loadingQuizzes, setLoadingQuizzes] = useState(false);
 
     // Active Quiz Taking State
     const [currentQuiz, setCurrentQuiz] = useState(null); // Full quiz object
     const [answers, setAnswers] = useState({}); // { qId: "A", qId: "B" }
     const [quizResult, setQuizResult] = useState(null); // { score, total, percentage }
+    const [timeLeft, setTimeLeft] = useState(null); // Time remaining in seconds
 
     useEffect(() => {
         if (!user) {
@@ -48,11 +50,20 @@ const Dashboard = () => {
     const fetchQuizzes = async () => {
         setLoadingQuizzes(true);
         try {
+            // Fetch quizzes
+            let qData = [];
             const res = await fetch(`${API_URL}/quizzes`);
-            if (res.ok) {
-                const data = await res.json();
-                setQuizzes(data);
+            if (res.ok) qData = await res.json();
+
+            // Fetch taken statuses
+            let takenData = [];
+            if (user?.email) {
+                const tr = await fetch(`${API_URL}/quizzes/student/${user.email}/taken`);
+                if (tr.ok) takenData = await tr.json();
             }
+
+            setQuizzes(qData);
+            setTakenQuizzes(takenData);
         } catch (err) {
             console.error("Failed to load quizzes", err);
         } finally {
@@ -69,6 +80,10 @@ const Dashboard = () => {
                 setCurrentQuiz(data);
                 setAnswers({});
                 setQuizResult(null);
+
+                // Initialize Timer
+                const duration = data.duration_minutes || 30;
+                setTimeLeft(duration * 60);
             } else {
                 alert("Failed to load quiz details");
             }
@@ -77,6 +92,19 @@ const Dashboard = () => {
         }
     };
 
+    // Timer Effect
+    useEffect(() => {
+        if (currentQuiz && !quizResult && timeLeft !== null && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+            return () => clearInterval(timer);
+        } else if (timeLeft === 0 && currentQuiz && !quizResult) {
+            // Auto submit when time reaches 0
+            handleSubmitQuiz(true);
+        }
+    }, [currentQuiz, quizResult, timeLeft]);
+
     const handleAnswerSelect = (questionId, option) => {
         setAnswers(prev => ({
             ...prev,
@@ -84,14 +112,19 @@ const Dashboard = () => {
         }));
     };
 
-    const handleSubmitQuiz = async () => {
+    const handleSubmitQuiz = async (forceSubmit = false) => {
         if (!currentQuiz) return;
 
-        // Count unanswered
-        const total = currentQuiz.questions.length;
-        const answered = Object.keys(answers).length;
-        if (answered < total) {
-            if (!window.confirm(`You have answered ${answered} out of ${total} questions. Submit anyway?`)) return;
+        // Ensure we don't submit if already resulted
+        if (quizResult) return;
+
+        if (!forceSubmit) {
+            // Count unanswered
+            const total = currentQuiz.questions.length;
+            const answered = Object.keys(answers).length;
+            if (answered < total) {
+                if (!window.confirm(`You have answered ${answered} out of ${total} questions. Submit anyway?`)) return;
+            }
         }
 
         try {
@@ -135,10 +168,17 @@ const Dashboard = () => {
                     <div className="max-w-4xl mx-auto flex justify-between items-center">
                         <h2 className="text-xl font-bold text-gray-800">{currentQuiz.title}</h2>
                         <div className="flex items-center space-x-4">
-                            <span className="text-sm font-medium text-gray-500 flex items-center">
-                                <Clock size={16} className="mr-1" /> Time: Unlimited
+                            <span className={`text-sm font-bold flex items-center px-4 py-2 rounded-full ${timeLeft <= 60 && timeLeft !== null ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 text-gray-700'}`}>
+                                <Clock size={16} className="mr-2" />
+                                {timeLeft !== null ? `${Math.floor(timeLeft / 60)}:${('0' + (timeLeft % 60)).slice(-2)} remaining` : 'Time: Unlimited'}
                             </span>
-                            <button onClick={() => setCurrentQuiz(null)} className="text-gray-500 hover:text-red-500">Exit</button>
+                            {!quizResult && (
+                                <button onClick={() => {
+                                    if (window.confirm("Are you sure you want to exit? Your progress will be lost and you won't be able to re-enter.")) {
+                                        setCurrentQuiz(null);
+                                    }
+                                }} className="text-gray-500 hover:text-red-500 font-medium">Exit</button>
+                            )}
                         </div>
                     </div>
                 </header>
@@ -208,7 +248,7 @@ const Dashboard = () => {
 
                             <div className="flex justify-end pt-4 pb-12">
                                 <button
-                                    onClick={handleSubmitQuiz}
+                                    onClick={() => handleSubmitQuiz()}
                                     className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition transform hover:-translate-y-1"
                                 >
                                     Submit Quiz
@@ -311,27 +351,45 @@ const Dashboard = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {quizzes.map(quiz => (
-                                        <div key={quiz.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
-                                            <div className="h-2 bg-blue-500"></div>
-                                            <div className="p-6">
-                                                <h3 className="text-lg font-bold text-gray-900 mb-2">{quiz.title}</h3>
-                                                <p className="text-sm text-gray-500 mb-4 line-clamp-2">{quiz.description || "No description"}</p>
+                                    {quizzes.filter(q => {
+                                        if (!q.is_published) return false;
+                                        if (q.scheduled_time) {
+                                            const stTime = new Date(q.scheduled_time).getTime();
+                                            if (stTime > Date.now()) return false;
+                                        }
+                                        return true;
+                                    }).map(quiz => {
+                                        const isTaken = takenQuizzes.includes(quiz.id);
+                                        return (
+                                            <div key={quiz.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+                                                <div className={`h-2 ${isTaken ? 'bg-green-500' : 'bg-blue-500'}`}></div>
+                                                <div className="p-6">
+                                                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{quiz.title}</h3>
+                                                    <p className="text-sm text-gray-500 mb-4 line-clamp-2">{quiz.description || "No description provided."}</p>
 
-                                                <div className="flex items-center justify-between mt-4">
-                                                    <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                                        {quiz.questions?.length || '?'} Questions
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handleStartQuiz(quiz.id)}
-                                                        className="flex items-center text-sm font-bold text-blue-600 hover:text-blue-800"
-                                                    >
-                                                        Start <Play size={14} className="ml-1" />
-                                                    </button>
+                                                    <div className="flex overflow-hidden items-center justify-between mt-4">
+                                                        <div className="flex gap-2 text-xs font-semibold">
+                                                            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                                                {quiz.duration_minutes || 30} Min
+                                                            </span>
+                                                        </div>
+                                                        {isTaken ? (
+                                                            <span className="flex items-center text-sm font-bold text-green-600">
+                                                                <CheckCircle size={16} className="mr-1" /> Completed
+                                                            </span>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleStartQuiz(quiz.id)}
+                                                                className="flex items-center text-sm font-bold text-blue-600 hover:text-blue-800"
+                                                            >
+                                                                Start <Play size={14} className="ml-1" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>

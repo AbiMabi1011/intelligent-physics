@@ -5,21 +5,33 @@ import { API_URL } from '../../config';
 const PapersPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [papers, setPapers] = useState([]);
+    const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
 
-    // New Paper State
     const [newPaper, setNewPaper] = useState({
         title: '',
         subject: 'Physics',
-        class_name: '11-A',
-        file_url: ''
+        selectedBatches: [],
+        paper_type: 'Past Paper',
+        file_url: '',
+        scheme_url: ''
     });
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         fetchPapers();
+        fetchBatches();
     }, []);
+
+    const fetchBatches = async () => {
+        try {
+            const res = await fetch(`${API_URL}/batches`);
+            if (res.ok) setBatches(await res.json());
+        } catch (err) {
+            console.error("Failed to fetch batches:", err);
+        }
+    };
 
     const fetchPapers = async () => {
         setLoading(true);
@@ -36,17 +48,26 @@ const PapersPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!newPaper.title || !newPaper.file_url) return alert("Fill all fields");
+        if (newPaper.selectedBatches.length === 0) return alert("Please select at least one batch");
 
         setIsSaving(true);
         try {
+            const payload = {
+                title: newPaper.title,
+                subject: newPaper.subject,
+                class_name: newPaper.selectedBatches.join(', '),
+                paper_type: newPaper.paper_type,
+                file_url: newPaper.file_url,
+                scheme_url: newPaper.scheme_url
+            };
             const res = await fetch(`${API_URL}/papers`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newPaper)
+                body: JSON.stringify(payload)
             });
             if (res.ok) {
                 setShowModal(false);
-                setNewPaper({ title: '', subject: 'Physics', class_name: '11-A', file_url: '' });
+                setNewPaper({ title: '', subject: 'Physics', selectedBatches: [], paper_type: 'Past Paper', file_url: '', scheme_url: '' });
                 fetchPapers();
             }
         } catch (err) {
@@ -109,14 +130,60 @@ const PapersPage = () => {
                                     required
                                 />
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Type</label>
+                                    <select
+                                        className="w-full border rounded p-2 text-sm"
+                                        value={newPaper.paper_type}
+                                        onChange={e => setNewPaper({ ...newPaper, paper_type: e.target.value })}
+                                    >
+                                        <option value="Past Paper">Past Paper</option>
+                                        <option value="FWC Paper">FWC Paper</option>
+                                        <option value="Model Paper">Model Paper</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Select Batches</label>
+                                    <div className="max-h-32 overflow-y-auto border rounded p-2 bg-gray-50 space-y-2">
+                                        {batches.length === 0 ? (
+                                            <p className="text-xs text-gray-500">No batches available.</p>
+                                        ) : batches.map(b => (
+                                            <label key={b.id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newPaper.selectedBatches.includes(b.name)}
+                                                    onChange={e => {
+                                                        const arr = newPaper.selectedBatches;
+                                                        if (e.target.checked) setNewPaper({ ...newPaper, selectedBatches: [...arr, b.name] });
+                                                        else setNewPaper({ ...newPaper, selectedBatches: arr.filter(x => x !== b.name) });
+                                                    }}
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                />
+                                                <span className="text-gray-700">{b.name}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                             <div>
-                                <label className="block text-sm font-medium">PDF/Drive URL</label>
+                                <label className="block text-sm font-medium">Paper PDF/Drive URL</label>
                                 <input
                                     className="w-full border rounded p-2 text-sm"
                                     value={newPaper.file_url}
                                     onChange={e => setNewPaper({ ...newPaper, file_url: e.target.value })}
                                     placeholder="https://drive.google.com/..."
                                     required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium">Marking Scheme URL (Optional)</label>
+                                <input
+                                    className="w-full border rounded p-2 text-sm"
+                                    value={newPaper.scheme_url}
+                                    onChange={e => setNewPaper({ ...newPaper, scheme_url: e.target.value })}
+                                    placeholder="https://drive.google.com/..."
                                 />
                             </div>
                             <div className="flex justify-end space-x-2 mt-6">
@@ -135,34 +202,49 @@ const PapersPage = () => {
 };
 
 const PaperCard = ({ paper }) => (
-    <div className="rounded-xl bg-white p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+    <div className="rounded-xl bg-white p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group flex flex-col h-full">
         <div className="flex items-start justify-between">
-            <div className="rounded-lg bg-red-50 p-3 text-red-600">
+            <div className={`rounded-lg p-3 ${paper.paper_type === 'FWC Paper' ? 'bg-purple-50 text-purple-600' :
+                paper.paper_type === 'Past Paper' ? 'bg-orange-50 text-orange-600' :
+                    'bg-blue-50 text-blue-600'
+                }`}>
                 <FileText size={24} />
             </div>
-            <a
-                href={paper.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-gray-400 hover:text-blue-600 transition-colors"
-            >
-                <Globe size={18} />
-            </a>
+            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${paper.paper_type === 'FWC Paper' ? 'bg-purple-100 text-purple-800' :
+                paper.paper_type === 'Past Paper' ? 'bg-orange-100 text-orange-800' :
+                    'bg-gray-100 text-gray-800'
+                }`}>
+                {paper.paper_type || 'Paper'}
+            </span>
         </div>
-        <div className="mt-4">
-            <h3 className="font-bold text-gray-800 line-clamp-1">{paper.title}</h3>
+        <div className="mt-4 flex-grow">
+            <h3 className="font-bold text-gray-800 line-clamp-2" title={paper.title}>{paper.title}</h3>
             <p className="text-sm text-gray-500 mt-1">{paper.subject} • {paper.class_name}</p>
         </div>
-        <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-50">
-            <span className="text-xs text-gray-400">Added: {paper.created_at}</span>
-            <a
-                href={paper.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-            >
-                View PDF <ArrowUpRight size={14} className="ml-1" />
-            </a>
+        <div className="mt-6 flex flex-col gap-2 pt-4 border-t border-gray-50">
+            <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Added: {paper.created_at}</span>
+                <a
+                    href={paper.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                    View Paper <ArrowUpRight size={14} className="ml-1" />
+                </a>
+            </div>
+            {paper.scheme_url && (
+                <div className="flex items-center justify-end">
+                    <a
+                        href={paper.scheme_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center text-sm font-semibold text-green-600 hover:text-green-800 transition-colors"
+                    >
+                        Marking Scheme <ArrowUpRight size={14} className="ml-1" />
+                    </a>
+                </div>
+            )}
         </div>
     </div>
 );

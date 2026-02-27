@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Edit, Search, Loader2 } from 'lucide-react';
+import { ClipboardList, Edit, Search, Loader2, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { API_URL } from '../../config';
 
 const MarksPage = () => {
@@ -8,6 +9,7 @@ const MarksPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     // Form State
     const [newMark, setNewMark] = useState({
@@ -22,6 +24,62 @@ const MarksPage = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    const handleBulkImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            if (file.name.endsWith('.pdf')) {
+                // In a production app, this would be specialized PDF extraction.
+                // For now, we inform users they should use Excel for predictable bulk data.
+                alert("For reliable bulk import of marks, please use an Excel or CSV file. PDFs are currently saved as raw attachments (feature coming soon).");
+                setIsImporting(false);
+                return;
+            }
+
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data);
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            const validMarks = jsonData.map(row => ({
+                email: (row.email || row.Email || '').trim(),
+                subject: row.subject || row.Subject || 'Physics',
+                term: row.term || row.Term || 'Mid-Term',
+                score: parseInt(row.score || row.Score),
+                max_score: parseInt(row.max_score || row.MaxScore || row.max || row.Max || 100)
+            })).filter(m => m.email && !isNaN(m.score));
+
+            if (validMarks.length === 0) {
+                alert("No valid marks data found. Ensure 'email' and 'score' columns exist.");
+                setIsImporting(false);
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/marks/bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ marks: validMarks })
+            });
+
+            if (response.ok) {
+                alert(`Import Complete!`);
+                fetchData();
+            } else {
+                const resData = await response.json();
+                alert(`Error: ${resData.detail || 'Failed to import'}`);
+            }
+        } catch (error) {
+            console.error("Import Error:", error);
+            alert("Error reading file or uploading.");
+        } finally {
+            setIsImporting(false);
+            e.target.value = null; // reset input
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -89,12 +147,19 @@ const MarksPage = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="ml-auto flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition"
-                >
-                    <ClipboardList size={16} className="mr-2" /> Add Marks
-                </button>
+                <div className="ml-auto flex gap-2">
+                    <label className={`flex cursor-pointer items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition ${isImporting ? 'opacity-70 pointer-events-none' : ''}`}>
+                        {isImporting ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Upload size={16} className="mr-2" />}
+                        Bulk Import (Excel/PDF)
+                        <input type="file" accept=".xlsx,.xls,.csv,.pdf" className="hidden" onChange={handleBulkImport} disabled={isImporting} />
+                    </label>
+                    <button
+                        onClick={() => setShowModal(true)}
+                        className="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition"
+                    >
+                        <ClipboardList size={16} className="mr-2" /> Add Marks
+                    </button>
+                </div>
             </div>
 
             {/* Table */}

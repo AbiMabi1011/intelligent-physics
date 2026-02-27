@@ -9,12 +9,16 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class BulkInviteRequest(BaseModel):
+    users: List[UserBase]
+
 class UserResponse(UserBase):
     id: int
     is_active: bool
     role: Optional[str] = "student"
     full_name: Optional[str] = None
     class_name: Optional[str] = None
+    approval_status: Optional[str] = "approved"
 
     class Config:
         from_attributes = True
@@ -30,6 +34,12 @@ class PasswordSet(BaseModel):
     email: str
     password: str
 
+class AdminCredentialsUpdate(BaseModel):
+    current_email: str
+    current_password: str
+    new_email: str
+    new_password: Optional[str] = None
+
 # --- QUIZ SCHEMAS ---
 
 class QuestionBase(BaseModel):
@@ -38,7 +48,8 @@ class QuestionBase(BaseModel):
     option_b: str
     option_c: str
     option_d: str
-    correct_option: str # 'A', 'B', 'C', 'D'
+    option_e: Optional[str] = None
+    correct_option: str # 'A', 'B', 'C', 'D', 'E'
 
 class QuestionCreate(QuestionBase):
     pass
@@ -53,6 +64,10 @@ class QuestionResponse(QuestionBase):
 class QuizBase(BaseModel):
     title: str
     description: Optional[str] = None
+    class_name: Optional[str] = None
+    is_published: bool = False
+    scheduled_time: Optional[str] = None
+    duration_minutes: Optional[int] = 30
 
 class QuizCreate(QuizBase):
     questions: List[QuestionCreate]
@@ -106,11 +121,23 @@ class MarkResponse(MarkBase):
     class Config:
         from_attributes = True
 
+class BulkMarkUploadItem(BaseModel):
+    email: str
+    subject: str
+    term: str
+    score: int
+    max_score: int
+
+class BulkMarkUploadRequest(BaseModel):
+    marks: List[BulkMarkUploadItem]
+
 class PaperBase(BaseModel):
     title: str
     subject: str
     class_name: str
+    paper_type: str = "Other"
     file_url: str
+    scheme_url: Optional[str] = None
 
 class PaperCreate(PaperBase):
     pass
@@ -118,6 +145,19 @@ class PaperCreate(PaperBase):
 class PaperResponse(PaperBase):
     id: int
     created_at: str
+
+    class Config:
+        from_attributes = True
+
+class BatchBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class BatchCreate(BatchBase):
+    pass
+
+class BatchResponse(BatchBase):
+    id: int
 
     class Config:
         from_attributes = True
