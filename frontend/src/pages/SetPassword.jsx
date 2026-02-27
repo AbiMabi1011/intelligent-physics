@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { User, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-
+import { Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import logo from '../assets/logo.jpeg';
 import { API_URL } from '../config';
 
 const SetPassword = () => {
@@ -77,10 +77,11 @@ const SetPassword = () => {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
                 <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md text-center">
-                    <div className="mb-4 flex justify-center text-red-500">
-                        <AlertCircle size={48} />
+                    <div className="mb-4 flex justify-center">
+                        <img src={logo} alt="Intelligent Physics" className="h-14 w-14 object-contain" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800 mb-2">Activation Issue</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-1">Intelligent Physics</h2>
+                    <p className="text-red-500 font-semibold mb-2">Activation Issue</p>
                     <p className="text-gray-600 mb-6">{error}</p>
                     <button onClick={() => navigate('/login')} className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                         Go to Login
@@ -106,11 +107,11 @@ const SetPassword = () => {
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
             <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
                 <div className="mb-6 text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                        <User size={32} />
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center mb-3">
+                        <img src={logo} alt="Intelligent Physics" className="w-full h-full object-contain" />
                     </div>
-                    <h2 className="mt-4 text-2xl font-bold text-gray-900">Activate Account</h2>
-                    <p className="mt-2 text-sm text-gray-500">Create a password for your new account.</p>
+                    <h2 className="text-2xl font-bold text-gray-900">Intelligent Physics</h2>
+                    <p className="mt-1 text-sm text-gray-500">Activate your student account below.</p>
                 </div>
 
                 <div className="mb-6 rounded-lg bg-blue-50 p-4 text-center border border-blue-100">

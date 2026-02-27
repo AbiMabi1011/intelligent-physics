@@ -77,6 +77,16 @@ def migrate():
         print("Adding duration_minutes column to quizzes...")
         cursor.execute("ALTER TABLE quizzes ADD COLUMN duration_minutes INTEGER DEFAULT 30")
         print("duration_minutes column added.")
+        
+    if "expiry_mode" not in quiz_cols:
+        print("Adding expiry_mode column to quizzes...")
+        cursor.execute("ALTER TABLE quizzes ADD COLUMN expiry_mode TEXT DEFAULT 'end_time'")
+        print("expiry_mode column added.")
+        
+    if "expiry_days" not in quiz_cols:
+        print("Adding expiry_days column to quizzes...")
+        cursor.execute("ALTER TABLE quizzes ADD COLUMN expiry_days INTEGER DEFAULT 1")
+        print("expiry_days column added.")
 
     # Check if paper_type exists in study_papers
     cursor.execute("PRAGMA table_info(study_papers)")
@@ -91,6 +101,54 @@ def migrate():
         print("Adding scheme_url column to study_papers...")
         cursor.execute("ALTER TABLE study_papers ADD COLUMN scheme_url TEXT")
         print("scheme_url column added.")
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='announcements'")
+    if not cursor.fetchone():
+        print("Creating announcements table...")
+        cursor.execute('''
+            CREATE TABLE announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title VARCHAR,
+                content TEXT,
+                image_url VARCHAR,
+                class_name VARCHAR,
+                created_at VARCHAR
+            )
+        ''')
+        print("announcements table created.")
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='class_recordings'")
+    if not cursor.fetchone():
+        print("Creating class_recordings table...")
+        cursor.execute('''
+            CREATE TABLE class_recordings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title VARCHAR,
+                description TEXT,
+                video_url VARCHAR,
+                class_name VARCHAR,
+                subject VARCHAR DEFAULT "Physics",
+                recorded_at VARCHAR
+            )
+        ''')
+        print("class_recordings table created.")
+
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sliders'")
+    if not cursor.fetchone():
+        print("Creating sliders table...")
+        cursor.execute('''
+            CREATE TABLE sliders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title VARCHAR NOT NULL,
+                subtitle VARCHAR,
+                image_url VARCHAR NOT NULL,
+                button_text VARCHAR,
+                button_link VARCHAR,
+                is_active BOOLEAN DEFAULT 1,
+                order_index INTEGER DEFAULT 0
+            )
+        ''')
+        print("sliders table created.")
 
     conn.commit()
     conn.close()

@@ -15,6 +15,9 @@ import PapersPage from './pages/admin/PapersPage';
 import QuizzesPage from './pages/admin/QuizzesPage';
 import ResultsPage from './pages/admin/ResultsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import AnnouncementsPage from './pages/admin/AnnouncementsPage';
+import RecordingsPage from './pages/admin/RecordingsPage';
+import SliderPage from './pages/admin/SliderPage';
 
 export default function App() {
   return (
@@ -35,6 +38,9 @@ export default function App() {
           <Route path="papers" element={<PapersPage />} />
           <Route path="quizzes" element={<QuizzesPage />} />
           <Route path="results" element={<ResultsPage />} />
+          <Route path="announcements" element={<AnnouncementsPage />} />
+          <Route path="recordings" element={<RecordingsPage />} />
+          <Route path="sliders" element={<SliderPage />} />
           <Route path="settings" element={<SettingsPage />} />
           {/* Redirect root admin to dashboard */}
           <Route index element={<AdminDashboard />} />

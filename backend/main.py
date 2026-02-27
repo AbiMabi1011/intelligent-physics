@@ -1,8 +1,15 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from typing import List
+import smtplib
+import os
+import shutil
+from pathlib import Path
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import models
 import schemas
@@ -10,6 +17,10 @@ from database import engine, get_db
 
 # Create Tables
 models.Base.metadata.create_all(bind=engine)
+
+# Create uploads directory
+UPLOADS_DIR = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 app = FastAPI()
 
@@ -22,11 +33,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Serve uploaded files statically
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
 # Password Hashing
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+# Email Configuration
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")  # Set in .env file
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")  # Set in .env file
+
+def send_announcement_email(to_emails: list, subject: str, body: str, image_url: str = None):
+    if not SMTP_USERNAME or not SMTP_PASSWORD:
+        print("[EMAIL] SMTP credentials not configured. Skipping email send.")
+        return
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        for email in to_emails:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f"📢 {subject}"
+            msg['From'] = SMTP_USERNAME
+            msg['To'] = email
+            image_html = f'<img src="{image_url}" style="max-width:100%;border-radius:8px;margin-top:16px;" />' if image_url else ''
+            html = f"""
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
+                <div style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);padding:20px;border-radius:12px 12px 0 0;">
+                    <h1 style="color:white;margin:0;font-size:22px;">📢 Intelligent Physics</h1>
+                </div>
+                <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:24px;border-radius:0 0 12px 12px;">
+                    <h2 style="color:#1f2937;">{subject}</h2>
+                    <p style="color:#374151;line-height:1.7;white-space:pre-wrap;">{body}</p>
+                    {image_html}
+                    <hr style="margin-top:24px;border:none;border-top:1px solid #e5e7eb;"/>
+                    <p style="color:#9ca3af;font-size:12px;">Intelligent Physics — Student Portal</p>
+                </div>
+            </div>
+            """
+            msg.attach(MIMEText(html, 'html'))
+            server.sendmail(SMTP_USERNAME, email, msg.as_string())
+        server.quit()
+        print(f"[EMAIL] Sent announcement to {len(to_emails)} recipients.")
+    except Exception as e:
+        print(f"[EMAIL ERROR] {e}")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -307,7 +363,74 @@ def bulk_upload_marks(payload: schemas.BulkMarkUploadRequest, db: Session = Depe
         "errors": errors
     }
 
+# --- ANNOUNCEMENT ENDPOINTS ---
+
+@app.post("/announcements", response_model=schemas.AnnouncementResponse)
+def create_announcement(announcement: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
+    new_announcement = models.Announcement(
+        title=announcement.title,
+        content=announcement.content,
+        image_url=announcement.image_url,
+        class_name=announcement.class_name,
+        created_at=announcement.created_at
+    )
+    db.add(new_announcement)
+    db.commit()
+    db.refresh(new_announcement)
+
+    # Send email notifications if requested
+    if announcement.send_email:
+        try:
+            batch_names = [b.strip() for b in announcement.class_name.split(',')]
+            all_students = db.query(models.User).filter(models.User.role != 'admin').all()
+            # Filter students whose class_name matches any selected batch
+            target_emails = [
+                s.email for s in all_students
+                if s.class_name and any(b in s.class_name for b in batch_names)
+            ]
+            if target_emails:
+                send_announcement_email(
+                    to_emails=target_emails,
+                    subject=announcement.title,
+                    body=announcement.content,
+                    image_url=announcement.image_url
+                )
+        except Exception as e:
+            print(f"[EMAIL SEND ERROR] {e}")
+
+    return new_announcement
+
+@app.get("/announcements", response_model=List[schemas.AnnouncementResponse])
+def get_announcements(db: Session = Depends(get_db)):
+    return db.query(models.Announcement).order_by(models.Announcement.id.desc()).all()
+
+@app.delete("/announcements/{announcement_id}")
+def delete_announcement(announcement_id: int, db: Session = Depends(get_db)):
+    ann = db.query(models.Announcement).filter(models.Announcement.id == announcement_id).first()
+    if not ann:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+    db.delete(ann)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
 # --- PAPERS ENDPOINTS ---
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload a file (PDF, image) and return its public URL."""
+    safe_name = file.filename.replace(" ", "_")
+    file_path = UPLOADS_DIR / safe_name
+    # Avoid name collision
+    counter = 1
+    stem = Path(safe_name).stem
+    suffix = Path(safe_name).suffix
+    while file_path.exists():
+        safe_name = f"{stem}_{counter}{suffix}"
+        file_path = UPLOADS_DIR / safe_name
+        counter += 1
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    return {"file_url": f"/uploads/{safe_name}", "url": f"/uploads/{safe_name}"}
 
 @app.get("/papers", response_model=List[schemas.PaperResponse])
 def get_papers(db: Session = Depends(get_db)):
@@ -320,6 +443,72 @@ def create_paper(paper: schemas.PaperCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_paper)
     return new_paper
+
+@app.delete("/papers/{paper_id}")
+def delete_paper(paper_id: int, db: Session = Depends(get_db)):
+    paper = db.query(models.StudyPaper).filter(models.StudyPaper.id == paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    db.delete(paper)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- CLASS RECORDINGS ENDPOINTS ---
+
+@app.get("/recordings", response_model=List[schemas.ClassRecordingResponse])
+def get_recordings(db: Session = Depends(get_db)):
+    return db.query(models.ClassRecording).order_by(models.ClassRecording.id.desc()).all()
+
+@app.post("/recordings", response_model=schemas.ClassRecordingResponse)
+def create_recording(recording: schemas.ClassRecordingCreate, db: Session = Depends(get_db)):
+    new_rec = models.ClassRecording(**recording.dict())
+    db.add(new_rec)
+    db.commit()
+    db.refresh(new_rec)
+    return new_rec
+
+@app.delete("/recordings/{recording_id}")
+def delete_recording(recording_id: int, db: Session = Depends(get_db)):
+    rec = db.query(models.ClassRecording).filter(models.ClassRecording.id == recording_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    db.delete(rec)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- SLIDER ENDPOINTS ---
+
+@app.get("/sliders", response_model=List[schemas.SliderResponse])
+def get_sliders(db: Session = Depends(get_db)):
+    return db.query(models.Slider).order_by(models.Slider.order_index).all()
+
+@app.post("/sliders", response_model=schemas.SliderResponse)
+def create_slider(slider: schemas.SliderCreate, db: Session = Depends(get_db)):
+    new_slider = models.Slider(**slider.dict())
+    db.add(new_slider)
+    db.commit()
+    db.refresh(new_slider)
+    return new_slider
+
+@app.put("/sliders/{slider_id}", response_model=schemas.SliderResponse)
+def update_slider(slider_id: int, slider: schemas.SliderCreate, db: Session = Depends(get_db)):
+    db_slider = db.query(models.Slider).filter(models.Slider.id == slider_id).first()
+    if not db_slider:
+        raise HTTPException(status_code=404, detail="Slider not found")
+    for k, v in slider.dict().items():
+        setattr(db_slider, k, v)
+    db.commit()
+    db.refresh(db_slider)
+    return db_slider
+
+@app.delete("/sliders/{slider_id}")
+def delete_slider(slider_id: int, db: Session = Depends(get_db)):
+    slider = db.query(models.Slider).filter(models.Slider.id == slider_id).first()
+    if not slider:
+        raise HTTPException(status_code=404, detail="Slider not found")
+    db.delete(slider)
+    db.commit()
+    return {"message": "Deleted successfully"}
 
 # --- BATCHES ENDPOINTS ---
 
@@ -439,7 +628,9 @@ def create_quiz(quiz: schemas.QuizCreate, db: Session = Depends(get_db)):
         class_name=quiz.class_name,
         is_published=quiz.is_published,
         scheduled_time=quiz.scheduled_time,
-        duration_minutes=quiz.duration_minutes
+        duration_minutes=quiz.duration_minutes,
+        expiry_mode=quiz.expiry_mode,
+        expiry_days=quiz.expiry_days
     )
     db.add(new_quiz)
     db.commit()
@@ -475,6 +666,8 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
     db_quiz.is_published = quiz.is_published
     db_quiz.scheduled_time = quiz.scheduled_time
     db_quiz.duration_minutes = quiz.duration_minutes
+    db_quiz.expiry_mode = quiz.expiry_mode
+    db_quiz.expiry_days = quiz.expiry_days
     
     # Remove old questions
     db.query(models.Question).filter(models.Question.quiz_id == quiz_id).delete()

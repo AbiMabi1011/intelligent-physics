@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     LayoutDashboard,
     Users,
@@ -6,14 +6,22 @@ import {
     ClipboardList,
     FileText,
     Settings,
-    ChevronLeft,
-    ChevronRight,
-    LogOut
+    X,
+    LogOut,
+    Megaphone,
+    Video,
+    Layers
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo.jpeg';
 
 const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
+    const location = useLocation();
+
+    // Close sidebar on route change (mobile)
+    useEffect(() => {
+        setIsOpen(false);
+    }, [location.pathname]);
 
     const menuItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
@@ -22,63 +30,87 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
         { name: 'Papers', path: '/admin/papers', icon: <FileText size={20} /> },
         { name: 'Quizzes', path: '/admin/quizzes', icon: <BookOpen size={20} /> },
         { name: 'Results', path: '/admin/results', icon: <ClipboardList size={20} /> },
+        { name: 'Announcements', path: '/admin/announcements', icon: <Megaphone size={20} /> },
+        { name: 'Recordings', path: '/admin/recordings', icon: <Video size={20} /> },
+        { name: 'Sliders', path: '/admin/sliders', icon: <Layers size={20} /> },
         { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} /> },
     ];
 
     return (
-        <aside
-            className={`
-                fixed inset-y-0 left-0 z-50 transform bg-slate-900 text-white transition-all duration-300 shadow-xl flex flex-col
-                ${isOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 w-20'}
-            `}
-        >
-            {/* Header / Logo */}
-            <div className="flex h-16 items-center justify-between px-4 border-b border-slate-700">
-                <div className="flex items-center space-x-2 overflow-hidden">
-                    <div className="h-10 w-10 min-w-[2.5rem] flex items-center justify-center p-1 bg-white/10 rounded-lg">
-                        <img src={logo} alt="IP Logo" className="w-full h-full object-contain" />
+        <>
+            {/* ── Mobile Overlay ── */}
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+                    onClick={() => setIsOpen(false)}
+                />
+            )}
+
+            {/* ── Sidebar Drawer ── */}
+            <aside
+                className={`
+                    fixed inset-y-0 left-0 z-50 flex flex-col w-64
+                    bg-slate-900 text-white shadow-2xl
+                    transition-transform duration-300 ease-in-out
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                    lg:translate-x-0 lg:static lg:z-auto lg:shadow-none lg:w-64
+                `}
+            >
+                {/* ── Brand Header ── */}
+                <div className="flex h-16 items-center justify-between px-5 border-b border-slate-700/60 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 min-w-[2.25rem] flex items-center justify-center p-1 bg-white/10 rounded-xl">
+                            <img src={logo} alt="IP Logo" className="w-full h-full object-contain" />
+                        </div>
+                        <span className="text-base font-bold tracking-wide whitespace-nowrap text-white">
+                            Intelligent Physics
+                        </span>
                     </div>
-                    {isOpen && (
-                        <span className="text-lg font-bold tracking-wider whitespace-nowrap">Physics Admin</span>
-                    )}
-                </div>
-                <button
-                    onClick={() => setIsOpen(!isOpen)}
-                    className="text-slate-400 hover:text-white focus:outline-none"
-                >
-                    {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-                </button>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 space-y-2 py-6 px-3 overflow-y-auto">
-                {menuItems.map((item) => (
-                    <NavLink
-                        key={item.name}
-                        to={item.path}
-                        className={({ isActive }) => `
-                            flex items-center rounded-lg px-3 py-3 transition-colors
-                            ${isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}
-                            ${!isOpen && 'justify-center'}
-                        `}
+                    {/* Close button (mobile only) */}
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition"
                     >
-                        {item.icon}
-                        {isOpen && <span className="ml-3 font-medium whitespace-nowrap">{item.name}</span>}
-                    </NavLink>
-                ))}
-            </nav>
+                        <X size={20} />
+                    </button>
+                </div>
 
-            {/* User / Logout */}
-            <div className="border-t border-slate-700 p-4">
-                <button
-                    onClick={onLogout}
-                    className={`flex w-full items-center rounded-lg px-3 py-2 text-slate-300 hover:bg-red-900/50 hover:text-red-400 transition-colors ${!isOpen && 'justify-center'}`}
-                >
-                    <LogOut size={20} />
-                    {isOpen && <span className="ml-3 font-medium">Logout</span>}
-                </button>
-            </div>
-        </aside>
+                {/* ── Label ── */}
+                <div className="px-5 pt-4 pb-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Admin Panel</p>
+                </div>
+
+                {/* ── Navigation ── */}
+                <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
+                    {menuItems.map((item) => (
+                        <NavLink
+                            key={item.name}
+                            to={item.path}
+                            className={({ isActive }) => `
+                                flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all
+                                ${isActive
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                            `}
+                        >
+                            <span className="shrink-0">{item.icon}</span>
+                            <span className="truncate">{item.name}</span>
+                        </NavLink>
+                    ))}
+                </nav>
+
+                {/* ── Logout ── */}
+                <div className="border-t border-slate-700/60 p-4 shrink-0">
+                    <button
+                        onClick={onLogout}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 hover:bg-red-900/40 hover:text-red-400 transition-all"
+                    >
+                        <LogOut size={20} className="shrink-0" />
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 };
 

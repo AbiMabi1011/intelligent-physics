@@ -64,7 +64,7 @@ const Login = () => {
                     return;
                 }
                 login(data);
-                navigate(data.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+                navigate(data.role === 'admin' ? '/admin/dashboard' : '/dashboard', { replace: true });
             }
             else if (mode === 'register') {
                 const response = await fetch(`${API_URL}/auth/register`, {
@@ -125,7 +125,11 @@ const Login = () => {
                         {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Create Account' : 'Reset Password'}
                     </h1>
                     <p className="text-gray-500 mt-2">
-                        {mode === 'login' ? 'Log in to access your academy' : mode === 'register' ? 'Register as a new student' : 'Enter your email to receive a reset link'}
+                        {mode === 'login'
+                            ? 'Sign in to Intelligent Physics'
+                            : mode === 'register'
+                                ? 'Join Intelligent Physics as a student'
+                                : 'Enter your email to receive a reset link'}
                     </p>
                 </div>
 

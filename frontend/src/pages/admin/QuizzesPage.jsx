@@ -26,6 +26,8 @@ const QuizzesPage = () => {
     const [selectedBatches, setSelectedBatches] = useState([]);
     const [scheduledTime, setScheduledTime] = useState('');
     const [durationMinutes, setDurationMinutes] = useState(30);
+    const [expiryMode, setExpiryMode] = useState('end_time');
+    const [expiryDays, setExpiryDays] = useState(1);
     const [questions, setQuestions] = useState([
         { text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A' }
     ]);
@@ -86,6 +88,8 @@ const QuizzesPage = () => {
         setSelectedBatches([]);
         setScheduledTime('');
         setDurationMinutes(30);
+        setExpiryMode('end_time');
+        setExpiryDays(1);
         setQuestions([{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A' }]);
     };
 
@@ -97,6 +101,8 @@ const QuizzesPage = () => {
         setSelectedBatches(quiz.class_name ? quiz.class_name.split(', ') : []);
         setScheduledTime(quiz.scheduled_time || '');
         setDurationMinutes(quiz.duration_minutes || 30);
+        setExpiryMode(quiz.expiry_mode || 'end_time');
+        setExpiryDays(quiz.expiry_days || 1);
         setQuestions(quiz.questions && quiz.questions.length > 0 ? quiz.questions : [{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A' }]);
     };
 
@@ -106,6 +112,8 @@ const QuizzesPage = () => {
         setSelectedBatches(quiz.class_name ? quiz.class_name.split(', ') : []);
         setScheduledTime(quiz.scheduled_time || '');
         setDurationMinutes(quiz.duration_minutes || 30);
+        setExpiryMode(quiz.expiry_mode || 'end_time');
+        setExpiryDays(quiz.expiry_days || 1);
         setQuestions(quiz.questions || []);
     };
 
@@ -122,6 +130,8 @@ const QuizzesPage = () => {
             is_published: editingQuizId ? currentQuizStatus : false,
             scheduled_time: scheduledTime || null,
             duration_minutes: durationMinutes,
+            expiry_mode: expiryMode,
+            expiry_days: expiryDays,
             questions: questions
         };
 
@@ -229,6 +239,34 @@ const QuizzesPage = () => {
                                 </label>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Availability After Start</label>
+                            <select
+                                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                value={expiryMode}
+                                onChange={(e) => setExpiryMode(e.target.value)}
+                            >
+                                <option value="end_time">Disable immediately when duration ends</option>
+                                <option value="one_day">Keep available for 1 day</option>
+                                <option value="custom_days">Keep available for custom days</option>
+                                <option value="never">Keep available indefinitely</option>
+                            </select>
+                        </div>
+                        {expiryMode === 'custom_days' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">How many days?</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                    value={expiryDays}
+                                    onChange={(e) => setExpiryDays(parseInt(e.target.value))}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -366,13 +404,43 @@ const QuizzesPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? <p>Loading...</p> : quizzes.map(quiz => {
+                    const now = Date.now();
                     const isScheduledForFuture = quiz.scheduled_time && new Date(quiz.scheduled_time) > new Date();
+
+                    // Calculate if quiz has ended based on expiry mode
+                    let isEnded = false;
+                    if (quiz.is_published && quiz.scheduled_time) {
+                        const stTime = new Date(quiz.scheduled_time).getTime();
+                        if (stTime <= now) {
+                            let endTime = null;
+                            if (quiz.expiry_mode === 'end_time') {
+                                endTime = stTime + ((quiz.duration_minutes || 30) * 60 * 1000);
+                            } else if (quiz.expiry_mode === 'one_day') {
+                                endTime = stTime + (24 * 60 * 60 * 1000);
+                            } else if (quiz.expiry_mode === 'custom_days') {
+                                endTime = stTime + ((quiz.expiry_days || 1) * 24 * 60 * 60 * 1000);
+                            }
+                            if (endTime && now > endTime) isEnded = true;
+                        }
+                    }
+
+                    // Determine status label & colors
+                    let statusLabel, statusClass;
+                    if (!quiz.is_published) {
+                        statusLabel = 'Draft'; statusClass = 'bg-gray-100 text-gray-600';
+                    } else if (isEnded) {
+                        statusLabel = 'Ended'; statusClass = 'bg-red-100 text-red-700';
+                    } else if (isScheduledForFuture) {
+                        statusLabel = 'Scheduled'; statusClass = 'bg-purple-100 text-purple-700';
+                    } else {
+                        statusLabel = 'Live'; statusClass = 'bg-green-100 text-green-700';
+                    }
                     return (
-                        <div key={quiz.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition relative pb-16">
+                        <div key={quiz.id} className={`bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition relative pb-16 ${isEnded ? 'border-red-100 opacity-80' : 'border-gray-100'}`}>
                             <div className="flex justify-between items-start">
                                 <h3 className="text-lg font-bold text-gray-900 line-clamp-2 pr-4">{quiz.title}</h3>
-                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${!quiz.is_published ? 'bg-gray-100 text-gray-600' : isScheduledForFuture ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-                                    {!quiz.is_published ? 'Draft' : isScheduledForFuture ? 'Scheduled' : 'Published'}
+                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusClass}`}>
+                                    {statusLabel}
                                 </span>
                             </div>
                             <p className="text-sm text-gray-500 mt-1 line-clamp-1 truncate">{quiz.class_name}</p>
@@ -384,15 +452,15 @@ const QuizzesPage = () => {
                                     {quiz.duration_minutes || 30} Mins
                                 </span>
                                 {quiz.scheduled_time && (
-                                    <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded">
-                                        {new Date(quiz.scheduled_time).toLocaleString()}
+                                    <span className={`px-2 py-1 rounded text-xs ${isEnded ? 'bg-red-50 text-red-600' : 'bg-purple-50 text-purple-700'}`}>
+                                        {isEnded ? '⏹ Ended ' : '🕐 '}{new Date(quiz.scheduled_time).toLocaleString()}
                                     </span>
                                 )}
                             </div>
                             <div className="absolute bottom-4 left-6 right-6 flex gap-2">
                                 <button
                                     onClick={() => handleViewQuiz(quiz)}
-                                    className={`text-sm font-semibold bg-blue-50 text-blue-700 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center ${quiz.is_published ? 'w-1/2' : 'w-1/3'}`}
+                                    className={`text-sm font-semibold bg-blue-50 text-blue-700 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center ${(quiz.is_published && !isEnded) ? 'w-1/2' : quiz.is_published ? 'w-1/2' : 'w-1/3'}`}
                                 >
                                     <Eye size={14} className="mr-1" /> View
                                 </button>

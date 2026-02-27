@@ -27,6 +27,8 @@ class Quiz(Base):
     is_published = Column(Boolean, default=False)
     scheduled_time = Column(String, nullable=True)
     duration_minutes = Column(Integer, default=30)
+    expiry_mode = Column(String, default="end_time") # 'end_time', 'one_day', 'custom_days', 'never'
+    expiry_days = Column(Integer, default=1)
     
     questions = relationship("Question", back_populates="quiz", cascade="all, delete-orphan")
     results = relationship("QuizResult", back_populates="quiz")
@@ -93,3 +95,36 @@ class Batch(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     description = Column(String, nullable=True)
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    content = Column(String)
+    image_url = Column(String, nullable=True)
+    class_name = Column(String) # Batches
+    created_at = Column(String)
+
+class ClassRecording(Base):
+    __tablename__ = "class_recordings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(String, nullable=True)
+    video_url = Column(String)
+    class_name = Column(String)
+    subject = Column(String, default="Physics")
+    recorded_at = Column(String)
+
+class Slider(Base):
+    __tablename__ = "sliders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String)
+    subtitle = Column(String, nullable=True)
+    image_url = Column(String)
+    button_text = Column(String, nullable=True)
+    button_link = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)

@@ -68,6 +68,25 @@ class QuizBase(BaseModel):
     is_published: bool = False
     scheduled_time: Optional[str] = None
     duration_minutes: Optional[int] = 30
+    expiry_mode: Optional[str] = "end_time"
+    expiry_days: Optional[int] = 1
+
+class AnnouncementBase(BaseModel):
+    title: str
+    content: str
+    image_url: Optional[str] = None
+    class_name: str
+    created_at: str
+    send_email: Optional[bool] = False
+
+class AnnouncementCreate(AnnouncementBase):
+    pass
+
+class AnnouncementResponse(AnnouncementBase):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 class QuizCreate(QuizBase):
     questions: List[QuestionCreate]
@@ -157,6 +176,41 @@ class BatchCreate(BatchBase):
     pass
 
 class BatchResponse(BatchBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class ClassRecordingBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    video_url: str
+    class_name: str
+    subject: Optional[str] = "Physics"
+    recorded_at: str
+
+class ClassRecordingCreate(ClassRecordingBase):
+    pass
+
+class ClassRecordingResponse(ClassRecordingBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class SliderBase(BaseModel):
+    title: str
+    subtitle: Optional[str] = None
+    image_url: str
+    button_text: Optional[str] = None
+    button_link: Optional[str] = None
+    is_active: Optional[bool] = True
+    order_index: Optional[int] = 0
+
+class SliderCreate(SliderBase):
+    pass
+
+class SliderResponse(SliderBase):
     id: int
 
     class Config:
