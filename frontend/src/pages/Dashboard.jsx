@@ -414,34 +414,76 @@ const Dashboard = () => {
                 </section>
             )}
 
-            {/* ════ PROMO BANNER ════ */}
+            {/* ════ INTELLIGENT PHYSICS — THINK POSITIVE BANNER ════ */}
             <section className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
                 <Reveal>
-                    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 p-8 md:p-10 shadow-2xl">
-                        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-                        <div className="absolute top-0 left-0 w-72 h-72 bg-blue-500/15 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-                        <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/15 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-                            <div className="max-w-lg">
-                                <div className="inline-flex items-center gap-2 bg-yellow-400/15 border border-yellow-400/25 text-yellow-300 text-xs font-black px-3 py-1.5 rounded-full mb-4">
-                                    <Flame size={12} /> STUDY TIP
+                    <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 100%)'
+                    }}>
+                        {/* Animated glow orbs */}
+                        <div className="absolute top-0 left-0 w-80 h-80 bg-indigo-600/25 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 float" />
+                        <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 float" style={{ animationDelay: '2s' }} />
+                        <div className="absolute top-1/2 left-1/2 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+
+                        {/* Subtle grid */}
+                        <div className="absolute inset-0 opacity-[0.025]"
+                            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
+
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 p-7 md:p-10">
+
+                            {/* Left — Logo card */}
+                            <div className="shrink-0 flex flex-col items-center text-center">
+                                <div className="relative mb-3">
+                                    <div className="absolute inset-0 bg-indigo-400/30 rounded-3xl blur-xl scale-110" />
+                                    <img src={logo} alt="Intelligent Physics"
+                                        className="relative h-20 w-20 md:h-24 md:w-24 rounded-3xl object-contain shadow-2xl ring-2 ring-white/20" />
                                 </div>
-                                <h2 className="text-2xl md:text-3xl font-black text-white leading-snug mb-3">
-                                    Consistency beats intensity — <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">30 minutes daily</span> transforms your score!
-                                </h2>
-                                <p className="text-white/40 text-sm">Join hundreds of students mastering A/L Physics with Intelligent Physics Academy.</p>
+                                <p className="text-white font-black text-base md:text-lg tracking-tight">Intelligent Physics</p>
+                                <div className="flex gap-0.5 mt-1">
+                                    {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />)}
+                                </div>
+                                <span className="mt-2 text-indigo-300 text-[11px] font-bold tracking-widest uppercase">A/L Physics Academy</span>
                             </div>
-                            <div className="shrink-0 text-center glass rounded-3xl px-8 py-6">
-                                <img src={logo} alt="IP" className="h-14 w-14 mx-auto rounded-2xl mb-2 shadow-xl" />
-                                <p className="font-black text-white">Intelligent Physics</p>
-                                <div className="flex justify-center gap-0.5 mt-1.5">
-                                    {[...Array(5)].map((_, i) => <Star key={i} size={13} className="fill-yellow-400 text-yellow-400" />)}
+
+                            {/* Divider */}
+                            <div className="hidden md:block w-px self-stretch bg-white/10 mx-2" />
+                            <div className="block md:hidden h-px w-full bg-white/10" />
+
+                            {/* Right — Think Positive quotes */}
+                            <div className="flex-1 text-center md:text-left">
+                                <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-black px-3 py-1.5 rounded-full mb-4 tracking-widest uppercase">
+                                    <Zap size={11} className="fill-indigo-300" /> Think Positive
+                                </div>
+
+                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug mb-3">
+                                    Every expert was once a{' '}
+                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                                        beginner.
+                                    </span>
+                                </h2>
+                                <p className="text-white/50 text-sm leading-relaxed mb-5 max-w-md mx-auto md:mx-0">
+                                    Believe in your potential. Each question you practice, each recording you watch, and each paper you solve brings you one step closer to your dream score. <span className="text-indigo-300 font-bold">You've got this! 🚀</span>
+                                </p>
+
+                                {/* Motivational stat pills */}
+                                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                                    {[
+                                        { icon: <BookOpen size={12} />, text: 'Practice Daily' },
+                                        { icon: <Star size={12} />, text: "Aim for A's" },
+                                        { icon: <Zap size={12} />, text: 'Stay Focused' },
+                                        { icon: <Flame size={12} />, text: 'Never Give Up' },
+                                    ].map(({ icon, text }) => (
+                                        <span key={text} className="flex items-center gap-1.5 bg-white/8 border border-white/10 text-white/70 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/15 hover:text-white transition-colors">
+                                            {icon}{text}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </Reveal>
             </section>
+
 
             {/* ════ QUIZZES ════ */}
             <section id="quizzes" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
