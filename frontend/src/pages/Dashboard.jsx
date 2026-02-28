@@ -678,29 +678,48 @@ const SkeletonGrid = () => (
 const HeroSlider = ({ slides }) => {
     const [cur, setCur] = useState(0);
     const timer = useRef(null);
+    const touchStartX = useRef(null);
     const go = useCallback(d => setCur(c => (c + d + slides.length) % slides.length), [slides.length]);
 
+    // Auto-advance
     useEffect(() => {
         if (slides.length <= 1) return;
         timer.current = setInterval(() => go(1), 5500);
         return () => clearInterval(timer.current);
     }, [slides.length, go]);
 
+    // Touch swipe handlers for mobile
+    const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+    const onTouchEnd = (e) => {
+        if (touchStartX.current === null) return;
+        const diff = touchStartX.current - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) go(diff > 0 ? 1 : -1);
+        touchStartX.current = null;
+    };
+
+    // ── Empty state (no slides added yet) ──
     if (slides.length === 0) return (
-        <div className="bg-mesh relative flex items-center justify-center overflow-hidden pb-20" style={{ minHeight: '92vh' }}>
-            <div className="absolute inset-0 opacity-[0.035]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl float" />
-            <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
-            <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-                <div className="inline-flex items-center gap-2 glass text-white/80 text-xs font-bold px-4 py-2 rounded-full mb-8">
+        <div className="bg-mesh relative flex items-center justify-center overflow-hidden"
+            style={{ minHeight: 'clamp(420px, 70vh, 92vh)', paddingBottom: '5rem' }}>
+            <div className="absolute inset-0 opacity-[0.035]"
+                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+            <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-blue-500/20 rounded-full blur-3xl float" />
+            <div className="absolute bottom-1/4 right-1/4 w-48 md:w-72 h-48 md:h-72 bg-purple-500/20 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
+            <div className="relative z-10 text-center px-5 max-w-3xl mx-auto">
+                <div className="inline-flex items-center gap-2 glass text-white/80 text-xs font-bold px-4 py-2 rounded-full mb-6">
                     <Star size={12} className="fill-yellow-400 text-yellow-400" />A/L Physics Academy - Sri Lanka
                 </div>
-                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[1.05] mb-6">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.08] mb-5">
                     Master Physics.<br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Score Straight A's.</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                        Score Straight A's.
+                    </span>
                 </h1>
-                <p className="text-white/50 text-lg md:text-xl max-w-lg mx-auto mb-8 leading-relaxed">Everything you need for A/L Physics — quizzes, class recordings, past papers & more, all in one place.</p>
-                <a href="#quizzes" className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-7 py-4 rounded-2xl hover:bg-blue-50 shadow-2xl hover:scale-105 transition-all">
+                <p className="text-white/50 text-sm sm:text-base md:text-lg max-w-lg mx-auto mb-8 leading-relaxed">
+                    Everything you need for A/L Physics — quizzes, class recordings, past papers &amp; more, all in one place.
+                </p>
+                <a href="#quizzes"
+                    className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-6 py-3.5 rounded-2xl hover:bg-blue-50 shadow-2xl hover:scale-105 transition-all">
                     Start Learning <ArrowRight size={16} />
                 </a>
             </div>
@@ -709,34 +728,83 @@ const HeroSlider = ({ slides }) => {
 
     const s = slides[cur];
     return (
-        <div className="relative overflow-hidden" style={{ minHeight: '92vh' }}>
-            <div className="absolute inset-0 bg-cover bg-center transition-all duration-1000" style={{ backgroundImage: `url(${imgSrc(s.image_url)})`, transform: 'scale(1.04)' }} />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-black/10" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-            <div className="absolute inset-0 flex items-center px-8 md:px-20 pb-24">
-                <div className="max-w-2xl">
-                    <div className="inline-flex items-center gap-2 glass text-white text-xs font-bold px-4 py-2 rounded-full mb-6">
-                        <Zap size={12} className="text-yellow-400" />Intelligent Physics
+        <div
+            className="relative overflow-hidden"
+            style={{ minHeight: 'clamp(420px, 70vh, 92vh)' }}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* Background image */}
+            <div
+                className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+                style={{ backgroundImage: `url(${imgSrc(s.image_url)})`, transform: 'scale(1.04)' }}
+            />
+
+            {/* Gradient overlays — stronger on mobile for readability */}
+            {/* Bottom-to-top dark gradient (always) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+            {/* Left-to-right gradient (desktop) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent hidden sm:block" />
+            {/* Full dark tint on mobile so text is always readable */}
+            <div className="absolute inset-0 bg-black/40 sm:hidden" />
+
+            {/* ── Content ── */}
+            <div className="absolute inset-0 flex items-end sm:items-center px-5 sm:px-10 md:px-16 lg:px-20 pb-20 sm:pb-16 md:pb-10">
+                <div className="w-full sm:max-w-xl lg:max-w-2xl text-center sm:text-left">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 glass text-white text-[11px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-5">
+                        <Zap size={11} className="text-yellow-400" />Intelligent Physics
                     </div>
-                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-[1.1] drop-shadow-2xl mb-5">{s.title}</h1>
-                    {s.subtitle && <p className="text-white/70 text-lg md:text-xl mb-8 max-w-lg leading-relaxed">{s.subtitle}</p>}
+
+                    {/* Title */}
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.12] drop-shadow-2xl mb-3 sm:mb-4">
+                        {s.title}
+                    </h1>
+
+                    {/* Subtitle */}
+                    {s.subtitle && (
+                        <p className="text-white/80 text-sm sm:text-base md:text-lg mb-5 sm:mb-7 max-w-md mx-auto sm:mx-0 leading-relaxed line-clamp-3 sm:line-clamp-none">
+                            {s.subtitle}
+                        </p>
+                    )}
+
+                    {/* CTA Button */}
                     {s.button_text && (
                         <a href={s.button_link || '#'} target="_blank" rel="noreferrer"
-                            className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-7 py-4 rounded-2xl hover:scale-105 shadow-2xl transition-all w-fit">
-                            {s.button_text}<ExternalLink size={15} />
+                            className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-6 py-3 sm:px-7 sm:py-3.5 rounded-2xl hover:scale-105 shadow-2xl transition-all">
+                            {s.button_text}<ExternalLink size={14} />
                         </a>
                     )}
                 </div>
             </div>
+
+            {/* ── Navigation arrows (hidden on very small screens) ── */}
             {slides.length > 1 && (
                 <>
-                    <button onClick={() => go(-1)} className="absolute left-4 top-1/2 -translate-y-1/2 glass text-white p-3 rounded-2xl hover:bg-white/20 hover:scale-110 transition-all"><ChevronLeft size={22} /></button>
-                    <button onClick={() => go(1)} className="absolute right-4 top-1/2 -translate-y-1/2 glass text-white p-3 rounded-2xl hover:bg-white/20 hover:scale-110 transition-all"><ChevronRight size={22} /></button>
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
-                        {slides.map((_, i) => <button key={i} onClick={() => setCur(i)} className={`h-1.5 rounded-full transition-all duration-500 ${i === cur ? 'bg-white w-10' : 'bg-white/40 w-3 hover:bg-white/70'}`} />)}
-                    </div>
-                    <div className="absolute bottom-10 right-8 glass text-white text-xs font-black px-3 py-1.5 rounded-full">{cur + 1}/{slides.length}</div>
+                    <button onClick={() => go(-1)}
+                        className="hidden sm:flex absolute left-3 md:left-5 top-1/2 -translate-y-1/2 glass text-white p-2.5 md:p-3 rounded-2xl hover:bg-white/20 hover:scale-110 transition-all items-center justify-center">
+                        <ChevronLeft size={20} />
+                    </button>
+                    <button onClick={() => go(1)}
+                        className="hidden sm:flex absolute right-3 md:right-5 top-1/2 -translate-y-1/2 glass text-white p-2.5 md:p-3 rounded-2xl hover:bg-white/20 hover:scale-110 transition-all items-center justify-center">
+                        <ChevronRight size={20} />
+                    </button>
                 </>
+            )}
+
+            {/* ── Dots + counter ── */}
+            {slides.length > 1 && (
+                <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-3">
+                    <div className="flex gap-2">
+                        {slides.map((_, i) => (
+                            <button key={i} onClick={() => setCur(i)}
+                                className={`h-1.5 rounded-full transition-all duration-500 ${i === cur ? 'bg-white w-8 sm:w-10' : 'bg-white/40 w-2.5 sm:w-3 hover:bg-white/70'}`} />
+                        ))}
+                    </div>
+                    <div className="glass text-white text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full">
+                        {cur + 1}/{slides.length}
+                    </div>
+                </div>
             )}
         </div>
     );
