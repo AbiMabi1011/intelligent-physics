@@ -163,7 +163,8 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "user_id": db_user.id, 
         "email": db_user.email,
         "role": db_user.role,
-        "full_name": db_user.full_name
+        "full_name": db_user.full_name,
+        "class_name": db_user.class_name  # Required so frontend can filter data by batch
     }
 
 @app.post("/admin/credentials")
