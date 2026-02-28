@@ -66,13 +66,36 @@ const StatCard = ({ label, value, icon, gradient, visible }) => {
 ═══════════════════════════════════ */
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { user, login, logout } = useAuth();
     const myClass = user?.class_name || '';
+
+    // resolvedClass: always use the fresh class_name from the server.
+    // This heals stale localStorage sessions that are missing class_name.
+    const [resolvedClass, setResolvedClass] = useState(myClass);
 
     useEffect(() => {
         if (!user) navigate('/login');
         else if (user.role === 'admin') navigate('/admin/dashboard');
     }, [user, navigate]);
+
+    // Fetch fresh user profile to get up-to-date class_name
+    useEffect(() => {
+        if (!user?.email) return;
+        // If class_name already in session, use it immediately
+        if (user.class_name) { setResolvedClass(user.class_name); return; }
+        // Otherwise fetch from backend and patch the stored user
+        fetch(`${API_URL}/users`)
+            .then(r => r.ok ? r.json() : [])
+            .then(users => {
+                const me = users.find(u => u.email === user.email);
+                if (me?.class_name) {
+                    setResolvedClass(me.class_name);
+                    // Patch localStorage so next load is instant
+                    login({ ...user, class_name: me.class_name });
+                }
+            })
+            .catch(() => { });
+    }, [user?.email]);
 
     const [sliders, setSliders] = useState([]);
     const [quizzes, setQuizzes] = useState([]);
@@ -122,14 +145,15 @@ const Dashboard = () => {
             setSliders(sl.filter(s => s.is_active));
             setQuizzes(qz);
             setTaken(tk);
-            setRecordings(rc.filter(r => batchMatch(r.class_name, myClass)));
-            setPapers(pp.filter(p => batchMatch(p.class_name, myClass)));
-            setAnnouncements(an.filter(a => batchMatch(a.class_name, myClass)));
+            // Use resolvedClass (fresh from server) for all batch filtering
+            setRecordings(rc.filter(r => batchMatch(r.class_name, resolvedClass)));
+            setPapers(pp.filter(p => batchMatch(p.class_name, resolvedClass)));
+            setAnnouncements(an.filter(a => batchMatch(a.class_name, resolvedClass)));
         }).catch(console.error).finally(() => setLoading(false));
-    }, [user]);
+    }, [user, resolvedClass]);
 
     const visibleQ = quizzes.filter(q => {
-        if (!q.is_published || !batchMatch(q.class_name, myClass)) return false;
+        if (!q.is_published || !batchMatch(q.class_name, resolvedClass)) return false;
         if (q.scheduled_time && new Date(q.scheduled_time) > new Date()) return false;
         return true;
     });
