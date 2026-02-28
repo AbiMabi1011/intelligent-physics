@@ -1,14 +1,58 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/src/assets/logo.jpeg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Intelligent Physics — Student portal for quizzes, exam papers, and class recordings." />
-    <title>Intelligent Physics</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- Tell IE to use Edge rendering engine, not compatibility mode -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Intelligent Physics — Student portal for quizzes, exam papers, and class recordings." />
+
+  <!-- Preconnect for faster Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <link rel="icon" type="image/jpeg" href="/src/assets/logo.jpeg" />
+  <title>Intelligent Physics</title>
+
+  <!-- Inline script: show warning banner for IE / outdated browsers.
+         Uses var/function (ES3) so even IE6 can read it.            -->
+  <script>
+    (function () {
+      var isIE = !!document.documentMode;           // IE 6-11
+      var isOldEdge = /Edge\/(\d+)/.test(navigator.userAgent) &&
+        parseInt(navigator.userAgent.match(/Edge\/(\d+)/)[1]) < 18;
+
+      if (isIE || isOldEdge) {
+        document.addEventListener('DOMContentLoaded', function () {
+          var el = document.getElementById('browser-warning');
+          if (el) el.style.display = 'block';
+        });
+      }
+    })();
+
+    // Close banner helper
+    function closeBrowserWarning() {
+      var el = document.getElementById('browser-warning');
+      if (el) el.style.display = 'none';
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Old-browser warning banner (hidden by default, shown by JS above) -->
+  <div id="browser-warning">
+    ⚠️ Your browser is outdated and may not display this site correctly.
+    Please upgrade to a modern browser for the best experience.
+    <a href="https://www.google.com/intl/en/chrome/" target="_blank" rel="noopener">Chrome</a>
+    <a href="https://www.mozilla.org/firefox/" target="_blank" rel="noopener">Firefox</a>
+    <a href="https://www.microsoft.com/edge" target="_blank" rel="noopener">Edge</a>
+    <span id="browser-warning-close" onclick="closeBrowserWarning()" aria-label="Close">&times; Dismiss</span>
+  </div>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

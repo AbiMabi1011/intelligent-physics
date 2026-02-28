@@ -1,0 +1,10 @@
+# Browserslist — shared config for Vite, Autoprefixer, PostCSS
+# "defaults" covers > 0.5% market share
+defaults
+not IE 11
+chrome >= 60
+firefox >= 60
+safari >= 12
+edge >= 18
+ios >= 12
+android >= 6
