@@ -1,10 +1,14 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* Google Fonts is loaded via <link> in index.html for better reliability */
 
 @layer base {
   html {
     scroll-behavior: smooth;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    /* Robust fallback chain: Inter (Google) → safe system fonts → generic sans-serif.
+       System fonts listed explicitly to prevent any symbol/dingbat font from being picked. */
+    font-family: 'Inter', Arial, Helvetica, 'Helvetica Neue', 'Trebuchet MS',
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
   html,
