@@ -1,7 +1,6 @@
-# Cloudflare Workers config for Intelligent Physics React SPA
+# Cloudflare Pages config for Intelligent Physics React SPA
 name = "intelligent-physics"
 compatibility_date = "2026-02-28"
-main = "src/worker.js"
 
 [assets]
 directory = "./dist"
