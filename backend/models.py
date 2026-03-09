@@ -62,11 +62,14 @@ class QuizResult(Base):
 class Mark(Base):
     __tablename__ = "marks"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    title = Column(String, nullable=True)
+    class_name = Column(String, nullable=True)
+    file_url = Column(String, nullable=True)
     subject = Column(String)
     term = Column(String) # Mid-term, Final
-    score = Column(Integer)
-    max_score = Column(Integer, default=100)
+    score = Column(Integer, nullable=True)
+    max_score = Column(Integer, default=100, nullable=True)
     student = relationship("User")
 
 class StudyPaper(Base):
@@ -79,6 +82,7 @@ class StudyPaper(Base):
     file_url = Column(String)
     scheme_url = Column(String, nullable=True)
     created_at = Column(String, default=lambda: "2026-02-24")
+    visibility = Column(String, default="both")
 
 class Item(Base):
     __tablename__ = "items"
@@ -105,6 +109,7 @@ class Announcement(Base):
     image_url = Column(String, nullable=True)
     class_name = Column(String) # Batches
     created_at = Column(String)
+    visibility = Column(String, default="both")
 
 class ClassRecording(Base):
     __tablename__ = "class_recordings"
@@ -116,15 +121,44 @@ class ClassRecording(Base):
     class_name = Column(String)
     subject = Column(String, default="Physics")
     recorded_at = Column(String)
+    visibility = Column(String, default="both")
 
 class Slider(Base):
     __tablename__ = "sliders"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String)
+    title = Column(String, nullable=True)
     subtitle = Column(String, nullable=True)
     image_url = Column(String)
     button_text = Column(String, nullable=True)
     button_link = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+
+class HomeAd(Base):
+    __tablename__ = "home_ads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    badge = Column(String, nullable=True)          # e.g. "🔥 Now Open"
+    title = Column(String)                          # headline
+    description = Column(String, nullable=True)    # body text
+    cta_text = Column(String, nullable=True)       # button label
+    cta_link = Column(String, nullable=True)       # button URL / route
+    image_url = Column(String, nullable=True)      # optional image
+    position = Column(String, default="left")      # 'left' | 'right'
+    accent = Column(String, default="#6366f1")     # hex accent colour
+    gradient = Column(String, default="linear-gradient(145deg,#0f0b2e,#1a116b)")
+    is_active = Column(Boolean, default=True)
+    order_index = Column(Integer, default=0)
+
+class HomeStat(Base):
+    __tablename__ = "home_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    value = Column(String)                         # e.g. "1,200+"
+    label = Column(String)                         # e.g. "Students Enrolled"
+    icon = Column(String)                          # e.g. "🎓"
+    color = Column(String, default="#3b82f6")      # hex text color
+    bg = Column(String, default="rgba(59,130,246,.12)") # hex/rgba background
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)

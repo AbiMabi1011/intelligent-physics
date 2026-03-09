@@ -16,7 +16,8 @@ const RecordingsPage = () => {
     const [form, setForm] = useState({
         title: '',
         video_url: '',
-        selectedBatches: []
+        selectedBatches: [],
+        visibility: 'both'
     });
 
     useEffect(() => {
@@ -42,7 +43,7 @@ const RecordingsPage = () => {
 
     const resetModal = () => {
         setShowModal(false);
-        setForm({ title: '', video_url: '', selectedBatches: [] });
+        setForm({ title: '', video_url: '', selectedBatches: [], visibility: 'both' });
     };
 
     const handleSave = async (e) => {
@@ -59,7 +60,8 @@ const RecordingsPage = () => {
                 video_url: form.video_url.trim(),
                 class_name: form.selectedBatches.join(', '),
                 subject: 'Physics',
-                recorded_at: new Date().toISOString()
+                recorded_at: new Date().toISOString(),
+                visibility: form.visibility
             };
             const res = await fetch(`${API_URL}/recordings`, {
                 method: 'POST',
@@ -156,6 +158,9 @@ const RecordingsPage = () => {
                                     <span className="flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded-full font-medium">
                                         <Users size={11} /> {rec.class_name}
                                     </span>
+                                    <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-1 rounded-full font-medium">
+                                        Visibility: {rec.visibility === 'portal' ? 'Portal' : rec.visibility === 'hub' ? 'Public Hub' : 'Both (Hub & Portal)'}
+                                    </span>
                                     <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                                         <Calendar size={11} /> {rec.recorded_at ? new Date(rec.recorded_at).toLocaleDateString() : 'N/A'}
                                     </span>
@@ -217,6 +222,20 @@ const RecordingsPage = () => {
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            {/* Visibility */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Display Where?</label>
+                                <select
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                    value={form.visibility}
+                                    onChange={e => setForm({ ...form, visibility: e.target.value })}
+                                >
+                                    <option value="both">Both (Learning Hub & Knowledge Center)</option>
+                                    <option value="portal">Learning Hub Only</option>
+                                    <option value="hub">Public Knowledge Center Only</option>
+                                </select>
                             </div>
 
                             {/* Batch Selector */}

@@ -78,6 +78,7 @@ class AnnouncementBase(BaseModel):
     class_name: str
     created_at: str
     send_email: Optional[bool] = False
+    visibility: Optional[str] = "both"
 
 class AnnouncementCreate(AnnouncementBase):
     pass
@@ -124,18 +125,21 @@ class FullQuizResult(BaseModel):
         from_attributes = True
 
 class MarkBase(BaseModel):
-    user_id: int
+    title: Optional[str] = None
+    class_name: Optional[str] = None
+    file_url: Optional[str] = None
+    user_id: Optional[int] = None
     subject: str
     term: str
-    score: int
-    max_score: int = 100
+    score: Optional[int] = None
+    max_score: Optional[int] = 100
 
 class MarkCreate(MarkBase):
     pass
 
 class MarkResponse(MarkBase):
     id: int
-    student: UserBase
+    student: Optional[UserBase] = None
 
     class Config:
         from_attributes = True
@@ -157,6 +161,7 @@ class PaperBase(BaseModel):
     paper_type: str = "Other"
     file_url: str
     scheme_url: Optional[str] = None
+    visibility: Optional[str] = "both"
 
 class PaperCreate(PaperBase):
     pass
@@ -188,6 +193,7 @@ class ClassRecordingBase(BaseModel):
     class_name: str
     subject: Optional[str] = "Physics"
     recorded_at: str
+    visibility: Optional[str] = "both"
 
 class ClassRecordingCreate(ClassRecordingBase):
     pass
@@ -199,7 +205,7 @@ class ClassRecordingResponse(ClassRecordingBase):
         from_attributes = True
 
 class SliderBase(BaseModel):
-    title: str
+    title: Optional[str] = None
     subtitle: Optional[str] = None
     image_url: str
     button_text: Optional[str] = None
@@ -211,6 +217,50 @@ class SliderCreate(SliderBase):
     pass
 
 class SliderResponse(SliderBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# --- HOME ADS SCHEMAS ---
+
+class HomeAdBase(BaseModel):
+    badge: Optional[str] = None
+    title: str
+    description: Optional[str] = None
+    cta_text: Optional[str] = None
+    cta_link: Optional[str] = None
+    image_url: Optional[str] = None
+    position: Optional[str] = "left"
+    accent: Optional[str] = "#6366f1"
+    gradient: Optional[str] = "linear-gradient(145deg,#0f0b2e,#1a116b)"
+    is_active: Optional[bool] = True
+    order_index: Optional[int] = 0
+
+class HomeAdCreate(HomeAdBase):
+    pass
+
+class HomeAdResponse(HomeAdBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# --- HOME STATS SCHEMAS ---
+
+class HomeStatBase(BaseModel):
+    value: str
+    label: str
+    icon: str
+    color: Optional[str] = "#3b82f6"
+    bg: Optional[str] = "rgba(59,130,246,.12)"
+    is_active: Optional[bool] = True
+    order_index: Optional[int] = 0
+
+class HomeStatCreate(HomeStatBase):
+    pass
+
+class HomeStatResponse(HomeStatBase):
     id: int
 
     class Config:

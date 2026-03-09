@@ -10,7 +10,8 @@ import {
     LogOut,
     Megaphone,
     Video,
-    Layers
+    Layers,
+    Home
 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo.jpeg';
@@ -23,17 +24,25 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
         setIsOpen(false);
     }, [location.pathname]);
 
-    const menuItems = [
+    const adminItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
         { name: 'Students', path: '/admin/students', icon: <Users size={20} /> },
-        { name: 'Marks', path: '/admin/marks', icon: <ClipboardList size={20} /> },
-        { name: 'Papers', path: '/admin/papers', icon: <FileText size={20} /> },
-        { name: 'Quizzes', path: '/admin/quizzes', icon: <BookOpen size={20} /> },
-        { name: 'Results', path: '/admin/results', icon: <ClipboardList size={20} /> },
-        { name: 'Announcements', path: '/admin/announcements', icon: <Megaphone size={20} /> },
-        { name: 'Recordings', path: '/admin/recordings', icon: <Video size={20} /> },
-        { name: 'Sliders', path: '/admin/sliders', icon: <Layers size={20} /> },
         { name: 'Settings', path: '/admin/settings', icon: <Settings size={20} /> },
+    ];
+
+    const portalItems = [
+        { name: 'Announcements', path: '/admin/announcements', icon: <Megaphone size={20} /> },
+        { name: 'Class Recordings', path: '/admin/recordings', icon: <Video size={20} /> },
+        { name: 'Exams & Quizzes', path: '/admin/quizzes', icon: <BookOpen size={20} /> },
+        { name: 'Past Papers', path: '/admin/papers', icon: <FileText size={20} /> },
+        { name: 'Student Marks', path: '/admin/marks', icon: <ClipboardList size={20} /> },
+        { name: 'Exam Results', path: '/admin/results', icon: <ClipboardList size={20} /> },
+    ];
+
+    const websiteItems = [
+        { name: 'Homepage Ads', path: '/admin/homepage', icon: <Home size={20} /> },
+        { name: 'Hero Sliders', path: '/admin/sliders', icon: <Layers size={20} /> },
+        { name: 'Hub Overview', path: '/admin/learning-hub', icon: <LayoutDashboard size={20} /> },
     ];
 
     return (
@@ -75,28 +84,80 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
                     </button>
                 </div>
 
-                {/* ── Label ── */}
-                <div className="px-5 pt-4 pb-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Admin Panel</p>
-                </div>
-
                 {/* ── Navigation ── */}
-                <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-0.5">
-                    {menuItems.map((item) => (
-                        <NavLink
-                            key={item.name}
-                            to={item.path}
-                            className={({ isActive }) => `
-                                flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all
-                                ${isActive
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
-                            `}
-                        >
-                            <span className="shrink-0">{item.icon}</span>
-                            <span className="truncate">{item.name}</span>
-                        </NavLink>
-                    ))}
+                <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-6 mt-4">
+
+                    {/* Administration */}
+                    <div>
+                        <div className="px-2 mb-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Administration</p>
+                        </div>
+                        <div className="space-y-0.5">
+                            {adminItems.map((item) => (
+                                <NavLink
+                                    key={item.name}
+                                    to={item.path}
+                                    className={({ isActive }) => `
+                                        flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all
+                                        ${isActive
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                                    `}
+                                >
+                                    <span className="shrink-0">{item.icon}</span>
+                                    <span className="truncate">{item.name}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Learning Hub Content */}
+                    <div>
+                        <div className="px-2 mb-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Learning Hub</p>
+                        </div>
+                        <div className="space-y-0.5">
+                            {portalItems.map((item) => (
+                                <NavLink
+                                    key={item.name}
+                                    to={item.path}
+                                    className={({ isActive }) => `
+                                        flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all
+                                        ${isActive
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                                    `}
+                                >
+                                    <span className="shrink-0">{item.icon}</span>
+                                    <span className="truncate">{item.name}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Public Website */}
+                    <div>
+                        <div className="px-2 mb-2">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Public Website (Free Hub)</p>
+                        </div>
+                        <div className="space-y-0.5">
+                            {websiteItems.map((item) => (
+                                <NavLink
+                                    key={item.name}
+                                    to={item.path}
+                                    className={({ isActive }) => `
+                                        flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all
+                                        ${isActive
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
+                                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
+                                    `}
+                                >
+                                    <span className="shrink-0">{item.icon}</span>
+                                    <span className="truncate">{item.name}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    </div>
                 </nav>
 
                 {/* ── Logout ── */}

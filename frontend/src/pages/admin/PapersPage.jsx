@@ -17,6 +17,7 @@ const PapersPage = () => {
         subject: 'Physics',
         selectedBatches: [],
         paper_type: 'Past Paper',
+        visibility: 'both'
     });
     const [paperFile, setPaperFile] = useState(null);
     const [schemeFile, setSchemeFile] = useState(null);
@@ -77,7 +78,8 @@ const PapersPage = () => {
                 class_name: form.selectedBatches.join(', '),
                 paper_type: form.paper_type,
                 file_url: fileUrl,
-                scheme_url: schemeUrl
+                scheme_url: schemeUrl,
+                visibility: form.visibility
             };
             const res = await fetch(`${API_URL}/papers`, {
                 method: 'POST',
@@ -101,7 +103,7 @@ const PapersPage = () => {
 
     const resetModal = () => {
         setShowModal(false);
-        setForm({ title: '', subject: 'Physics', selectedBatches: [], paper_type: 'Past Paper' });
+        setForm({ title: '', subject: 'Physics', selectedBatches: [], paper_type: 'Past Paper', visibility: 'both' });
         setPaperFile(null);
         setSchemeFile(null);
         setUploadProgress('');
@@ -181,6 +183,9 @@ const PapersPage = () => {
                             <div className="mt-4 flex-grow">
                                 <h3 className="font-bold text-gray-800 line-clamp-2">{p.title}</h3>
                                 <p className="text-sm text-gray-500 mt-1">{p.subject} • {p.class_name}</p>
+                                <div className="mt-2 text-xs font-semibold px-2 py-0.5 inline-block rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                                    Visibility: {p.visibility === 'portal' ? 'Portal Only' : p.visibility === 'hub' ? 'Public Hub Only' : 'Both (Hub & Portal)'}
+                                </div>
                             </div>
                             <div className="mt-4 flex flex-col gap-2 pt-4 border-t border-gray-50">
                                 <a
@@ -228,7 +233,7 @@ const PapersPage = () => {
                                 />
                             </div>
 
-                            {/* Type & Batches */}
+                            {/* Type & Visibility & Batches */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Paper Type</label>
@@ -244,6 +249,18 @@ const PapersPage = () => {
                                     </select>
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Display Where?</label>
+                                    <select
+                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm"
+                                        value={form.visibility}
+                                        onChange={e => setForm({ ...form, visibility: e.target.value })}
+                                    >
+                                        <option value="both">Both (Learning Hub & Knowledge Center)</option>
+                                        <option value="portal">Learning Hub Only</option>
+                                        <option value="hub">Public Knowledge Center Only</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
                                     <label className="block text-sm font-semibold text-gray-700 mb-1">Batches *</label>
                                     <div className="max-h-24 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50 space-y-1">
                                         {batches.length === 0 ? (

@@ -102,6 +102,7 @@ const Dashboard = () => {
     const [taken, setTaken] = useState([]);
     const [recordings, setRecordings] = useState([]);
     const [papers, setPapers] = useState([]);
+    const [marks, setMarks] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentQuiz, setCurrentQuiz] = useState(null);
@@ -122,7 +123,7 @@ const Dashboard = () => {
         const onScroll = () => {
             setScrolled(window.scrollY > 50);
             setShowTop(window.scrollY > 400);
-            const sections = ['home', 'announcements', 'quizzes', 'recordings', 'papers'];
+            const sections = ['home', 'announcements', 'quizzes', 'recordings', 'papers', 'marks'];
             for (const id of [...sections].reverse()) {
                 const el = document.getElementById(id);
                 if (el && window.scrollY >= el.offsetTop - 120) { setActiveSection(id); break; }
@@ -140,15 +141,17 @@ const Dashboard = () => {
             fetch(`${API_URL}/quizzes/student/${user.email}/taken`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/recordings`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/papers`).then(r => r.ok ? r.json() : []),
+            fetch(`${API_URL}/marks`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/announcements`).then(r => r.ok ? r.json() : []),
-        ]).then(([sl, qz, tk, rc, pp, an]) => {
+        ]).then(([sl, qz, tk, rc, pp, mk, an]) => {
             setSliders(sl.filter(s => s.is_active));
             setQuizzes(qz);
             setTaken(tk);
             // Use resolvedClass (fresh from server) for all batch filtering
-            setRecordings(rc.filter(r => batchMatch(r.class_name, resolvedClass)));
-            setPapers(pp.filter(p => batchMatch(p.class_name, resolvedClass)));
-            setAnnouncements(an.filter(a => batchMatch(a.class_name, resolvedClass)));
+            setRecordings(rc.filter(r => batchMatch(r.class_name, resolvedClass) && (r.visibility === 'both' || r.visibility === 'portal')));
+            setPapers(pp.filter(p => batchMatch(p.class_name, resolvedClass) && (p.visibility === 'both' || p.visibility === 'portal')));
+            setMarks(mk.filter(m => batchMatch(m.class_name, resolvedClass)));
+            setAnnouncements(an.filter(a => batchMatch(a.class_name, resolvedClass) && (a.visibility === 'both' || a.visibility === 'portal')));
         }).catch(console.error).finally(() => setLoading(false));
     }, [user, resolvedClass]);
 
@@ -268,12 +271,13 @@ const Dashboard = () => {
     );
 
     /* ════════════════════ PORTAL ════════════════════ */
-    const navLinks = [
-        { id: 'home', label: 'Home', icon: <Home size={14} /> },
-        { id: 'quizzes', label: 'Quizzes', icon: <BookOpen size={14} /> },
-        { id: 'recordings', label: 'Recordings', icon: <Video size={14} /> },
-        { id: 'papers', label: 'Papers', icon: <FileText size={14} /> },
-        { id: 'announcements', label: 'News', icon: <Megaphone size={14} /> },
+    const sections = [
+        { id: 'home', label: 'Overview', icon: <Play size={16} /> },
+        { id: 'announcements', label: 'Notices', icon: <Bell size={16} />, count: announcements.length },
+        { id: 'quizzes', label: 'Live Quizzes', icon: <Award size={16} />, count: quizzes.length },
+        { id: 'recordings', label: 'Class Replays', icon: <Video size={16} />, count: recordings.length },
+        { id: 'papers', label: 'Study Resources', icon: <FileText size={16} />, count: papers.length },
+        { id: 'marks', label: 'Marks & Results', icon: <FileText size={16} />, count: marks.length },
     ];
 
     return (
@@ -288,18 +292,19 @@ const Dashboard = () => {
                         </div>
                         <div className="hidden sm:block leading-tight">
                             <p className={`font-black text-sm tracking-tight ${scrolled ? 'text-gray-900' : 'text-white'}`}>Intelligent Physics</p>
-                            <p className={`text-[10px] font-bold ${scrolled ? 'text-blue-600' : 'text-white/50'}`}>STUDENT PORTAL</p>
+                            <p className={`text-[10px] font-bold ${scrolled ? 'text-blue-600' : 'text-white/50'}`}>LEARNING HUB</p>
                         </div>
                     </a>
 
                     {/* Desktop nav */}
                     <div className="hidden md:flex items-center rounded-2xl gap-0.5 p-1 bg-black/5 backdrop-blur-sm">
-                        {navLinks.map(l => (
+                        {sections.map(l => (
                             <a key={l.id} href={`#${l.id}`}
                                 className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${activeSection === l.id ? (scrolled ? 'bg-white shadow-sm text-blue-600' : 'bg-white/20 text-white') : (scrolled ? 'text-gray-600 hover:text-gray-900 hover:bg-white/70' : 'text-white/70 hover:text-white hover:bg-white/10')}`}>
                                 {l.icon}{l.label}
                                 {l.id === 'quizzes' && visibleQ.length > 0 && <span className="ml-0.5 text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{visibleQ.length}</span>}
                                 {l.id === 'announcements' && announcements.some(a => isNew(a.created_at)) && <span className="w-2 h-2 bg-red-500 rounded-full" />}
+                                {l.count > 0 && l.id !== 'quizzes' && l.id !== 'announcements' && <span className="ml-0.5 text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{l.count}</span>}
                             </a>
                         ))}
                     </div>
@@ -333,12 +338,16 @@ const Dashboard = () => {
                             </div>
                             <div><p className="text-white font-bold">{user?.full_name}</p>{myClass && <p className="text-blue-400 text-xs font-semibold">{myClass}</p>}</div>
                         </div>
-                        {navLinks.map(l => (
-                            <a key={l.id} href={`#${l.id}`} onClick={() => setMobileOpen(false)}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition mb-1 ${activeSection === l.id ? 'bg-blue-600/30 text-blue-300' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-                                {l.icon}{l.label}<ArrowRight size={14} className="ml-auto opacity-40" />
-                            </a>
-                        ))}
+                        <nav className="flex flex-col gap-2">
+                            {sections.map(s => (
+                                <a key={s.id} href={`#${s.id}`} onClick={() => setMobileOpen(false)}
+                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition mb-1 ${activeSection === s.id ? 'bg-blue-600/30 text-blue-300' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                                    {s.icon}{s.label}
+                                    {s.count > 0 && <span className="ml-auto text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{s.count}</span>}
+                                    <ArrowRight size={14} className="ml-auto opacity-40" />
+                                </a>
+                            ))}
+                        </nav>
                     </div>
                 )}
             </nav>
@@ -356,7 +365,7 @@ const Dashboard = () => {
                             <div className="flex-1">
                                 <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100/80 text-blue-700 text-xs font-black px-3 py-1.5 rounded-full mb-3">
                                     <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                                    {myClass ? `Batch ${myClass}` : 'Student Portal'}
+                                    {myClass ? `Batch ${myClass}` : 'Learning Hub'}
                                 </div>
                                 <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">
                                     Welcome back, <span className="gradient-text">{user?.full_name?.split(' ')[0] || 'Student'}</span> 👋
@@ -626,6 +635,36 @@ const Dashboard = () => {
                 )}
             </section>
 
+            {/* ════ MARKS & RESULTS ════ */}
+            <section id="marks" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
+                <Reveal><SectionHeader icon={<FileText size={18} />} label="Student Performance" title="Marks & Results" gradient="from-blue-500 to-indigo-600" count={marks.length} /></Reveal>
+                {loading ? <SkeletonGrid /> : marks.length === 0 ? (
+                    <EmptyBox icon={<FileText size={40} />} title="No results published yet" desc="PDF results for your batch will appear here when uploaded." color="blue" />
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {marks.map((m, i) => (
+                            <Reveal key={m.id} delay={i * 50}>
+                                <div className="card-lift bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col group p-6 relative">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none" />
+                                    <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-5 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
+                                        <FileText size={24} />
+                                    </div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">{m.title}</h3>
+                                    <div className="flex flex-col gap-1 text-sm text-gray-500 mb-6">
+                                        <span className="font-medium text-blue-600">{m.term}</span>
+                                        <span>{m.subject} • {m.class_name}</span>
+                                    </div>
+                                    <a href={imgSrc(m.file_url)} target="_blank" rel="noreferrer"
+                                        className="mt-auto flex items-center justify-center gap-2 w-full bg-slate-900 text-white font-bold py-3 rounded-2xl hover:bg-blue-600 transition-colors">
+                                        View Result PDF
+                                    </a>
+                                </div>
+                            </Reveal>
+                        ))}
+                    </div>
+                )}
+            </section>
+
             {/* ════ FOOTER ════ */}
             <footer className="bg-slate-900 text-white mt-4">
                 <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
@@ -793,15 +832,14 @@ const HeroSlider = ({ slides }) => {
             {/* ── Content ── */}
             <div className="absolute inset-0 flex items-end sm:items-center px-5 sm:px-10 md:px-16 lg:px-20 pb-20 sm:pb-16 md:pb-10">
                 <div className="w-full sm:max-w-xl lg:max-w-2xl text-center sm:text-left">
-                    {/* Badge */}
-                    <div className="inline-flex items-center gap-2 glass text-white text-[11px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-5">
-                        <Zap size={11} className="text-yellow-400" />Intelligent Physics
-                    </div>
+
 
                     {/* Title */}
-                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.12] drop-shadow-2xl mb-3 sm:mb-4">
-                        {s.title}
-                    </h1>
+                    {s.title && (
+                        <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.12] drop-shadow-2xl mb-3 sm:mb-4">
+                            {s.title}
+                        </h1>
+                    )}
 
                     {/* Subtitle */}
                     {s.subtitle && (

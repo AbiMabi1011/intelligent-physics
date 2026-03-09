@@ -150,6 +150,16 @@ def migrate():
         ''')
         print("sliders table created.")
 
+    # Check and add visibility column to study_papers, announcements, class_recordings
+    tables_to_check = ['study_papers', 'announcements', 'class_recordings']
+    for table in tables_to_check:
+        cursor.execute(f"PRAGMA table_info({table})")
+        cols = [col[1] for col in cursor.fetchall()]
+        if "visibility" not in cols:
+            print(f"Adding visibility column to {table}...")
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN visibility TEXT DEFAULT 'both'")
+            print(f"visibility column added to {table}.")
+
     conn.commit()
     conn.close()
 

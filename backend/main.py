@@ -511,6 +511,74 @@ def delete_slider(slider_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Deleted successfully"}
 
+# --- HOME ADS ENDPOINTS ---
+
+@app.get("/home-ads", response_model=List[schemas.HomeAdResponse])
+def get_home_ads(db: Session = Depends(get_db)):
+    return db.query(models.HomeAd).order_by(models.HomeAd.position, models.HomeAd.order_index).all()
+
+@app.post("/home-ads", response_model=schemas.HomeAdResponse)
+def create_home_ad(ad: schemas.HomeAdCreate, db: Session = Depends(get_db)):
+    new_ad = models.HomeAd(**ad.dict())
+    db.add(new_ad)
+    db.commit()
+    db.refresh(new_ad)
+    return new_ad
+
+@app.put("/home-ads/{ad_id}", response_model=schemas.HomeAdResponse)
+def update_home_ad(ad_id: int, ad: schemas.HomeAdCreate, db: Session = Depends(get_db)):
+    db_ad = db.query(models.HomeAd).filter(models.HomeAd.id == ad_id).first()
+    if not db_ad:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    for k, v in ad.dict().items():
+        setattr(db_ad, k, v)
+    db.commit()
+    db.refresh(db_ad)
+    return db_ad
+
+@app.delete("/home-ads/{ad_id}")
+def delete_home_ad(ad_id: int, db: Session = Depends(get_db)):
+    db_ad = db.query(models.HomeAd).filter(models.HomeAd.id == ad_id).first()
+    if not db_ad:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    db.delete(db_ad)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- HOME STATS ENDPOINTS ---
+
+@app.get("/home-stats", response_model=List[schemas.HomeStatResponse])
+def get_home_stats(db: Session = Depends(get_db)):
+    return db.query(models.HomeStat).order_by(models.HomeStat.order_index).all()
+
+@app.post("/home-stats", response_model=schemas.HomeStatResponse)
+def create_home_stat(stat: schemas.HomeStatCreate, db: Session = Depends(get_db)):
+    new_stat = models.HomeStat(**stat.dict())
+    db.add(new_stat)
+    db.commit()
+    db.refresh(new_stat)
+    return new_stat
+
+@app.put("/home-stats/{stat_id}", response_model=schemas.HomeStatResponse)
+def update_home_stat(stat_id: int, stat: schemas.HomeStatCreate, db: Session = Depends(get_db)):
+    db_stat = db.query(models.HomeStat).filter(models.HomeStat.id == stat_id).first()
+    if not db_stat:
+        raise HTTPException(status_code=404, detail="Stat not found")
+    for k, v in stat.dict().items():
+        setattr(db_stat, k, v)
+    db.commit()
+    db.refresh(db_stat)
+    return db_stat
+
+@app.delete("/home-stats/{stat_id}")
+def delete_home_stat(stat_id: int, db: Session = Depends(get_db)):
+    db_stat = db.query(models.HomeStat).filter(models.HomeStat.id == stat_id).first()
+    if not db_stat:
+        raise HTTPException(status_code=404, detail="Stat not found")
+    db.delete(db_stat)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
 # --- BATCHES ENDPOINTS ---
 
 @app.get("/batches", response_model=List[schemas.BatchResponse])

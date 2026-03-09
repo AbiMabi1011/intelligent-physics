@@ -59,7 +59,6 @@ const SliderPage = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if (!form.title.trim()) return alert('Title is required');
         if (!imagePreview && !form.image_url) return alert('Please upload or provide an image');
 
         setIsSaving(true);
@@ -319,13 +318,14 @@ const SliderPage = () => {
 
                             {/* Title */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    Title <span className="font-normal text-gray-400">(Optional)</span>
+                                </label>
                                 <input
                                     className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
                                     placeholder="e.g. Welcome to Intelligent Physics"
                                     value={form.title}
                                     onChange={e => setForm({ ...form, title: e.target.value })}
-                                    required
                                 />
                             </div>
 

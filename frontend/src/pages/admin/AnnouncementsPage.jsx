@@ -27,6 +27,7 @@ const AnnouncementsPage = () => {
     const [sendEmail, setSendEmail] = useState(false);
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState('');
+    const [visibility, setVisibility] = useState('both');
     const imageInputRef = useRef(null);
 
     useEffect(() => {
@@ -65,6 +66,7 @@ const AnnouncementsPage = () => {
         setSendEmail(false);
         setImageFile(null);
         setImagePreview('');
+        setVisibility('both');
     };
 
     const handleSubmit = async () => {
@@ -95,7 +97,8 @@ const AnnouncementsPage = () => {
                 image_url: imageUrl || null,
                 class_name: selectedBatches.join(', '),
                 created_at: new Date().toISOString(),
-                send_email: sendEmail
+                send_email: sendEmail,
+                visibility: visibility
             };
 
             const res = await fetch(`${API_URL}/announcements`, {
@@ -202,6 +205,20 @@ const AnnouncementsPage = () => {
                             className="hidden"
                             onChange={handleImageChange}
                         />
+                    </div>
+
+                    {/* Visibility */}
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Display Where? *</label>
+                        <select
+                            value={visibility}
+                            onChange={e => setVisibility(e.target.value)}
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                        >
+                            <option value="both">Both (Learning Hub & Public Knowledge Center)</option>
+                            <option value="portal">Learning Hub Only (Requires Login)</option>
+                            <option value="hub">Public Knowledge Center Only (Homepage)</option>
+                        </select>
                     </div>
 
                     {/* Target Batches */}
@@ -318,6 +335,12 @@ const AnnouncementsPage = () => {
                                 <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100">
                                     <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                                         <Users size={12} /> {ann.class_name}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-full font-medium">
+                                        Visibility: {
+                                            ann.visibility === 'portal' ? 'Portal Only' :
+                                                ann.visibility === 'hub' ? 'Public Hub Only' : 'Both (Hub & Portal)'
+                                        }
                                     </span>
                                     <span className="flex items-center gap-1 text-xs text-gray-400">
                                         <Clock size={12} /> {ann.created_at ? new Date(ann.created_at).toLocaleString() : 'N/A'}
