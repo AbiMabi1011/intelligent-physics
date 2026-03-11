@@ -243,15 +243,6 @@ const Login = () => {
                                     Register here
                                 </button>
                             </p>
-                            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-center">
-                                <button
-                                    type="button"
-                                    onClick={() => { setEmail('raakul'); setPassword('12345'); }}
-                                    className="text-xs font-semibold px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition"
-                                >
-                                    Fill Default Admin Access
-                                </button>
-                            </div>
                         </div>
                     )}
                 </form>
