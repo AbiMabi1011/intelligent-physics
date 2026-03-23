@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import logo from '../assets/logo.jpeg';
+import Footer from '../components/Footer';
 
 /* ─── helpers ─── */
 function getYouTubeId(url) {
@@ -571,16 +572,7 @@ export default function LearningHub() {
                     </div>
                 </div>
 
-                {/* ─── FOOTER ─── */}
-                <footer className="border-t border-white/5 bg-[#010409] py-8 px-6 sm:px-12 flex flex-col md:flex-row items-center justify-between gap-6 mt-auto">
-                    <div className="flex flex-wrap items-center justify-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-                        <img src={logo} className="w-8 h-8 rounded-lg object-contain border border-white/10" alt="" />
-                        <span className="font-bold text-sm text-[#e2e8f0]">Intelligent Physics</span>
-                        <span className="text-[#8b9ab5] text-xs px-2 border-l border-white/10">Knowledge Center</span>
-                    </div>
-                    <span className="text-[#4f6180] text-xs text-center md:text-left">© {new Date().getFullYear()} Intelligent Physics · All rights reserved</span>
-                    <button className="bg-transparent border-none text-[#64748b] hover:text-[#818cf8] text-[0.85rem] font-semibold cursor-pointer transition-colors" onClick={() => navigate('/login')}>Student Login →</button>
-                </footer>
+                <Footer />
             </div>
         </>
     );

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import logo from '../assets/logo.jpeg';
+import Footer from '../components/Footer';
 
 /* ─── Data ─── */
 const SYLLABUS = [
@@ -568,103 +569,7 @@ export default function HomePage() {
 
       </div>
 
-      {/* ── FOOTER ── */}
-      <footer className="relative bg-[#010309] border-t border-white/5 pt-20 pb-10 overflow-hidden">
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1000px] h-px bg-gradient-to-r from-transparent via-[#6366f1]/40 to-transparent" />
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#6366f1]/5 blur-[120px] rounded-full pointer-events-none" />
-
-        <div className="max-w-[1260px] mx-auto px-6 lg:px-10 relative z-10 w-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 mb-16">
-
-            {/* Brand Section */}
-            <div className="lg:col-span-1 flex flex-col items-center md:items-start text-center md:text-left">
-              <div className="flex items-center gap-3 mb-6" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] p-1 border border-white/10 shadow-[0_0_20px_rgba(99,102,241,0.15)] flex items-center justify-center shrink-0">
-                  <img src={logo} alt="Intelligent Physics" className="w-full h-full object-contain rounded-lg" />
-                </div>
-                <span className="font-black text-[#f8fafc] tracking-tight text-xl">Intelligent Physics</span>
-              </div>
-              <p className="text-[#64748b] text-sm leading-relaxed max-w-[280px]">
-                Sri Lanka's premier digital platform for Advanced Level Physics. Empowering students with interactive learning, adaptive testing, and comprehensive resources.
-              </p>
-            </div>
-
-            {/* Quick Links */}
-            <div className="flex flex-col items-center md:items-start lg:pl-8">
-              <h4 className="text-[#f8fafc] font-black text-sm tracking-widest uppercase mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#6366f1]" /> Platform
-              </h4>
-              <nav className="flex flex-col gap-4 text-center md:text-left">
-                <a href="#features" onClick={(e) => { e.preventDefault(); scrollTo('features'); }} className="text-[#64748b] hover:text-[#a5b4fc] text-sm font-medium transition-colors decoration-transparent group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#6366f1] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> Features
-                </a>
-                <a href="#syllabus" onClick={(e) => { e.preventDefault(); scrollTo('syllabus'); }} className="text-[#64748b] hover:text-[#a5b4fc] text-sm font-medium transition-colors decoration-transparent group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#6366f1] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> Syllabus
-                </a>
-                <button onClick={() => navigate('/learning-hub')} className="text-[#64748b] hover:text-[#a5b4fc] text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#6366f1] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> Knowledge Center
-                </button>
-              </nav>
-            </div>
-
-            {/* Support */}
-            <div className="flex flex-col items-center md:items-start lg:pl-8">
-              <h4 className="text-[#f8fafc] font-black text-sm tracking-widest uppercase mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#8b5cf6]" /> Support
-              </h4>
-              <nav className="flex flex-col gap-4 text-center md:text-left">
-                <a href="#about" onClick={(e) => { e.preventDefault(); scrollTo('about'); }} className="text-[#64748b] hover:text-[#c4b5fd] text-sm font-medium transition-colors decoration-transparent group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#8b5cf6] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> About Us
-                </a>
-                <a href="#faq" onClick={(e) => { e.preventDefault(); scrollTo('faq'); }} className="text-[#64748b] hover:text-[#c4b5fd] text-sm font-medium transition-colors decoration-transparent group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#8b5cf6] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> FAQ
-                </a>
-                <a href="#contact" onClick={(e) => { e.preventDefault(); scrollTo('contact'); }} className="text-[#64748b] hover:text-[#c4b5fd] text-sm font-medium transition-colors decoration-transparent group flex items-center justify-center md:justify-start gap-2">
-                  <span className="text-[#8b5cf6] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all hidden md:block">▸</span> Contact Us
-                </a>
-              </nav>
-            </div>
-
-            {/* Contact Info */}
-            <div className="flex flex-col items-center md:items-start lg:pl-8">
-              <h4 className="text-[#f8fafc] font-black text-sm tracking-widest uppercase mb-6 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#06b6d4]" /> Connect
-              </h4>
-              <div className="flex flex-col gap-4 text-center md:text-left">
-                <div className="flex flex-col items-center md:items-start gap-1 text-[#64748b] text-sm font-medium">
-                  <span className="text-[#94a3b8] text-xs uppercase tracking-wider font-bold">Email</span>
-                  <a href="mailto:info@intelligentphysics.lk" className="hover:text-[#67e8f9] transition-colors decoration-transparent">info@intelligentphysics.lk</a>
-                </div>
-
-                <div className="flex gap-4 mt-2 justify-center md:justify-start">
-                  <a href="https://www.facebook.com/intelligentphysics.lk" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0f172a] border border-white/5 flex items-center justify-center text-[#64748b] hover:bg-[#1e293b] hover:text-[#38bdf8] hover:border-[#38bdf8]/30 transition-all group">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="group-hover:scale-110 transition-transform"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
-                  </a>
-                  <a href="https://www.youtube.com/@intelligentphysics" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-[#0f172a] border border-white/5 flex items-center justify-center text-[#64748b] hover:bg-[#1e293b] hover:text-[#ef4444] hover:border-[#ef4444]/30 transition-all group">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="group-hover:scale-110 transition-transform"><path d="M2.5 17.5c0-.8.7-1.5 1.5-1.5h16c.8 0 1.5.7 1.5 1.5v2c0 .8-.7 1.5-1.5 1.5h-16c-.8 0-1.5-.7-1.5-1.5v-2zm0-10c0-.8.7-1.5 1.5-1.5h16c.8 0 1.5.7 1.5 1.5v2c0 .8-.7 1.5-1.5 1.5h-16c-.8 0-1.5-.7-1.5-1.5v-2zm0-10c0-.8.7-1.5 1.5-1.5h16c.8 0 1.5.7 1.5 1.5v2c0 .8-.7 1.5-1.5 1.5h-16c-.8 0-1.5-.7-1.5-1.5v-2z" /></svg>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Bottom Bar */}
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-[#475569] text-xs font-medium text-center md:text-left">
-              &copy; {new Date().getFullYear()} <span className="text-[#64748b]">Intelligent Physics</span>. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6 text-[#475569] text-xs font-medium justify-center">
-              <span className="hover:text-[#64748b] cursor-pointer transition-colors">Privacy Policy</span>
-              <span className="hover:text-[#64748b] cursor-pointer transition-colors">Terms of Service</span>
-            </div>
-            <p className="text-[#475569] text-xs font-medium text-center md:text-right">
-              Designed with ✦ by <a href="https://www.linkedin.com/in/ravindu-prabashana/" target="_blank" rel="noreferrer" className="text-[#64748b] hover:text-[#a5b4fc] transition-colors decoration-transparent font-semibold">Ravindu Prabashana</a>
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

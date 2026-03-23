@@ -167,6 +167,30 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "class_name": db_user.class_name  # Required so frontend can filter data by batch
     }
 
+@app.post("/auth/qr-login")
+def login_via_qr(payload: dict, db: Session = Depends(get_db)):
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Invalid QR data")
+    
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    if user.approval_status == "pending":
+        raise HTTPException(status_code=403, detail="Your account is pending admin approval.")
+    elif user.approval_status == "rejected":
+        raise HTTPException(status_code=403, detail="Your registration request was rejected.")
+
+    return {
+        "status": "success", 
+        "user_id": user.id, 
+        "email": user.email,
+        "role": user.role,
+        "full_name": user.full_name,
+        "class_name": user.class_name
+    }
+
 @app.post("/admin/credentials")
 def update_admin_credentials(creds: schemas.AdminCredentialsUpdate, db: Session = Depends(get_db)):
     search_email = creds.current_email.strip().lower()

@@ -4,11 +4,13 @@ import {
     BookOpen, CheckCircle, Award, Clock, LogOut, Play, Video,
     FileText, Megaphone, ChevronLeft, ChevronRight, ExternalLink,
     Menu, X, GraduationCap, Zap, Star, ArrowRight, Flame, ArrowUp,
-    Home, Filter, TrendingUp
+    Home, Filter, TrendingUp, QrCode, Bell, Download
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
+import Footer from '../components/Footer';
 
 const batchMatch = (t, c) => !t || t.split(',').some(b => b.trim() === (c || '').trim());
 const imgSrc = u => u?.startsWith('/') ? `${API_URL}${u}` : u || '';
@@ -115,9 +117,32 @@ const Dashboard = () => {
     const [activeSection, setActiveSection] = useState('home');
     const [paperFilter, setPaperFilter] = useState('All');
     const [showTop, setShowTop] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
 
     const statsRef = useRef(null);
     const statsVis = useVisible(statsRef);
+
+    const downloadQR = () => {
+        const svg = document.getElementById("qr-code-svg");
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement("canvas");
+        const svgSize = svg.getBoundingClientRect();
+        canvas.width = svgSize.width * 2;
+        canvas.height = svgSize.height * 2;
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        img.onload = () => {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const pngFile = canvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `${user?.full_name?.replace(/\s+/g, '_')}_QR_ID.png`;
+            downloadLink.href = pngFile;
+            downloadLink.click();
+        };
+        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    };
 
     useEffect(() => {
         const onScroll = () => {
@@ -319,6 +344,10 @@ const Dashboard = () => {
                                 {myClass && <p className="text-[10px] text-blue-500 font-bold">{myClass}</p>}
                             </div>
                         </div>
+                        <button onClick={() => setShowQRModal(true)}
+                            className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:text-white hover:bg-white/10'}`}>
+                            <QrCode size={15} /><span className="hidden sm:block">My QR</span>
+                        </button>
                         <button onClick={() => { logout(); navigate('/login'); }}
                             className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                             <LogOut size={15} /><span className="hidden sm:block">Logout</span>
@@ -666,31 +695,12 @@ const Dashboard = () => {
             </section>
 
             {/* ════ FOOTER ════ */}
-            <footer className="bg-slate-900 text-white mt-4">
-                <div className="max-w-7xl mx-auto px-4 md:px-8 py-12">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-white/10">
-                        <div className="flex items-center gap-4">
-                            <img src={logo} alt="IP" className="h-12 w-12 rounded-2xl ring-2 ring-white/20 object-contain" />
-                            <div>
-                                <p className="font-black text-xl">Intelligent Physics</p>
-                                <p className="text-slate-500 text-sm">Excellence in A/L Physics Education</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {navLinks.map(l => <a key={l.id} href={`#${l.id}`} className="text-slate-400 hover:text-blue-400 font-semibold text-sm transition-colors">{l.label}</a>)}
-                        </div>
-                    </div>
-                    <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-slate-500 text-sm">
-                        <p>© {new Date().getFullYear()} Intelligent Physics. All rights reserved.</p>
-                        {myClass && <p className="text-blue-500 font-bold">Batch: {myClass}</p>}
-                    </div>
-                </div>
-            </footer>
+            <Footer />
 
             {/* ════ MOBILE BOTTOM NAV ════ */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl">
                 <div className="flex">
-                    {navLinks.map(l => (
+                    {sections.map(l => (
                         <a key={l.id} href={`#${l.id}`}
                             className={`flex-1 flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition-colors gap-1
                                 ${activeSection === l.id ? 'text-blue-600' : 'text-gray-400'}`}>
@@ -706,6 +716,31 @@ const Dashboard = () => {
                 className={`fixed bottom-20 md:bottom-8 right-4 md:right-8 z-40 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl shadow-xl shadow-blue-300/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                 <ArrowUp size={20} />
             </button>
+
+            {/* ════ MY QR MODAL ════ */}
+            {showQRModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative">
+                        <button onClick={() => setShowQRModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                        <h3 className="font-black text-2xl text-gray-900 mb-2">My QR ID</h3>
+                        <p className="text-gray-500 text-sm mb-6">Scan this code to login or mark your attendance.</p>
+                        <div className="bg-white p-4 inline-block rounded-2xl border-4 border-indigo-50 shadow-sm mb-4">
+                            <QRCodeSVG id="qr-code-svg" value={JSON.stringify({ user_id: user?.user_id || user?.id })} size={200} />
+                        </div>
+                        <div className="bg-blue-50 text-blue-800 text-xs font-bold rounded-xl px-4 py-2 mt-2">
+                            {user?.full_name} • {user?.class_name || 'No Batch'}
+                        </div>
+                        <div className="mt-6">
+                            <button 
+                                onClick={downloadQR}
+                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition w-full justify-center"
+                            >
+                                <Download size={16} /> Download QR ID
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

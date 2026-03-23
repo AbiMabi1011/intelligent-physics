@@ -1,0 +1,63 @@
+﻿.\venv\Scripts\python : INFO:     Started server process [27236]
+At line:1 char:1
++ .\venv\Scripts\python -m uvicorn main:app --port 8000 2>&1 | Out-File ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:     Started server process [27236]:String) [], Remo 
+   teException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63354 - "HEAD / HTTP/1.1" 405 Method Not Allowed
+INFO:     127.0.0.1:63354 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59188 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59188 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:60949 - "OPTIONS /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60949 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59958 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64293 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49354 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57485 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49356 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60252 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51125 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58631 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61151 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58631 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57483 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55404 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63937 - "GET /uploads/Gemini_Generated_Image_6307va6307va6307.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62019 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62019 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59880 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55263 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62019 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57774 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60644 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61709 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57774 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49675 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57536 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55114 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58548 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51633 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52678 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58448 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58548 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55742 - "GET /papers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58027 - "GET /recordings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55742 - "GET /recordings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50302 - "GET /papers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56153 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49674 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53992 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56153 - "GET /home-ads HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65284 - "GET /home-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57331 - "GET /sliders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51824 - "POST /auth/login HTTP/1.1" 200 OK
+INFO:     Shutting down

@@ -11,8 +11,11 @@ import {
     Copy,
     X,
     Loader2,
-    Upload
+    Upload,
+    QrCode,
+    Download
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 import * as XLSX from 'xlsx';
 
@@ -32,8 +35,31 @@ const StudentsPage = () => {
     // Modal State
     const [showModal, setShowModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [generatedLink, setGeneratedLink] = useState('');
+    const [showQRModal, setShowQRModal] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
     const [lastAddedEmail, setLastAddedEmail] = useState('');
+
+    const downloadQR = () => {
+        const svg = document.getElementById("qr-to-download");
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement("canvas");
+        const svgSize = svg.getBoundingClientRect();
+        canvas.width = svgSize.width * 2;
+        canvas.height = svgSize.height * 2;
+        const ctx = canvas.getContext("2d");
+        const img = new Image();
+        img.onload = () => {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const pngFile = canvas.toDataURL("image/png");
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `${selectedStudent.name.replace(/\s+/g, '_')}_QR_ID.png`;
+            downloadLink.href = pngFile;
+            downloadLink.click();
+        };
+        img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    };
 
     // Form State
     const [newStudent, setNewStudent] = useState({ name: '', email: '', class: '', status: 'Active' });
@@ -373,6 +399,9 @@ const StudentsPage = () => {
                                         </span>
                                     </td>
                                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                        <button onClick={() => { setSelectedStudent(student); setShowQRModal(true); }} className="text-gray-600 hover:text-blue-600 mr-4" title="View QR ID">
+                                            <QrCode size={16} />
+                                        </button>
                                         <button onClick={() => handleResendInvite(student.email)} className="text-blue-600 hover:text-blue-900 mr-4">
                                             <Mail size={16} />
                                         </button>
@@ -484,6 +513,40 @@ const StudentsPage = () => {
                         >
                             Done
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* QR Modal */}
+            {showQRModal && selectedStudent && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative animate-scale-in">
+                        <button onClick={() => setShowQRModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                        <h3 className="font-black text-2xl text-gray-900 mb-2">Student QR ID</h3>
+                        <p className="text-gray-500 text-sm mb-6">Scan this code to log {selectedStudent.name} in.</p>
+                        <div className="bg-white p-4 inline-block rounded-2xl border-4 border-indigo-50 shadow-sm mb-4">
+                            <QRCodeSVG id="qr-to-download" value={JSON.stringify({ user_id: selectedStudent.db_id })} size={200} />
+                        </div>
+                        <div className="bg-blue-50 text-blue-800 text-xs font-bold rounded-xl px-4 py-2 mt-2 break-all">
+                            ID: {selectedStudent.id} • {selectedStudent.email}
+                        </div>
+                        <div className="bg-indigo-50 text-indigo-800 text-xs font-bold rounded-xl px-4 py-2 mt-2">
+                             Batch: {selectedStudent.class}
+                        </div>
+                        <div className="mt-6 flex flex-col gap-2">
+                            <button 
+                                onClick={downloadQR}
+                                className="inline-flex items-center gap-2 justify-center bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition"
+                            >
+                                <Download size={16} /> Download QR ID
+                            </button>
+                            <button 
+                                onClick={() => window.print()}
+                                className="inline-flex items-center gap-2 justify-center bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-200 transition"
+                            >
+                                <QrCode size={16} /> Print ID
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
