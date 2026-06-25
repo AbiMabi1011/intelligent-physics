@@ -10,11 +10,11 @@ const AdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     if (!user || user.role !== 'admin') {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/" replace />;
     }
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className="flex h-screen bg-[#0D0E12] overflow-hidden font-sans text-white">
 
             {/* Sidebar — drawer on mobile, static column on desktop */}
             <Sidebar
@@ -33,8 +33,8 @@ const AdminLayout = () => {
                 />
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-20 lg:pb-6">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#0D0E12] p-6 lg:p-10 pb-24 lg:pb-10">
+                    <div className="max-w-[1600px] mx-auto">
                         <Outlet />
                     </div>
                 </main>

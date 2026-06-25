@@ -8,12 +8,17 @@ import {
     ChevronDown,
     ChevronUp,
     Pencil,
-    Eye
+    Eye,
+    Clock,
+    Layers,
+    Calendar,
+    ArrowRight,
+    Loader2
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const QuizzesPage = () => {
-    // Mode: 'list' or 'create'
+    // Mode: 'list', 'create', or 'view'
     const [mode, setMode] = useState('list');
     const [quizzes, setQuizzes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -118,7 +123,7 @@ const QuizzesPage = () => {
     };
 
     const handleSaveQuiz = async () => {
-        if (!quizTitle) return alert("Title is required");
+        if (!quizTitle) return alert("Quiz Title is required");
         if (selectedBatches.length === 0) return alert("Please select at least one batch");
         if (questions.length === 0) return alert("Add at least one question");
 
@@ -174,163 +179,179 @@ const QuizzesPage = () => {
         }
     };
 
+    const deleteQuiz = async (id) => {
+        if (!window.confirm("Delete this quiz permanently?")) return;
+        try {
+            const res = await fetch(`${API_URL}/quizzes/${id}`, { method: 'DELETE' });
+            if (res.ok) fetchQuizzes();
+        } catch (e) { }
+    };
+
     if (mode === 'create') {
         return (
-            <div className="space-y-6 animate-fade-in-up">
+            <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-800">{editingQuizId ? 'Edit Quiz' : 'Create New Quiz'}</h1>
-                    <button onClick={resetForm} className="text-gray-500 hover:text-gray-700 font-semibold">Cancel</button>
+                    <div>
+                        <h1 className="text-2xl font-black text-white tracking-tight">{editingQuizId ? 'Edit Quiz' : 'Create New Quiz'}</h1>
+                        <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1 italic">Set up your quiz details and questions</p>
+                    </div>
+                    <button onClick={resetForm} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all">Cancel</button>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Quiz Title</label>
-                        <input
-                            type="text"
-                            className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g. Thermodynamics Test 1"
-                            value={quizTitle}
-                            onChange={(e) => setQuizTitle(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Scheduled Start Time (Optional)</label>
-                            <input
-                                type="datetime-local"
-                                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                value={scheduledTime}
-                                onChange={(e) => setScheduledTime(e.target.value)}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">If set, quiz will automatically activate at this time.</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Duration (Minutes)</label>
-                            <input
-                                type="number"
-                                min="1"
-                                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                value={durationMinutes}
-                                onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
-                            />
-                            <p className="text-xs text-gray-500 mt-1">Time limit before auto-submit.</p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Select Batches</label>
-                        <div className="max-h-32 overflow-y-auto border rounded p-2 bg-gray-50 space-y-2">
-                            {batches.length === 0 ? (
-                                <p className="text-xs text-gray-500">No batches available.</p>
-                            ) : batches.map(b => (
-                                <label key={b.id} className="flex items-center space-x-2 text-sm cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedBatches.includes(b.name)}
-                                        onChange={e => {
-                                            const arr = selectedBatches;
-                                            if (e.target.checked) setSelectedBatches([...arr, b.name]);
-                                            else setSelectedBatches(arr.filter(x => x !== b.name));
-                                        }}
-                                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                    />
-                                    <span className="text-gray-700">{b.name}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Availability After Start</label>
-                            <select
-                                className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                value={expiryMode}
-                                onChange={(e) => setExpiryMode(e.target.value)}
-                            >
-                                <option value="end_time">Disable immediately when duration ends</option>
-                                <option value="one_day">Keep available for 1 day</option>
-                                <option value="custom_days">Keep available for custom days</option>
-                                <option value="never">Keep available indefinitely</option>
-                            </select>
-                        </div>
-                        {expiryMode === 'custom_days' && (
+                <div className="admin-card p-10 space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">How many days?</label>
+                                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Quiz Title</label>
                                 <input
-                                    type="number"
-                                    min="1"
-                                    className="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                                    value={expiryDays}
-                                    onChange={(e) => setExpiryDays(parseInt(e.target.value))}
+                                    type="text"
+                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-3.5 px-5 text-sm font-bold text-white placeholder:text-slate-600 focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none"
+                                    placeholder="e.g. Thermodynamics Mastery Test"
+                                    value={quizTitle}
+                                    onChange={(e) => setQuizTitle(e.target.value)}
                                 />
                             </div>
-                        )}
-                    </div>
-                </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold text-gray-700">Questions</h2>
-                    {questions.map((q, idx) => (
-                        <div key={idx} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative">
-                            <div className="absolute top-4 right-4">
-                                <button onClick={() => removeQuestion(idx)} className="text-red-500 hover:text-red-700">
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                            <h3 className="text-sm font-bold text-gray-500 mb-3">Question {idx + 1}</h3>
-
-                            <div className="space-y-3">
-                                <textarea
-                                    className="w-full p-2 border border-gray-300 rounded-lg"
-                                    placeholder="Question Text"
-                                    rows="2"
-                                    value={q.text}
-                                    onChange={(e) => updateQuestion(idx, 'text', e.target.value)}
-                                ></textarea>
-
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    <input type="text" placeholder="Option A" className="p-2 border rounded" value={q.option_a} onChange={(e) => updateQuestion(idx, 'option_a', e.target.value)} />
-                                    <input type="text" placeholder="Option B" className="p-2 border rounded" value={q.option_b} onChange={(e) => updateQuestion(idx, 'option_b', e.target.value)} />
-                                    <input type="text" placeholder="Option C" className="p-2 border rounded" value={q.option_c} onChange={(e) => updateQuestion(idx, 'option_c', e.target.value)} />
-                                    <input type="text" placeholder="Option D" className="p-2 border rounded" value={q.option_d} onChange={(e) => updateQuestion(idx, 'option_d', e.target.value)} />
-                                    <input type="text" placeholder="Option E" className="p-2 border rounded" value={q.option_e} onChange={(e) => updateQuestion(idx, 'option_e', e.target.value)} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Start Time</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none"
+                                        value={scheduledTime}
+                                        onChange={(e) => setScheduledTime(e.target.value)}
+                                    />
                                 </div>
-
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-sm font-medium">Correct Answer:</span>
-                                    <select
-                                        className="p-2 border rounded bg-green-50 text-green-700 font-bold"
-                                        value={q.correct_option}
-                                        onChange={(e) => updateQuestion(idx, 'correct_option', e.target.value)}
-                                    >
-                                        <option value="A">Option A</option>
-                                        <option value="B">Option B</option>
-                                        <option value="C">Option C</option>
-                                        <option value="D">Option D</option>
-                                        <option value="E">Option E</option>
-                                    </select>
+                                <div>
+                                    <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Duration (Min)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none transition-all"
+                                        value={durationMinutes}
+                                        onChange={(e) => setDurationMinutes(parseInt(e.target.value))}
+                                    />
                                 </div>
                             </div>
                         </div>
-                    ))}
 
-                    <button
-                        onClick={addQuestion}
-                        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-500 hover:text-blue-500 transition-colors flex justify-center items-center"
-                    >
-                        <Plus size={20} className="mr-2" /> Add Next Question
-                    </button>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Select Batches</label>
+                                <div className="grid grid-cols-2 gap-3 p-4 bg-[#0D0E12] border border-[#23262D] rounded-2xl max-h-[160px] overflow-y-auto custom-scrollbar">
+                                    {batches.map(b => (
+                                        <label key={b.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedBatches.includes(b.name) ? 'bg-[#656CFF]/10 border-[#656CFF]/50 text-[#656CFF]' : 'bg-transparent border-[#23262D] text-slate-500 hover:border-slate-700'}`}>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={selectedBatches.includes(b.name)}
+                                                onChange={e => {
+                                                    const arr = selectedBatches;
+                                                    if (e.target.checked) setSelectedBatches([...arr, b.name]);
+                                                    else setSelectedBatches(arr.filter(x => x !== b.name));
+                                                }}
+                                            />
+                                            <span className="text-[11px] font-black uppercase tracking-tight">{b.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Quiz Availability</label>
+                                <select
+                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-3.5 px-5 text-sm font-bold text-white focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none appearance-none"
+                                    value={expiryMode}
+                                    onChange={(e) => setExpiryMode(e.target.value)}
+                                >
+                                    <option value="end_time">Standard (Ends at time)</option>
+                                    <option value="one_day">Extend 1 Day</option>
+                                    <option value="custom_days">Custom Days</option>
+                                    <option value="never">No Expiry</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="pt-4 flex justify-end">
-                    <button
-                        onClick={handleSaveQuiz}
-                        disabled={isSubmitting}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 shadow-lg flex items-center"
-                    >
-                        <Save size={20} className="mr-2" />
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h2 className="text-xl font-black text-white tracking-tight">Questions</h2>
+                        <span className="text-xs font-black text-[#656CFF] bg-[#656CFF]/10 px-3 py-1.5 rounded-full uppercase tracking-widest">{questions.length} Items</span>
+                    </div>
+
+                    <div className="grid gap-6">
+                        {questions.map((q, idx) => (
+                            <div key={idx} className="admin-card p-8 group relative border-l-4 border-l-[#656CFF]">
+                                <div className="absolute top-6 right-6">
+                                    <button onClick={() => removeQuestion(idx)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                        <Trash2 size={20} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="h-8 w-8 bg-[#656CFF]/10 text-[#656CFF] flex items-center justify-center rounded-lg font-black text-xs">
+                                        Q{idx + 1}
+                                    </div>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest opacity-80">Question Content</h3>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <textarea
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-4 px-6 text-sm font-bold text-white placeholder:text-slate-600 focus:ring-2 focus:ring-[#656CFF]/20 transition-all outline-none"
+                                        placeholder="Enter your question here..."
+                                        rows="3"
+                                        value={q.text}
+                                        onChange={(e) => updateQuestion(idx, 'text', e.target.value)}
+                                    ></textarea>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {['a', 'b', 'c', 'd', 'e'].map(opt => (
+                                            <div key={opt} className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{`Option ${opt.toUpperCase()}`}</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl py-3 px-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none transition-all"
+                                                    value={q[`option_${opt}`]}
+                                                    onChange={(e) => updateQuestion(idx, `option_${opt}`, e.target.value)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex items-center gap-6 pt-6 border-t border-white/5">
+                                        <div className="flex-1">
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Correct Answer</label>
+                                            <div className="flex bg-[#0D0E12] p-1 rounded-xl border border-[#23262D]">
+                                                {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                                    <button
+                                                        key={opt}
+                                                        type="button"
+                                                        onClick={() => updateQuestion(idx, 'correct_option', opt)}
+                                                        className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${q.correct_option === opt ? 'bg-[#10B981] text-white shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                                    >
+                                                        {opt}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+
+                        <button
+                            onClick={addQuestion}
+                            className="bg-white/5 border-2 border-dashed border-[#23262D] rounded-[2rem] p-10 text-center hover:bg-[#656CFF]/10 hover:border-[#656CFF]/50 transition-all group active:scale-[0.98]"
+                        >
+                            <Plus className="mx-auto text-slate-600 group-hover:text-[#656CFF] mb-3 transition-colors" size={32} />
+                            <span className="text-xs font-black text-slate-500 group-hover:text-white uppercase tracking-widest transition-colors">Append New Question Instance</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="pt-10 flex justify-end gap-4">
+                    <button onClick={handleSaveQuiz} disabled={isSubmitting} className="h-16 bg-[#656CFF] text-white rounded-2xl px-12 font-black text-xs uppercase tracking-[0.4em] shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all flex items-center gap-3 active:scale-95 disabled:opacity-50">
+                        {isSubmitting ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
                         {isSubmitting ? 'Saving...' : 'Save Quiz'}
                     </button>
                 </div>
@@ -338,156 +359,79 @@ const QuizzesPage = () => {
         );
     }
 
-    if (mode === 'view') {
-        return (
-            <div className="space-y-6 animate-fade-in-up">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-800">Preview: {quizTitle}</h1>
-                    <button onClick={resetForm} className="text-gray-500 hover:text-gray-700 font-semibold px-4 py-2 border rounded-lg bg-white">Back to List</button>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                    <div className="flex gap-4 mb-6">
-                        <div className="bg-gray-50 px-4 py-2 rounded-lg border">
-                            <span className="text-sm text-gray-500 font-bold block">Batches</span>
-                            <span className="font-semibold">{selectedBatches.join(', ') || 'N/A'}</span>
-                        </div>
-                        <div className="bg-gray-50 px-4 py-2 rounded-lg border">
-                            <span className="text-sm text-gray-500 font-bold block">Duration</span>
-                            <span className="font-semibold">{durationMinutes} Mins</span>
-                        </div>
-                        {scheduledTime && (
-                            <div className="bg-gray-50 px-4 py-2 rounded-lg border">
-                                <span className="text-sm text-gray-500 font-bold block">Scheduled For</span>
-                                <span className="font-semibold">{new Date(scheduledTime).toLocaleString()}</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <h2 className="text-lg font-bold text-gray-800 mb-4">Questions Preview</h2>
-                    <div className="space-y-4">
-                        {questions.map((q, idx) => (
-                            <div key={idx} className="border border-gray-200 rounded-xl p-4 shadow-sm bg-gray-50 relative">
-                                <h3 className="font-bold text-gray-900 mb-2">{idx + 1}. {q.text}</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 ml-4">
-                                    {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                        const val = q[`option_${opt.toLowerCase()}`];
-                                        if (!val) return null;
-                                        return (
-                                            <div key={opt} className={`p-2 border rounded-md font-medium text-sm flex items-center gap-2 
-                                                ${q.correct_option === opt ? 'bg-green-100 border-green-500 text-green-800' : 'bg-white border-gray-200'}`}>
-                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${q.correct_option === opt ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600'}`}>{opt}</span>
-                                                {val}
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">Quizzes</h1>
+        <div className="space-y-12 animate-in fade-in duration-700 pb-10">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="w-full">
+                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-4 italic italic">
+                        <Layers size={32} className="text-[#656CFF]" /> All Quizzes
+                    </h1>
+                    <p className="text-sm text-slate-500 font-black uppercase tracking-[0.2em] mt-2 italic">
+                        Create and manage your student quizzes
+                    </p>
+                </div>
                 <button
                     onClick={() => setMode('create')}
-                    className="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-all"
+                    className="h-14 bg-[#656CFF] text-white rounded-2xl px-10 font-black text-xs uppercase tracking-widest shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all flex items-center gap-3 active:scale-95 whitespace-nowrap"
                 >
-                    <Plus size={16} className="mr-2" /> Create Quiz
+                    <Plus size={20} /> Create Quiz
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? <p>Loading...</p> : quizzes.map(quiz => {
-                    const now = Date.now();
-                    const isScheduledForFuture = quiz.scheduled_time && new Date(quiz.scheduled_time) > new Date();
-
-                    // Calculate if quiz has ended based on expiry mode
-                    let isEnded = false;
-                    if (quiz.is_published && quiz.scheduled_time) {
-                        const stTime = new Date(quiz.scheduled_time).getTime();
-                        if (stTime <= now) {
-                            let endTime = null;
-                            if (quiz.expiry_mode === 'end_time') {
-                                endTime = stTime + ((quiz.duration_minutes || 30) * 60 * 1000);
-                            } else if (quiz.expiry_mode === 'one_day') {
-                                endTime = stTime + (24 * 60 * 60 * 1000);
-                            } else if (quiz.expiry_mode === 'custom_days') {
-                                endTime = stTime + ((quiz.expiry_days || 1) * 24 * 60 * 60 * 1000);
-                            }
-                            if (endTime && now > endTime) isEnded = true;
-                        }
-                    }
-
-                    // Determine status label & colors
-                    let statusLabel, statusClass;
-                    if (!quiz.is_published) {
-                        statusLabel = 'Draft'; statusClass = 'bg-gray-100 text-gray-600';
-                    } else if (isEnded) {
-                        statusLabel = 'Ended'; statusClass = 'bg-red-100 text-red-700';
-                    } else if (isScheduledForFuture) {
-                        statusLabel = 'Scheduled'; statusClass = 'bg-purple-100 text-purple-700';
-                    } else {
-                        statusLabel = 'Live'; statusClass = 'bg-green-100 text-green-700';
-                    }
-                    return (
-                        <div key={quiz.id} className={`bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition relative pb-16 ${isEnded ? 'border-red-100 opacity-80' : 'border-gray-100'}`}>
-                            <div className="flex justify-between items-start">
-                                <h3 className="text-lg font-bold text-gray-900 line-clamp-2 pr-4">{quiz.title}</h3>
-                                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${statusClass}`}>
-                                    {statusLabel}
-                                </span>
+            {loading ? (
+                <div className="py-24 text-center">
+                    <Loader2 className="animate-spin mx-auto text-[#656CFF] mb-4" size={40} />
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Loading Quizzes...</span>
+                </div>
+            ) : quizzes.length === 0 ? (
+                <div className="py-32 text-center border-2 border-dashed border-[#23262D] rounded-[3rem] bg-white/[0.01]">
+                    <Layers className="mx-auto text-slate-800 mb-6 opacity-30" size={64} />
+                    <h4 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-2">No Quizzes Found</h4>
+                    <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Create your first quiz to get started.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-6">
+                    {quizzes.map((q) => (
+                        <div key={q.id} className="admin-card group p-8 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#656CFF]/30 transition-all bg-[#15171C]">
+                            <div className="flex items-center gap-8 w-full flex-1">
+                                <div className="h-16 w-16 rounded-2xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] flex-shrink-0 group-hover:scale-110 transition-transform">
+                                    <Clock size={28} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="text-[9px] font-black text-[#656CFF] uppercase tracking-[0.3em]">{q.class_name}</span>
+                                        <div className={`h-1.5 w-1.5 rounded-full ${q.is_published ? 'bg-[#10B981]' : 'bg-slate-700'}`} />
+                                    </div>
+                                    <h4 className="text-xl font-black text-white leading-tight uppercase tracking-tight mb-2 truncate group-hover:text-[#656CFF] transition-colors">{q.title}</h4>
+                                    <div className="flex items-center gap-6 mt-3">
+                                        <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                            <Calendar size={12} /> {new Date(q.scheduled_time).toLocaleDateString()}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                            <Clock size={12} /> {q.duration_minutes} Min
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1 line-clamp-1 truncate">{quiz.class_name}</p>
-                            <div className="mt-4 flex flex-wrap gap-2 text-sm mb-4">
-                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                    {quiz.questions ? quiz.questions.length : '?'} Questions
-                                </span>
-                                <span className="bg-orange-50 text-orange-700 px-2 py-1 rounded">
-                                    {quiz.duration_minutes || 30} Mins
-                                </span>
-                                {quiz.scheduled_time && (
-                                    <span className={`px-2 py-1 rounded text-xs ${isEnded ? 'bg-red-50 text-red-600' : 'bg-purple-50 text-purple-700'}`}>
-                                        {isEnded ? '⏹ Ended ' : '🕐 '}{new Date(quiz.scheduled_time).toLocaleString()}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="absolute bottom-4 left-6 right-6 flex gap-2">
-                                <button
-                                    onClick={() => handleViewQuiz(quiz)}
-                                    className={`text-sm font-semibold bg-blue-50 text-blue-700 py-2 rounded-lg hover:bg-blue-100 transition flex items-center justify-center ${(quiz.is_published && !isEnded) ? 'w-1/2' : quiz.is_published ? 'w-1/2' : 'w-1/3'}`}
-                                >
-                                    <Eye size={14} className="mr-1" /> View
-                                </button>
-                                <button
-                                    onClick={() => handleEditQuiz(quiz)}
-                                    className={`text-sm font-semibold bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition flex items-center justify-center ${quiz.is_published ? 'w-1/2' : 'w-1/3'}`}
-                                >
-                                    <Pencil size={14} className="mr-1" /> Edit
-                                </button>
-                                {!quiz.is_published && (
-                                    <button
-                                        onClick={() => publishQuiz(quiz.id)}
-                                        className="w-1/3 text-sm font-semibold bg-green-50 text-green-700 py-2 rounded-lg hover:bg-green-100 transition flex items-center justify-center"
-                                    >
-                                        <CheckCircle size={14} className="mr-1" /> {isScheduledForFuture ? 'Schedule' : 'Publish'}
-                                    </button>
-                                )}
+                            
+                            <div className="flex items-center gap-4">
+                                 {!q.is_published && (
+                                     <button onClick={() => publishQuiz(q.id)} className="h-12 px-6 flex items-center gap-3 rounded-2xl bg-[#10B981]/10 text-[#10B981] text-[9px] font-black uppercase tracking-widest hover:bg-[#10B981] hover:text-white transition-all shadow-xl">
+                                         <CheckCircle size={16} /> Publish Now
+                                     </button>
+                                 )}
+                                 <button onClick={() => handleEditQuiz(q)} className="h-12 w-12 rounded-2xl bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center">
+                                     <Pencil size={20} />
+                                 </button>
+                                 <button onClick={() => deleteQuiz(q.id)} className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl">
+                                     <Trash2 size={20} />
+                                 </button>
                             </div>
                         </div>
-                    );
-                })}
-                {!loading && quizzes.length === 0 && (
-                    <div className="col-span-3 text-center py-12 text-gray-500 bg-white rounded-xl border border-dashed border-gray-200">
-                        No quizzes found. Create one to get started.
-                    </div>
-                )}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

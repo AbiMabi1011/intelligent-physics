@@ -348,7 +348,7 @@ const Dashboard = () => {
                             className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:text-white hover:bg-white/10'}`}>
                             <QrCode size={15} /><span className="hidden sm:block">My QR</span>
                         </button>
-                        <button onClick={() => { logout(); navigate('/login'); }}
+                        <button onClick={() => { logout(); navigate('/'); }}
                             className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
                             <LogOut size={15} /><span className="hidden sm:block">Logout</span>
                         </button>
@@ -815,8 +815,8 @@ const HeroSlider = ({ slides }) => {
 
     // ── Empty state (no slides added yet) ──
     if (slides.length === 0) return (
-        <div className="bg-mesh relative flex items-center justify-center overflow-hidden"
-            style={{ minHeight: 'clamp(420px, 70vh, 92vh)', paddingBottom: '5rem' }}>
+        <div className="bg-[#04091c] relative flex items-center justify-center overflow-hidden w-full aspect-video md:aspect-[21/9] lg:aspect-[3/1]"
+            style={{ paddingTop: '90px' }}>
             <div className="absolute inset-0 opacity-[0.035]"
                 style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
             <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-blue-500/20 rounded-full blur-3xl float" />
@@ -845,28 +845,26 @@ const HeroSlider = ({ slides }) => {
     const s = slides[cur];
     return (
         <div
-            className="relative overflow-hidden"
-            style={{ minHeight: 'clamp(420px, 70vh, 92vh)' }}
+            className="relative overflow-hidden bg-[#04091c] w-full"
+            style={{ paddingTop: '90px' }}
             onTouchStart={onTouchStart}
             onTouchEnd={onTouchEnd}
         >
-            {/* Background image */}
-            <div
-                className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
-                style={{ backgroundImage: `url(${imgSrc(s.image_url)})`, transform: 'scale(1.04)' }}
-            />
-
-            {/* Gradient overlays — stronger on mobile for readability */}
-            {/* Bottom-to-top dark gradient (always) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
-            {/* Left-to-right gradient (desktop) */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent hidden sm:block" />
-            {/* Full dark tint on mobile so text is always readable */}
-            <div className="absolute inset-0 bg-black/40 sm:hidden" />
+            {/* ── Main Image Layer (Responsive Auto-Height) ── */}
+            <div className="relative w-full">
+                <img 
+                    src={imgSrc(s.image_url)} 
+                    alt="Slider Banner" 
+                    className="w-full h-auto object-cover sm:object-fill min-h-[300px]"
+                />
+                
+                {/* ── Bottom Gradient Blend ── */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#04091c] via-[#04091c]/20 to-transparent pointer-events-none" />
+            </div>
 
             {/* ── Content ── */}
-            <div className="absolute inset-0 flex items-end sm:items-center px-5 sm:px-10 md:px-16 lg:px-20 pb-20 sm:pb-16 md:pb-10">
-                <div className="w-full sm:max-w-xl lg:max-w-2xl text-center sm:text-left">
+            <div className="absolute left-0 right-0 top-[90px] bottom-0 flex items-center justify-center px-5 pb-10 z-20">
+                <div className="w-full max-w-3xl text-center">
 
 
                     {/* Title */}
@@ -878,7 +876,7 @@ const HeroSlider = ({ slides }) => {
 
                     {/* Subtitle */}
                     {s.subtitle && (
-                        <p className="text-white/80 text-sm sm:text-base md:text-lg mb-5 sm:mb-7 max-w-md mx-auto sm:mx-0 leading-relaxed line-clamp-3 sm:line-clamp-none">
+                        <p className="text-white/80 text-sm sm:text-base md:text-lg mb-5 sm:mb-7 max-w-lg mx-auto leading-relaxed line-clamp-3 sm:line-clamp-none">
                             {s.subtitle}
                         </p>
                     )}
@@ -886,7 +884,7 @@ const HeroSlider = ({ slides }) => {
                     {/* CTA Button */}
                     {s.button_text && (
                         <a href={s.button_link || '#'} target="_blank" rel="noreferrer"
-                            className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-6 py-3 sm:px-7 sm:py-3.5 rounded-2xl hover:scale-105 shadow-2xl transition-all">
+                            className="inline-flex items-center gap-2 bg-white text-gray-900 font-black text-sm px-6 py-3 sm:px-7 sm:py-3.5 rounded-2xl hover:scale-105 shadow-2xl transition-all mx-auto">
                             {s.button_text}<ExternalLink size={14} />
                         </a>
                     )}

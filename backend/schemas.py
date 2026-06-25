@@ -265,3 +265,119 @@ class HomeStatResponse(HomeStatBase):
 
     class Config:
         from_attributes = True
+# --- DASHBOARD SCHEMAS ---
+
+class ActivityItem(BaseModel):
+    title: str
+    desc: str
+    time: str
+    color: str
+
+class DashboardStats(BaseModel):
+    students: int
+    quizzes: int
+    submissions: int
+    papers: int
+    recent_activity: List[ActivityItem]
+    # No performance_data for now to keep it simple, or add a List[dict]
+    performance_data: List[dict]
+
+# --- TEACHER PROFILE SCHEMAS ---
+class TeacherProfileBase(BaseModel):
+    name: str
+    title: Optional[str] = "Lead Lecturer"
+    credentials: str
+    bio_text: str
+    image_url: Optional[str] = None
+    mediums: str
+
+class TeacherProfileCreate(TeacherProfileBase):
+    pass
+
+class TeacherProfileResponse(TeacherProfileBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- SYLLABUS UNIT SCHEMAS ---
+class SyllabusUnitBase(BaseModel):
+    topic: str
+    icon: str
+    desc: str
+    subtopics_json: str
+    color: str
+    order_index: Optional[int] = 0
+
+class SyllabusUnitCreate(SyllabusUnitBase):
+    pass
+
+class SyllabusUnitResponse(SyllabusUnitBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- LMS FEATURE SCHEMAS ---
+class LmsFeatureBase(BaseModel):
+    icon: str
+    title: str
+    desc: str
+    color: str
+    order_index: Optional[int] = 0
+
+class LmsFeatureCreate(LmsFeatureBase):
+    pass
+
+class LmsFeatureResponse(LmsFeatureBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- HOME BATCH SCHEMAS ---
+class HomeBatchBase(BaseModel):
+    name: str
+    status: str
+    seats_left: str
+    schedule: str
+    description: str
+    features_json: str
+    color: str
+    enroll_link: Optional[str] = "/login"
+    order_index: Optional[int] = 0
+
+class HomeBatchCreate(HomeBatchBase):
+    pass
+
+class HomeBatchResponse(HomeBatchBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- TESTIMONIAL SCHEMAS ---
+class TestimonialBase(BaseModel):
+    quote: str
+    name: str
+    result: str
+    stars: Optional[int] = 5
+    order_index: Optional[int] = 0
+
+class TestimonialCreate(TestimonialBase):
+    pass
+
+class TestimonialResponse(TestimonialBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# --- HOME FAQ SCHEMAS ---
+class HomeFaqBase(BaseModel):
+    question: str
+    answer: str
+    order_index: Optional[int] = 0
+
+class HomeFaqCreate(HomeFaqBase):
+    pass
+
+class HomeFaqResponse(HomeFaqBase):
+    id: int
+    class Config:
+        from_attributes = True

@@ -21,6 +21,7 @@ import RecordingsPage from './pages/admin/RecordingsPage';
 import SliderPage from './pages/admin/SliderPage';
 import LearningHubAdmin from './pages/admin/LearningHubAdmin';
 import HomePageAdmin from './pages/admin/HomePageAdmin';
+import AdminLogin from './pages/admin/AdminLogin';
 
 export default function App() {
   return (
@@ -30,10 +31,10 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/loading" element={<LoadingPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<Login />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/learning-hub" element={<LearningHub />} />
+        <Route path="/knowledge-hub" element={<LearningHub />} />
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>

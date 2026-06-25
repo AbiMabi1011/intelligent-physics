@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
-    ArrowUpRight,
-    ArrowDownRight,
-    Activity,
     Users,
     BookOpen,
-    FileText
+    FileText,
+    TrendingUp,
+    MoreVertical,
+    Calendar,
+    ArrowUpRight,
+    Search,
+    Activity,
+    Database,
+    Zap,
+    Trophy,
+    Target,
+    Loader2,
+    CheckCircle
 } from 'lucide-react';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    Cell,
+    AreaChart,
+    Area
+} from 'recharts';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
@@ -20,6 +41,8 @@ const AdminDashboard = () => {
         papers: 0
     });
     const [loading, setLoading] = useState(true);
+    const [recentActivity, setRecentActivity] = useState([]);
+    const [chartData, setChartData] = useState([]);
 
     useEffect(() => {
         fetchStats();
@@ -29,7 +52,15 @@ const AdminDashboard = () => {
         try {
             const res = await fetch(`${API_URL}/stats`);
             if (res.ok) {
-                setStats(await res.json());
+                const data = await res.json();
+                setStats({
+                    students: data.students,
+                    quizzes: data.quizzes,
+                    submissions: data.submissions,
+                    papers: data.papers
+                });
+                setRecentActivity(data.recent_activity || []);
+                setChartData(data.performance_data || []);
             }
         } catch (err) {
             console.error(err);
@@ -39,92 +70,185 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div className="space-y-6">
-            {/* Welcome Banner */}
-            <div className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white shadow-lg">
-                <h2 className="text-3xl font-bold">Welcome back, {user?.full_name || user?.email || 'Admin'}</h2>
-                <p className="mt-2 opacity-90">Here is the overview of your academy's performance today.</p>
+        <div className="space-y-12 animate-in fade-in duration-700 pb-10">
+            {/* Header Section */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="w-full">
+                    <h1 className="text-4xl font-black text-white tracking-tighter flex items-center gap-4">
+                        <LayoutDashboard size={40} className="text-[#656CFF]" /> Admin Dashboard
+                    </h1>
+                    <p className="text-sm text-slate-500 font-black uppercase tracking-[0.3em] mt-3 italic flex items-center gap-2">
+                         Welcome, <span className="text-[#656CFF]">{user?.full_name || 'Admin'}</span> — System Status: <span className="text-[#10B981] flex items-center gap-1"><Activity size={14} /> ONLINE</span>
+                    </p>
+                </div>
             </div>
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
-                <KPICard title="Total Students" value={stats.students} icon={<Users className="ml-auto opacity-50" />} color="blue" />
-                <KPICard title="Total Quizzes" value={stats.quizzes} icon={<BookOpen className="ml-auto opacity-50" />} color="green" />
-                <KPICard title="Quiz Submissions" value={stats.submissions} icon={<Activity className="ml-auto opacity-50" />} color="amber" />
-                <KPICard title="Study Papers" value={stats.papers} icon={<FileText className="ml-auto opacity-50" />} color="indigo" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <StatCard 
+                    title="Total Students" 
+                    value={stats.students} 
+                    icon={<Users size={24} />} 
+                    color="#656CFF" 
+                    trend="up"
+                    percentage="Registered accounts"
+                />
+                <StatCard 
+                    title="Active Quizzes" 
+                    value={stats.quizzes} 
+                    icon={<BookOpen size={24} />} 
+                    color="#FEBC2E" 
+                    trend="up"
+                    percentage="Available for students"
+                />
+                <StatCard 
+                    title="Quiz Logins" 
+                    value={stats.submissions} 
+                    icon={<Activity size={24} />} 
+                    color="#10B981" 
+                    trend="up"
+                    percentage="Total attempts made"
+                />
+                <StatCard 
+                    title="Study Materials" 
+                    value={stats.papers} 
+                    icon={<Database size={24} />} 
+                    color="#EF4444" 
+                    trend="stable"
+                    percentage="Uploaded documents"
+                />
             </div>
 
-            {/* Recent Activity / Content Placeholder */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 h-full">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-gray-800">System Monitoring</h3>
-                    </div>
-                    <div className="space-y-6">
-                        <div className="w-full space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">Database Health</span>
-                                <span className="font-semibold text-green-600">Optimal</span>
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-gray-100">
-                                <div className="h-2 w-full rounded-full bg-green-500"></div>
-                            </div>
-
-                            <div className="flex justify-between text-sm pt-2">
-                                <span className="text-gray-600">Server Status</span>
-                                <span className="font-semibold text-blue-600">Live</span>
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-gray-100">
-                                <div className="h-2 w-full rounded-full bg-blue-500"></div>
-                            </div>
+            {/* Main Analytics Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* Performance Chart */}
+                <div className="lg:col-span-8 admin-card p-10 bg-gradient-to-br from-[#15171C] to-[#0D0E12] border-[#23262D] shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#656CFF]/5 blur-[100px] rounded-full group-hover:bg-[#656CFF]/10 transition-all duration-700" />
+                    
+                    <div className="flex items-center justify-between mb-12 relative z-10">
+                        <div>
+                            <h3 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                                <TrendingUp size={24} className="text-[#656CFF]" /> Registration Trend
+                            </h3>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Growth of student base over months</p>
                         </div>
-                        <p className="text-xs text-gray-500 italic break-all">API: {API_URL}</p>
+                    </div>
+
+                    <div className="h-[350px] w-full relative z-10">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#656CFF" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#656CFF" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#23262D" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#475569', fontSize: 10, fontWeight: '900' }} 
+                                    dy={10}
+                                />
+                                <YAxis 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#475569', fontSize: 10, fontWeight: '900' }} 
+                                />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: '#15171C', 
+                                        borderColor: '#23262D', 
+                                        borderRadius: '1rem',
+                                        fontSize: '12px',
+                                        fontWeight: 'bold',
+                                        color: '#fff',
+                                        border: '1px solid rgba(255,255,255,0.05)',
+                                        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                                    }}
+                                    itemStyle={{ color: '#656CFF' }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke="#656CFF" 
+                                    strokeWidth={4} 
+                                    fillOpacity={1} 
+                                    fill="url(#colorValue)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Quick Actions / Stats */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center text-center">
-                    <div className="mb-4 rounded-full bg-indigo-50 p-4 text-indigo-600">
-                        <LayoutDashboard size={32} />
+                {/* Recent Activity */}
+                <div className="lg:col-span-4 flex flex-col gap-8">
+                    <div className="admin-card p-10 bg-[#15171C] border-[#23262D] h-full">
+                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-8 flex items-center gap-2">
+                             <Zap size={14} className="text-[#FEBC2E]" /> New Activity
+                        </h4>
+                        <div className="space-y-6">
+                            {recentActivity.length > 0 ? recentActivity.map((act, i) => (
+                                <ActivityItem 
+                                    key={i}
+                                    title={act.title} 
+                                    desc={act.desc}
+                                    time={act.time}
+                                    color={act.color}
+                                />
+                            )) : (
+                                <p className="text-[10px] text-slate-500 italic">No recent activity found.</p>
+                            )}
+                        </div>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-800">Management Overview</h3>
-                    <p className="text-gray-500 max-w-xs mt-2 mb-6">You are controlling {stats.students} student accounts and managing {stats.quizzes} active quizzes.</p>
                 </div>
             </div>
+
         </div>
     );
 };
 
-// --- Helper Components ---
-
-const KPICard = ({ title, value, color, icon }) => {
-    const colorMap = {
-        blue: { bg: 'bg-blue-100', bar: 'bg-blue-500', text: 'text-blue-600' },
-        green: { bg: 'bg-green-100', bar: 'bg-green-500', text: 'text-green-600' },
-        amber: { bg: 'bg-amber-100', bar: 'bg-amber-500', text: 'text-amber-600' },
-        indigo: { bg: 'bg-indigo-100', bar: 'bg-indigo-500', text: 'text-indigo-600' }
-    };
-
-    const styles = colorMap[color] || colorMap.blue;
-
-    return (
-        <div className="rounded-xl bg-white p-4 md:p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md h-full">
-            <div className="flex items-start">
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider truncate">{title}</h3>
-                    <p className="mt-2 text-2xl md:text-3xl font-bold text-slate-800">{value}</p>
-                </div>
-                <div className={`p-2 rounded-lg ${styles.bg} ${styles.text}`}>
-                    {icon}
-                </div>
+const StatCard = ({ title, value, icon, color, trend, percentage }) => (
+    <div className="admin-card p-10 group relative h-full transition-all duration-500 hover:scale-[1.03] hover:border-white/20 bg-gradient-to-br from-[#15171C] to-[#0D0E12] border-[#23262D] overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full translate-x-1/2 translate-y-[-1/2] opacity-5 transition-opacity" style={{ background: color }} />
+        
+        <div className="flex justify-between items-start mb-10">
+            <div className="h-14 w-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:rotate-12 duration-500" style={{ background: `${color}15`, color: color }}>
+                {icon}
             </div>
-            <div className="mt-6 flex items-center">
-                <div className={`h-1.5 w-full rounded-full bg-gray-100`}>
-                    <div className={`h-1.5 w-[70%] rounded-full ${styles.bar} opacity-60`}></div>
+            {trend === 'up' ? (
+                <div className="flex items-center gap-1 text-[#10B981] bg-[#10B981]/10 px-3 py-1.5 rounded-xl border border-[#10B981]/20">
+                    <ArrowUpRight size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Active</span>
                 </div>
-            </div>
+            ) : (
+                <div className="flex items-center gap-1 text-slate-500 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
+                    <CheckCircle size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Fixed</span>
+                </div>
+            )}
         </div>
-    );
-};
+        
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-3">{title}</p>
+        <h3 className="text-4xl font-black text-white tracking-tighter mb-4 italic leading-none">{value.toLocaleString()}</h3>
+        <p className={`text-[10px] font-bold uppercase tracking-widest ${trend === 'up' ? 'text-slate-600' : 'text-slate-600'}`}>{percentage}</p>
+    </div>
+);
+
+const ActivityItem = ({ title, desc, time, color }) => (
+    <div className="flex gap-5 group/item cursor-pointer">
+        <div className="h-10 w-1 pt-1.5 pb-1.5 flex items-center">
+            <div className="h-full w-1 rounded-full group-hover/item:h-full transition-all duration-300" style={{ backgroundColor: color }} />
+        </div>
+        <div className="flex-1">
+            <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-black text-white uppercase tracking-tighter group-hover/item:text-[#656CFF] transition-colors">{title}</p>
+                <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest">{time}</span>
+            </div>
+            <p className="text-[10px] text-slate-500 font-bold tracking-wide italic">{desc}</p>
+        </div>
+    </div>
+);
 
 export default AdminDashboard;

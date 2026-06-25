@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Eye, EyeOff } from 'lucide-react'; // Swapped custom SVGs for Lucide icons
+import { Loader2, ArrowLeft, Eye, EyeOff, Shield, Sparkles, QrCode, Mail, User, BookOpen, Activity, ChevronRight } from 'lucide-react'; 
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
@@ -103,165 +103,177 @@ const Login = () => {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 md:p-10 shadow-xl border border-gray-100">
-                <div className="mb-8 text-center relative">
-                    {mode !== 'login' && (
-                        <button
-                            type="button"
-                            onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
-                            className="absolute left-0 top-0 p-2 text-gray-500 hover:text-gray-900 transition"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
+        <div className="flex min-h-screen items-center justify-center bg-[#0D0E12] px-4 py-12 relative overflow-hidden font-black">
+             {/* Dynamic Flux Background */}
+             <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[#656CFF]/5 blur-[120px] rounded-full animate-pulse" />
+             <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-[#656CFF]/5 blur-[120px] rounded-full animate-pulse delay-1000" />
+            
+            <div className="w-full max-w-lg z-10 animate-in fade-in zoom-in-95 duration-700">
+                <div className="bg-[#15171C] border border-[#23262D] rounded-[3rem] p-10 md:p-14 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative group overflow-hidden">
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-[#656CFF]/10 blur-[80px] rounded-full -translate-y-12 translate-x-12 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="mb-12 text-center relative">
+                        {mode !== 'login' && (
+                            <button
+                                type="button"
+                                onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
+                                className="absolute -left-4 -top-4 h-11 w-11 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all shadow-xl"
+                            >
+                                <ArrowLeft size={20} />
+                            </button>
+                        )}
+                        <div className="mx-auto mb-10 h-28 w-28 p-4 bg-[#656CFF]/10 rounded-[2.5rem] border border-[#656CFF]/20 shadow-2xl transition-transform hover:scale-110 duration-700">
+                            <img src={logo} alt="IP Logo" className="h-full w-full object-contain" />
+                        </div>
+                        <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+                            {mode === 'login' ? 'Student' : mode === 'register' ? 'Create' : mode === 'forgot' ? 'Reset' : 'Scan'} <span className="text-[#656CFF]">{mode === 'login' ? 'Login' : mode === 'register' ? 'Account' : mode === 'forgot' ? 'Password' : 'QR'}</span>
+                        </h1>
+                        <p className="text-[10px] text-slate-500 mt-4 uppercase tracking-[0.4em] font-black flex items-center justify-center gap-3">
+                            <Shield size={10} className="text-[#656CFF]" /> 
+                            {mode === 'login' ? 'Intelligent Physics Portal' : mode === 'register' ? 'Join our institute' : mode === 'forgot' ? 'Recover your account' : 'Scan your personal QR'}
+                        </p>
+                    </div>
+
+                    {error && (
+                        <div className="mb-8 rounded-2xl bg-red-500/10 border border-red-500/20 p-5 text-[10px] text-red-500 font-black uppercase tracking-widest text-center animate-pulse flex items-center justify-center gap-3">
+                            <Activity size={16} /> {error}
+                        </div>
                     )}
-                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center">
-                        <img src={logo} alt="Intelligent Physics Logo" className="h-full w-full object-contain" />
-                    </div>
-                    <h1 className="text-3xl font-bold text-gray-900">
-                        {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Create Account' : mode === 'qr' ? 'QR Login' : 'Reset Password'}
-                    </h1>
-                    <p className="text-gray-500 mt-2">
-                        {mode === 'login'
-                            ? 'Sign in to Intelligent Physics'
-                            : mode === 'register'
-                                ? 'Join Intelligent Physics as a student'
-                                : mode === 'qr'
-                                    ? 'Scan your personal QR code'
-                                    : 'Enter your email to receive a reset link'}
-                    </p>
-                </div>
+                    {successMsg && (
+                        <div className="mb-8 rounded-2xl bg-[#10B981]/10 border border-[#10B981]/20 p-5 text-[10px] text-[#10B981] font-black uppercase tracking-widest text-center flex items-center justify-center gap-3">
+                            <Sparkles size={16} /> {successMsg}
+                        </div>
+                    )}
 
-                {error && (
-                    <div className="mb-4 rounded-lg bg-red-50 p-3 text-red-600 text-sm font-medium border border-red-100 text-center">
-                        {error}
-                    </div>
-                )}
-                {successMsg && (
-                    <div className="mb-4 rounded-lg bg-green-50 p-3 text-green-700 text-sm font-medium border border-green-100 text-center">
-                        {successMsg}
-                    </div>
-                )}
+                    {mode === 'qr' ? (
+                        <QRLogin />
+                    ) : (
+                        <form className="space-y-8" onSubmit={handleLogin}>
+                            {mode === 'register' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-4 duration-500">
+                                    <div className="space-y-3 group/field">
+                                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 group-focus-within/field:text-[#656CFF]">Full Name</label>
+                                        <div className="relative">
+                                            <User size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700" />
+                                            <input
+                                                type="text"
+                                                className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl pl-16 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 focus:ring-4 focus:ring-[#656CFF]/10 outline-none transition-all placeholder:text-slate-800"
+                                                placeholder="ENTER NAME"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
 
-                {/* Conditional Rendering for QR Mode */}
-                {mode === 'qr' ? (
-                    <QRLogin />
-                ) : (
-                    <form className="space-y-4" onSubmit={handleLogin}>
-                        {mode === 'register' && (
-                            <>
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-semibold text-gray-700">Full Name</label>
+                                    <div className="space-y-3 group/field">
+                                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 group-focus-within/field:text-[#656CFF]">Select Batch</label>
+                                        <div className="relative">
+                                            <BookOpen size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700" />
+                                            <select
+                                                className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl pl-16 py-4 text-[10px] font-black text-white uppercase tracking-widest focus:border-[#656CFF]/50 outline-none transition-all appearance-none"
+                                                value={className}
+                                                onChange={(e) => setClassName(e.target.value)}
+                                                required
+                                            >
+                                                <option value="" disabled>SELECT BATCH</option>
+                                                {batches.map(b => (
+                                                    <option key={b.id} value={b.name}>{b.name.toUpperCase()}</option>
+                                                ))}
+                                                <option value="N/A">OTHER</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="space-y-3 group/field animate-in slide-in-from-top-4 duration-500 delay-75">
+                                <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 group-focus-within/field:text-[#656CFF]">Email Address</label>
+                                <div className="relative">
+                                    <Mail size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700" />
                                     <input
                                         type="text"
-                                        className="block w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        placeholder="John Doe"
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
+                                        name="username"
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl pl-16 py-5 text-sm font-black text-white focus:border-[#656CFF]/50 focus:ring-4 focus:ring-[#656CFF]/10 outline-none transition-all placeholder:text-slate-800"
+                                        placeholder="ENTER EMAIL"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
                                         required
                                     />
                                 </div>
+                            </div>
 
-                                <div className="space-y-1">
-                                    <label className="block text-sm font-semibold text-gray-700">Class / Batch</label>
-                                    <select
-                                        className="block w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        value={className}
-                                        onChange={(e) => setClassName(e.target.value)}
-                                        required
-                                    >
-                                        <option value="" disabled>Select your batch</option>
-                                        {batches.map(b => (
-                                            <option key={b.id} value={b.name}>{b.name}</option>
-                                        ))}
-                                        <option value="N/A">Other</option>
-                                    </select>
-                                </div>
-                            </>
-                        )}
-
-                        <div className="space-y-1">
-                            <label className="block text-sm font-semibold text-gray-700">Email or Username</label>
-                            <input
-                                type="text"
-                                name="username"
-                                className="block w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                placeholder="Email Address or Username"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
-
-                        {mode !== 'forgot' && (
-                            <div className="space-y-1">
-                                <label className="block text-sm font-semibold text-gray-700">Password</label>
-                                <div className="relative">
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        className="block w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                    >
-                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                                    </button>
-                                </div>
-                                {mode === 'login' && (
-                                    <div className="flex justify-end pt-1">
+                            {mode !== 'forgot' && (
+                                <div className="space-y-3 group/field animate-in slide-in-from-top-4 duration-500 delay-150">
+                                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1 group-focus-within/field:text-[#656CFF]">Password</label>
+                                    <div className="relative">
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-[#656CFF] shadow-[0_0_8px_#656CFF]" />
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            name="password"
+                                            className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl pl-16 py-5 text-sm font-black text-white focus:border-[#656CFF]/50 focus:ring-4 focus:ring-[#656CFF]/10 outline-none transition-all placeholder:text-slate-800 tracking-widest"
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                        />
                                         <button
                                             type="button"
-                                            onClick={() => { setMode('forgot'); setError(''); setSuccessMsg(''); }}
-                                            className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 rounded-xl h-9 w-9 bg-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-all shadow-inner"
                                         >
-                                            Forgot Password?
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
-                                )}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="group relative w-full flex justify-center rounded-xl bg-blue-600 px-4 py-3.5 mt-2 text-sm font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700 hover:shadow-xl active:scale-[0.98] disabled:opacity-70"
-                        >
-                            {isLoading ? <Loader2 className="animate-spin" /> : <span>{mode === 'login' ? 'Sign In' : mode === 'register' ? 'Register' : 'Send Reset Link'}</span>}
-                        </button>
-
-                        {mode === 'login' && (
-                            <div className="text-center mt-4">
-                                <p className="text-sm text-gray-600">
-                                    Don't have an account?{' '}
-                                    <button
-                                        type="button"
-                                        onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
-                                        className="font-bold text-blue-600 hover:underline"
-                                    >
-                                        Register here
-                                    </button>
-                                </p>
-                                {/* Added QR Button here */}
-                                <div className="mt-4 pt-4 border-t border-gray-100">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setMode('qr'); setError(''); setSuccessMsg(''); }}
-                                        className="w-full rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        Login with QR Code
-                                    </button>
+                                    {mode === 'login' && (
+                                        <div className="flex justify-end pt-2 px-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setMode('forgot'); setError(''); setSuccessMsg(''); }}
+                                                className="text-[9px] font-black text-slate-700 uppercase tracking-widest hover:text-[#656CFF] transition-colors italic"
+                                            >
+                                                Forgot Password?
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            </div>
-                        )}
-                    </form>
-                )}
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full flex items-center justify-center gap-4 rounded-2xl bg-[#656CFF] px-8 py-5 text-xs font-black uppercase tracking-[0.3em] text-white shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                            >
+                                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <ChevronRight size={18} />}
+                                {isLoading ? 'LOADING...' : mode === 'login' ? 'Login Now' : mode === 'register' ? 'Register Now' : 'Reset Password'}
+                            </button>
+
+                            {mode === 'login' && (
+                                <div className="text-center mt-10 space-y-8 animate-in fade-in duration-1000">
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                        Need an account?{' '}
+                                        <button
+                                            type="button"
+                                            onClick={() => { setMode('register'); setError(''); setSuccessMsg(''); }}
+                                            className="font-black text-[#656CFF] hover:underline hover:scale-105 transition-all"
+                                        >
+                                            Register Here
+                                        </button>
+                                    </p>
+                                    <div className="pt-8 border-t border-white/5">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setMode('qr'); setError(''); setSuccessMsg(''); }}
+                                            className="w-full h-14 rounded-2xl border border-[#23262D] bg-[#0D0E12] text-white hover:bg-white/5 transition-all flex items-center justify-center gap-3 font-black text-[10px] uppercase tracking-widest shadow-xl group/qr"
+                                        >
+                                            <QrCode size={18} className="text-[#656CFF] group-hover:scale-110 transition-transform" /> Login with QR Code
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );

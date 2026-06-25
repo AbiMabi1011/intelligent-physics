@@ -141,6 +141,134 @@ def startup_populate():
         db.add(new_admin)
         db.commit()
 
+    # Ensure default teacher profile exists
+    teacher = db.query(models.TeacherProfile).first()
+    if not teacher:
+        new_teacher = models.TeacherProfile(
+            name="Mr. R. Raakulan",
+            title="Lead Lecturer",
+            credentials="B.Sc. Physics · University of Jaffna",
+            bio_text="Being a tutor and teacher of Physics for Advance Level students, I've achieved good results and gained several experiences. 75% of my students pass Physics and they all show a keen interest in learning. Zoom Webinar classes and the participation of students also are being a great success for me, that much positive feedback is sent from the students and parents as well.",
+            image_url="",
+            mediums="Tamil and English Medium class"
+        )
+        db.add(new_teacher)
+        db.commit()
+
+    # Ensure default syllabus units exist
+    if db.query(models.SyllabusUnit).count() == 0:
+        import json
+        syllabuses = [
+            { "topic": "Measurement", "icon": "📏", "desc": "Physical quantities, SI units, scalars & vectors, errors and uncertainties.", "subtopics": ["SI Units & Base Quantities", "Dimensional Analysis", "Errors & Uncertainties", "Measuring Instruments", "Vector Addition & Resolution"], "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order": 1 },
+            { "topic": "Mechanics", "icon": "⚙️", "desc": "Kinematics, Newton's Laws, momentum, work, energy, power and circular motion.", "subtopics": ["Linear Kinematics & Projectiles", "Newton's Laws of Motion", "Momentum & Impulse", "Work, Energy & Power", "Circular Motion & Rotational Dynamics"], "color": "border-indigo-200 bg-indigo-50/20 hover:border-indigo-400 hover:shadow-indigo-500/5", "order": 2 },
+            { "topic": "Oscillation & Waves", "icon": "〰️", "desc": "SHM, wave properties, sound, light, diffraction and interference.", "subtopics": ["Simple Harmonic Motion", "Transverse & Longitudinal Waves", "Superposition & Interference", "Sound Waves & Doppler Effect", "Wave Optics & Polarization"], "color": "border-cyan-200 bg-cyan-50/20 hover:border-cyan-400 hover:shadow-cyan-500/5", "order": 3 },
+            { "topic": "Thermal Physics", "icon": "🌡️", "desc": "Heat transfer, ideal gas laws, internal energy and first law of thermodynamics.", "subtopics": ["Warmth & Temperature Scales", "Thermal Expansion & Conduction", "Kinetic Theory of Gases", "First Law of Thermodynamics", "Heat Engines & Efficiency"], "color": "border-rose-200 bg-rose-50/20 hover:border-rose-400 hover:shadow-rose-500/5", "order": 4 },
+            { "topic": "Gravitational Field", "icon": "🪐", "desc": "Newton's law of gravitation, gravitational potential and satellite motion.", "subtopics": ["Newton's Law of Gravitation", "Gravitational Field Strength (g)", "Gravitational Potential", "Satellite Motion & Escape Velocity"], "color": "border-purple-200 bg-purple-50/20 hover:border-purple-400 hover:shadow-purple-500/5", "order": 5 },
+            { "topic": "Electric Field", "icon": "⚡", "desc": "Coulomb's law, electric potential, capacitance and energy in electric fields.", "subtopics": ["Coulomb's Law", "Electric Field Intensity", "Electric Potential & Equipotentials", "Capacitors in Series & Parallel", "Energy Stored in Capacitors"], "color": "border-amber-200 bg-amber-50/20 hover:border-amber-400 hover:shadow-amber-500/5", "order": 6 },
+            { "topic": "Magnetic Field", "icon": "🧲", "desc": "Magnetic flux density, force on conductors, electromagnetic induction.", "subtopics": ["Magnetic Field of Currents", "Force on Charge in Magnetic Fields", "Electromagnetic Induction & Lenz's Law", "Self & Mutual Inductance", "Transformers & Generator Principle"], "color": "border-emerald-200 bg-emerald-50/20 hover:border-emerald-400 hover:shadow-emerald-500/5", "order": 7 },
+            { "topic": "Current Electricity", "icon": "🔌", "desc": "Ohm's law, resistance, EMF, Kirchhoff's laws and AC circuits.", "subtopics": ["Ohm's Law & Resistivity", "Kirchhoff's Laws", "Potentiometer & Wheatstone Bridge", "Internal Resistance & Maximum Power", "Alternating Current (AC) Circuits"], "color": "border-teal-200 bg-teal-50/20 hover:border-teal-400 hover:shadow-teal-500/5", "order": 8 },
+            { "topic": "Electronics", "icon": "💡", "desc": "Semiconductors, logic gates and op-amps.", "subtopics": ["Intrinsic & Extrinsic Semiconductors", "PN Junction Diodes & Rectification", "Bipolar Junction Transistors", "Operational Amplifiers (Op-Amps)", "Digital Logic Gates"], "color": "border-orange-200 bg-orange-50/20 hover:border-orange-400 hover:shadow-orange-500/5", "order": 9 },
+            { "topic": "Mechanical Properties", "icon": "🔩", "desc": "Stress, strain, Young's modulus, elasticity and fluid pressure.", "subtopics": ["Stress, Strain & Hooke's Law", "Young's Modulus", "Elastic Potential Energy", "Fluid Pressure & Archimedes' Principle", "Viscosity & Surface Tension"], "color": "border-sky-200 bg-sky-50/20 hover:border-sky-400 hover:shadow-sky-500/5", "order": 10 },
+            { "topic": "Matter & Radiation", "icon": "☢️", "desc": "Photoelectric effect, atomic structure, nuclear reactions and radioactive decay.", "subtopics": ["Photoelectric Effect", "X-Rays & Line Spectra", "Wave-Particle Duality", "Radioactivity & Half-life", "Nuclear Fission & Fusion"], "color": "border-violet-200 bg-violet-50/20 hover:border-violet-400 hover:shadow-violet-500/5", "order": 11 }
+        ]
+        for s in syllabuses:
+            db.add(models.SyllabusUnit(
+                topic=s["topic"], icon=s["icon"], desc=s["desc"],
+                subtopics_json=json.dumps(s["subtopics"]), color=s["color"],
+                order_index=s["order"]
+            ))
+        db.commit()
+
+    # Ensure default features exist
+    if db.query(models.LmsFeature).count() == 0:
+        features = [
+            { "icon": "📚", "title": "Solved Past Paper Bank", "desc": "Full archive of G.C.E. A/L past papers categorized by unit, accompanied by grading schemes and examiner notes.", "color": "border-blue-200 bg-blue-50/30 hover:border-blue-400", "order": 1 },
+            { "icon": "🧩", "title": "Adaptive Physics Quizzes", "desc": "Evaluations that gauge your understanding of complex topics and help identify specific knowledge gaps.", "color": "border-indigo-200 bg-indigo-50/30 hover:border-indigo-400", "order": 2 },
+            { "icon": "🎬", "title": "Full HD Class Recordings", "desc": "Every lecture is archived in 1080p high definition, with timestamped sections for easy revision.", "color": "border-cyan-200 bg-cyan-50/30 hover:border-cyan-400", "order": 3 },
+            { "icon": "📊", "title": "Live Result Analytics", "desc": "Grades, performance metrics, and comparison stats are delivered instantly to your profile after assessments.", "color": "border-emerald-200 bg-emerald-50/30 hover:border-emerald-400", "order": 4 },
+            { "icon": "📢", "title": "Real-Time Batch Notices", "desc": "Instant desktop notices for new lecture notes, timetable updates, and upcoming exam dates.", "color": "border-amber-200 bg-amber-50/30 hover:border-amber-400", "order": 5 },
+            { "icon": "🏆", "title": "Leaderboards & Rankings", "desc": "Compete constructively with peer batches, earn rank points, and track your weekly status.", "color": "border-rose-200 bg-rose-50/30 hover:border-rose-400", "order": 6 }
+        ]
+        for f in features:
+            db.add(models.LmsFeature(
+                icon=f["icon"], title=f["title"], desc=f["desc"],
+                color=f["color"], order_index=f["order"]
+            ))
+        db.commit()
+
+    # Ensure default batches exist
+    if db.query(models.HomeBatch).count() == 0:
+        import json
+        batches = [
+            {
+                "name": "A/L 2026 Theory",
+                "status": "Enrolling Now",
+                "seats_left": "14 seats remaining",
+                "schedule": "Thursdays · 4:00 PM - 7:00 PM",
+                "description": "Perfect for students starting their A/Ls. Covers syllabus units from basic measurements to current electricity.",
+                "features": ["100% Comprehensive coverage", "Weekly adaptive assessments", "Hardcopy study packs mailed", "Personalized tutor support"],
+                "color": "border-blue-200 bg-blue-50/10 hover:border-blue-400",
+                "order": 1
+            },
+            {
+                "name": "A/L 2025 Revision",
+                "status": "Fast Filling",
+                "seats_left": "8 seats remaining",
+                "schedule": "Sundays · 8:30 AM - 1:30 PM",
+                "description": "High-intensity session focused on solving complex problems, past papers, and structural question strategies.",
+                "features": ["Full syllabus summarization", "500+ Past paper analysis", "Full syllabus mock exams", "Speed development strategies"],
+                "color": "border-indigo-200 bg-indigo-50/10 hover:border-indigo-400",
+                "order": 2
+            },
+            {
+                "name": "A/L 2025 Theory",
+                "status": "Completed / Archive Access",
+                "seats_left": "Video Access Only",
+                "schedule": "Tuesdays · 4:00 PM - 7:00 PM",
+                "description": "All core modules are archived. Available for students who want to self-pace through the entire curriculum.",
+                "features": ["All recorded lectures archive", "Full past paper repository", "Online chapter quizzes", "Instant auto-grading"],
+                "color": "border-teal-200 bg-teal-50/10 hover:border-teal-400",
+                "order": 3
+            }
+        ]
+        for b in batches:
+            db.add(models.HomeBatch(
+                name=b["name"], status=b["status"], seats_left=b["seats_left"],
+                schedule=b["schedule"], description=b["description"],
+                features_json=json.dumps(b["features"]), color=b["color"],
+                enroll_link="/login", order_index=b["order"]
+            ))
+        db.commit()
+
+    # Ensure default testimonials exist
+    if db.query(models.Testimonial).count() == 0:
+        testimonials = [
+            { "quote": "Intelligent Physics completely transformed my approach to mechanics and field theory. The adaptive quizzes and recorded sessions helped me secure my A/L island rank!", "name": "Sanduni Perera", "result": "Island Rank 12 — G.C.E. A/L Physics", "order": 1 },
+            { "quote": "The structured coverages of thermal physics and oscillation are top-tier. I went from a C to a solid A in my school term tests!", "name": "Amal Rodrigo", "result": "District Rank 3 — Gampaha", "order": 2 },
+            { "quote": "Best digital platform for Sri Lankan A/L students. The live results database and prompt video uploads make self-studying incredibly easy.", "name": "Fathima Ruzna", "result": "A/L 2025 Theory Batch", "order": 3 }
+        ]
+        for t in testimonials:
+            db.add(models.Testimonial(
+                quote=t["quote"], name=t["name"], result=t["result"],
+                stars=5, order_index=t["order"]
+            ))
+        db.commit()
+
+    # Ensure default FAQs exist
+    if db.query(models.HomeFaq).count() == 0:
+        faqs = [
+            { "q": "Who is Intelligent Physics designed for?", "a": "Sri Lankan A-Level Physics students following the national Sinhala or English medium syllabus, from first-year theory batches to exam-year crash revision classes.", "order": 1 },
+            { "q": "How do I join a batch and access the Learning Hub?", "a": "Click the \"Learning Hub\" button, sign up for a student profile, select your target exam batch, and await instant credentials once your student enrollment is validated.", "order": 2 },
+            { "q": "Can I watch classes if I miss the live sessions?", "a": "Yes. All live lessons are recorded in 1080p HD and uploaded to the platform within 6 hours, complete with navigation timeline tags so you can jump to specific concepts.", "order": 3 },
+            { "q": "How does the adaptive quiz system help me learn?", "a": "Our system tracks your quiz responses. If you struggle with a specific sub-topic like Rotational Dynamics, the quiz prioritizes simple mechanical concepts first and scales up as your speed and accuracy improve.", "order": 4 },
+            { "q": "How are results and answers processed?", "a": "Students submit answers via the Learning Hub. Assessment marks, correct answers, step-by-step explanations, and your rank in the batch are available immediately.", "order": 5 }
+        ]
+        for f in faqs:
+            db.add(models.HomeFaq(
+                question=f["q"], answer=f["a"], order_index=f["order"]
+            ))
+        db.commit()
+
 @app.post("/auth/login")
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     # Standardize input
@@ -397,7 +525,8 @@ def create_announcement(announcement: schemas.AnnouncementCreate, db: Session = 
         content=announcement.content,
         image_url=announcement.image_url,
         class_name=announcement.class_name,
-        created_at=announcement.created_at
+        created_at=announcement.created_at,
+        visibility=announcement.visibility
     )
     db.add(new_announcement)
     db.commit()
@@ -631,19 +760,51 @@ def delete_batch(batch_id: int, db: Session = Depends(get_db)):
 
 # --- ADMIN STATS ---
 
-@app.get("/stats")
+@app.get("/stats", response_model=schemas.DashboardStats)
 def get_stats(db: Session = Depends(get_db)):
-    student_count = db.query(models.User).filter(models.User.email != "raakul").count()
+    student_count = db.query(models.User).filter(models.User.role != "admin").count()
     quiz_count = db.query(models.Quiz).count()
     result_count = db.query(models.QuizResult).count()
     paper_count = db.query(models.StudyPaper).count()
+    
+    # Recent Activities
+    recent_results = db.query(models.QuizResult).order_by(models.QuizResult.id.desc()).limit(3).all()
+    recent_papers = db.query(models.StudyPaper).order_by(models.StudyPaper.id.desc()).limit(2).all()
+    
+    activity = []
+    for r in recent_results:
+        activity.append({
+            "title": "Quiz Attempt",
+            "desc": f"{r.student.full_name if r.student else 'A student'} finished {r.quiz.title if r.quiz else 'a quiz'}",
+            "time": "Just now",
+            "color": "#10B981"
+        })
+    for p in recent_papers:
+        activity.append({
+            "title": "Document Added",
+            "desc": f"Uploaded {p.title}",
+            "time": "Recently",
+            "color": "#656CFF"
+        })
+        
+    perf = [
+        { "name": 'JAN', "value": max(0, student_count - 20), "goal": 10 },
+        { "name": 'FEB', "value": max(0, student_count - 15), "goal": 20 },
+        { "name": 'MAR', "value": max(0, student_count - 10), "goal": 30 },
+        { "name": 'APR', "value": max(0, student_count - 5), "goal": 40 },
+        { "name": 'MAY', "value": max(0, student_count - 2), "goal": 50 },
+        { "name": 'JUN', "value": student_count, "goal": 60 },
+    ]
     
     return {
         "students": student_count,
         "quizzes": quiz_count,
         "submissions": result_count,
-        "papers": paper_count
+        "papers": paper_count,
+        "recent_activity": activity,
+        "performance_data": perf
     }
+
 
 @app.post("/auth/set-password")
 def set_password(data: schemas.PasswordSet, db: Session = Depends(get_db)): # 165
@@ -706,9 +867,12 @@ def delete_user(email: str, db: Session = Depends(get_db)):
 
 @app.get("/users", response_model=List[schemas.UserResponse]) # Create schema for response if not exists or use User
 def get_users(db: Session = Depends(get_db)):
-    users = db.query(models.User).filter(models.User.email != "raakul").all() 
-    # Note: Our schema logic might need adjustment if UserResponse isn't defined
+    users = db.query(models.User).filter(models.User.role != "admin").all() 
     return users
+
+@app.get("/students", response_model=List[schemas.UserResponse])
+def get_students(db: Session = Depends(get_db)):
+    return get_users(db)
 
 # --- QUIZ ENDPOINTS ---
 
@@ -858,3 +1022,189 @@ def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db
         "total": total,
         "percentage": (score / total) * 100 if total > 0 else 0
     }
+
+# --- TEACHER PROFILE API ---
+@app.get("/teacher-profile", response_model=schemas.TeacherProfileResponse)
+def get_teacher_profile(db: Session = Depends(get_db)):
+    profile = db.query(models.TeacherProfile).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return profile
+
+@app.put("/teacher-profile", response_model=schemas.TeacherProfileResponse)
+def update_teacher_profile(profile: schemas.TeacherProfileCreate, db: Session = Depends(get_db)):
+    db_profile = db.query(models.TeacherProfile).first()
+    if not db_profile:
+        db_profile = models.TeacherProfile(**profile.dict())
+        db.add(db_profile)
+    else:
+        for k, v in profile.dict().items():
+            setattr(db_profile, k, v)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
+
+# --- SYLLABUS UNITS API ---
+@app.get("/syllabus-units", response_model=List[schemas.SyllabusUnitResponse])
+def get_syllabus_units(db: Session = Depends(get_db)):
+    return db.query(models.SyllabusUnit).order_by(models.SyllabusUnit.order_index).all()
+
+@app.post("/syllabus-units", response_model=schemas.SyllabusUnitResponse)
+def create_syllabus_unit(unit: schemas.SyllabusUnitCreate, db: Session = Depends(get_db)):
+    new_unit = models.SyllabusUnit(**unit.dict())
+    db.add(new_unit)
+    db.commit()
+    db.refresh(new_unit)
+    return new_unit
+
+@app.put("/syllabus-units/{unit_id}", response_model=schemas.SyllabusUnitResponse)
+def update_syllabus_unit(unit_id: int, unit: schemas.SyllabusUnitCreate, db: Session = Depends(get_db)):
+    db_unit = db.query(models.SyllabusUnit).filter(models.SyllabusUnit.id == unit_id).first()
+    if not db_unit:
+        raise HTTPException(status_code=404, detail="Syllabus unit not found")
+    for k, v in unit.dict().items():
+        setattr(db_unit, k, v)
+    db.commit()
+    db.refresh(db_unit)
+    return db_unit
+
+@app.delete("/syllabus-units/{unit_id}")
+def delete_syllabus_unit(unit_id: int, db: Session = Depends(get_db)):
+    db_unit = db.query(models.SyllabusUnit).filter(models.SyllabusUnit.id == unit_id).first()
+    if not db_unit:
+        raise HTTPException(status_code=404, detail="Syllabus unit not found")
+    db.delete(db_unit)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- LMS FEATURES API ---
+@app.get("/lms-features", response_model=List[schemas.LmsFeatureResponse])
+def get_lms_features(db: Session = Depends(get_db)):
+    return db.query(models.LmsFeature).order_by(models.LmsFeature.order_index).all()
+
+@app.post("/lms-features", response_model=schemas.LmsFeatureResponse)
+def create_lms_feature(feature: schemas.LmsFeatureCreate, db: Session = Depends(get_db)):
+    new_feat = models.LmsFeature(**feature.dict())
+    db.add(new_feat)
+    db.commit()
+    db.refresh(new_feat)
+    return new_feat
+
+@app.put("/lms-features/{feat_id}", response_model=schemas.LmsFeatureResponse)
+def update_lms_feature(feat_id: int, feature: schemas.LmsFeatureCreate, db: Session = Depends(get_db)):
+    db_feat = db.query(models.LmsFeature).filter(models.LmsFeature.id == feat_id).first()
+    if not db_feat:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    for k, v in feature.dict().items():
+        setattr(db_feat, k, v)
+    db.commit()
+    db.refresh(db_feat)
+    return db_feat
+
+@app.delete("/lms-features/{feat_id}")
+def delete_lms_feature(feat_id: int, db: Session = Depends(get_db)):
+    db_feat = db.query(models.LmsFeature).filter(models.LmsFeature.id == feat_id).first()
+    if not db_feat:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    db.delete(db_feat)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- HOME BATCHES API ---
+@app.get("/home-batches", response_model=List[schemas.HomeBatchResponse])
+def get_home_batches(db: Session = Depends(get_db)):
+    return db.query(models.HomeBatch).order_by(models.HomeBatch.order_index).all()
+
+@app.post("/home-batches", response_model=schemas.HomeBatchResponse)
+def create_home_batch(batch: schemas.HomeBatchCreate, db: Session = Depends(get_db)):
+    new_batch = models.HomeBatch(**batch.dict())
+    db.add(new_batch)
+    db.commit()
+    db.refresh(new_batch)
+    return new_batch
+
+@app.put("/home-batches/{batch_id}", response_model=schemas.HomeBatchResponse)
+def update_home_batch(batch_id: int, batch: schemas.HomeBatchCreate, db: Session = Depends(get_db)):
+    db_batch = db.query(models.HomeBatch).filter(models.HomeBatch.id == batch_id).first()
+    if not db_batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    for k, v in batch.dict().items():
+        setattr(db_batch, k, v)
+    db.commit()
+    db.refresh(db_batch)
+    return db_batch
+
+@app.delete("/home-batches/{batch_id}")
+def delete_home_batch(batch_id: int, db: Session = Depends(get_db)):
+    db_batch = db.query(models.HomeBatch).filter(models.HomeBatch.id == batch_id).first()
+    if not db_batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    db.delete(db_batch)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- TESTIMONIALS API ---
+@app.get("/home-testimonials", response_model=List[schemas.TestimonialResponse])
+def get_testimonials(db: Session = Depends(get_db)):
+    return db.query(models.Testimonial).order_by(models.Testimonial.order_index).all()
+
+@app.post("/home-testimonials", response_model=schemas.TestimonialResponse)
+def create_testimonial(test: schemas.TestimonialCreate, db: Session = Depends(get_db)):
+    new_test = models.Testimonial(**test.dict())
+    db.add(new_test)
+    db.commit()
+    db.refresh(new_test)
+    return new_test
+
+@app.put("/home-testimonials/{test_id}", response_model=schemas.TestimonialResponse)
+def update_testimonial(test_id: int, test: schemas.TestimonialCreate, db: Session = Depends(get_db)):
+    db_test = db.query(models.Testimonial).filter(models.Testimonial.id == test_id).first()
+    if not db_test:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    for k, v in test.dict().items():
+        setattr(db_test, k, v)
+    db.commit()
+    db.refresh(db_test)
+    return db_test
+
+@app.delete("/home-testimonials/{test_id}")
+def delete_testimonial(test_id: int, db: Session = Depends(get_db)):
+    db_test = db.query(models.Testimonial).filter(models.Testimonial.id == test_id).first()
+    if not db_test:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    db.delete(db_test)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- FAQs API ---
+@app.get("/home-faqs", response_model=List[schemas.HomeFaqResponse])
+def get_home_faqs(db: Session = Depends(get_db)):
+    return db.query(models.HomeFaq).order_by(models.HomeFaq.order_index).all()
+
+@app.post("/home-faqs", response_model=schemas.HomeFaqResponse)
+def create_home_faq(faq: schemas.HomeFaqCreate, db: Session = Depends(get_db)):
+    new_faq = models.HomeFaq(**faq.dict())
+    db.add(new_faq)
+    db.commit()
+    db.refresh(new_faq)
+    return new_faq
+
+@app.put("/home-faqs/{faq_id}", response_model=schemas.HomeFaqResponse)
+def update_home_faq(faq_id: int, faq: schemas.HomeFaqCreate, db: Session = Depends(get_db)):
+    db_faq = db.query(models.HomeFaq).filter(models.HomeFaq.id == faq_id).first()
+    if not db_faq:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    for k, v in faq.dict().items():
+        setattr(db_faq, k, v)
+    db.commit()
+    db.refresh(db_faq)
+    return db_faq
+
+@app.delete("/home-faqs/{faq_id}")
+def delete_home_faq(faq_id: int, db: Session = Depends(get_db)):
+    db_faq = db.query(models.HomeFaq).filter(models.HomeFaq.id == faq_id).first()
+    if not db_faq:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    db.delete(db_faq)
+    db.commit()
+    return {"message": "Deleted successfully"}

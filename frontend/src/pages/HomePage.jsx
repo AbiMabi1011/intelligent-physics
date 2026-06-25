@@ -2,344 +2,106 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import logo from '../assets/logo.jpeg';
+import teacherPic from '../assets/teacher.png';
 import Footer from '../components/Footer';
 
-/* ─── Data ─── */
+/* ─── Static Data ─── */
 const SYLLABUS = [
-  { topic: 'Measurement', icon: '📏', desc: 'Physical quantities, SI units, scalars & vectors, errors and uncertainties.' },
-  { topic: 'Mechanics', icon: '⚙️', desc: "Kinematics, Newton's Laws, momentum, work, energy, power and circular motion." },
-  { topic: 'Oscillation & Waves', icon: '〰️', desc: 'SHM, wave properties, sound, light, diffraction and interference.' },
-  { topic: 'Thermal Physics', icon: '🌡️', desc: 'Heat transfer, ideal gas laws, internal energy and first law of thermodynamics.' },
-  { topic: 'Gravitational Field', icon: '🪐', desc: "Newton's law of gravitation, gravitational potential and satellite motion." },
-  { topic: 'Electric Field', icon: '⚡', desc: "Coulomb's law, electric potential, capacitance and energy in electric fields." },
-  { topic: 'Magnetic Field', icon: '🧲', desc: 'Magnetic flux density, force on conductors, electromagnetic induction.' },
-  { topic: 'Current Electricity', icon: '🔌', desc: "Ohm's law, resistance, EMF, Kirchhoff's laws and AC circuits." },
-  { topic: 'Electronics', icon: '💡', desc: 'Semiconductors, diodes, transistors, logic gates and op-amps.' },
-  { topic: 'Mechanical Properties', icon: '🔩', desc: "Stress, strain, Young's modulus, elasticity and fluid pressure." },
-  { topic: 'Matter & Radiation', icon: '☢️', desc: 'Photoelectric effect, atomic structure, nuclear reactions and radioactive decay.' },
+  { topic: 'Measurement', icon: '📏', desc: 'Physical quantities, SI units, scalars & vectors, errors and uncertainties.', subtopics: ['SI Units & Base Quantities', 'Dimensional Analysis', 'Errors & Uncertainties', 'Measuring Instruments', 'Vector Addition & Resolution'], color: 'border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5' },
+  { topic: 'Mechanics', icon: '⚙️', desc: "Kinematics, Newton's Laws, momentum, work, energy, power and circular motion.", subtopics: ['Linear Kinematics & Projectiles', "Newton's Laws of Motion", 'Momentum & Impulse', 'Work, Energy & Power', 'Circular Motion & Rotational Dynamics'], color: 'border-indigo-200 bg-indigo-50/20 hover:border-indigo-400 hover:shadow-indigo-500/5' },
+  { topic: 'Oscillation & Waves', icon: '〰️', desc: 'SHM, wave properties, sound, light, diffraction and interference.', subtopics: ['Simple Harmonic Motion', 'Transverse & Longitudinal Waves', 'Superposition & Interference', 'Sound Waves & Doppler Effect', 'Wave Optics & Polarization'], color: 'border-cyan-200 bg-cyan-50/20 hover:border-cyan-400 hover:shadow-cyan-500/5' },
+  { topic: 'Thermal Physics', icon: '🌡️', desc: 'Heat transfer, ideal gas laws, internal energy and first law of thermodynamics.', subtopics: ['Warmth & Temperature Scales', 'Thermal Expansion & Conduction', 'Kinetic Theory of Gases', 'First Law of Thermodynamics', 'Heat Engines & Efficiency'], color: 'border-rose-200 bg-rose-50/20 hover:border-rose-400 hover:shadow-rose-500/5' },
+  { topic: 'Gravitational Field', icon: '🪐', desc: "Newton's law of gravitation, gravitational potential and satellite motion.", subtopics: ["Newton's Law of Gravitation", 'Gravitational Field Strength (g)', 'Gravitational Potential', 'Satellite Motion & Escape Velocity'], color: 'border-purple-200 bg-purple-50/20 hover:border-purple-400 hover:shadow-purple-500/5' },
+  { topic: 'Electric Field', icon: '⚡', desc: "Coulomb's law, electric potential, capacitance and energy in electric fields.", subtopics: ["Coulomb's Law", 'Electric Field Intensity', 'Electric Potential & Equipotentials', 'Capacitors in Series & Parallel', 'Energy Stored in Capacitors'], color: 'border-amber-200 bg-amber-50/20 hover:border-amber-400 hover:shadow-amber-500/5' },
+  { topic: 'Magnetic Field', icon: '🧲', desc: 'Magnetic flux density, force on conductors, electromagnetic induction.', subtopics: ['Magnetic Field of Currents', 'Force on Charge in Magnetic Fields', 'Electromagnetic Induction & Lenz\'s Law', 'Self & Mutual Inductance', 'Transformers & Generator Principle'], color: 'border-emerald-200 bg-emerald-50/20 hover:border-emerald-400 hover:shadow-emerald-500/5' },
+  { topic: 'Current Electricity', icon: '🔌', desc: "Ohm's law, resistance, EMF, Kirchhoff's laws and AC circuits.", subtopics: ["Ohm's Law & Resistivity", "Kirchhoff's Laws", 'Potentiometer & Wheatstone Bridge', 'Internal Resistance & Maximum Power', 'Alternating Current (AC) Circuits'], color: 'border-teal-200 bg-teal-50/20 hover:border-teal-400 hover:shadow-teal-500/5' },
+  { topic: 'Electronics', icon: '💡', desc: 'Semiconductors, logic gates and op-amps.', subtopics: ['Intrinsic & Extrinsic Semiconductors', 'PN Junction Diodes & Rectification', 'Bipolar Junction Transistors', 'Operational Amplifiers (Op-Amps)', 'Digital Logic Gates'], color: 'border-orange-200 bg-orange-50/20 hover:border-orange-400 hover:shadow-orange-500/5' },
+  { topic: 'Mechanical Properties', icon: '🔩', desc: "Stress, strain, Young's modulus, elasticity and fluid pressure.", subtopics: ['Stress, Strain & Hooke\'s Law', 'Young\'s Modulus', 'Elastic Potential Energy', 'Fluid Pressure & Archimedes\' Principle', 'Viscosity & Surface Tension'], color: 'border-sky-200 bg-sky-50/20 hover:border-sky-400 hover:shadow-sky-500/5' },
+  { topic: 'Matter & Radiation', icon: '☢️', desc: 'Photoelectric effect, atomic structure, nuclear reactions and radioactive decay.', subtopics: ['Photoelectric Effect', 'X-Rays & Line Spectra', 'Wave-Particle Duality', 'Radioactivity & Half-life', 'Nuclear Fission & Fusion'], color: 'border-violet-200 bg-violet-50/20 hover:border-violet-400 hover:shadow-violet-500/5' },
 ];
 
 const FEATURES = [
-  { icon: '📋', title: 'Past Paper Bank', desc: 'Full archive of A/L past papers with marking schemes and examiner notes.' },
-  { icon: '🧩', title: 'Adaptive Quizzes', desc: 'Smart quizzes that target your weak topics and adapt difficulty in real-time.' },
-  { icon: '🎬', title: 'HD Class Recordings', desc: 'Every class recorded in full HD — rewatch, pause and revise at your pace.' },
-  { icon: '📊', title: 'Live Results & Marks', desc: 'Marks published instantly after assessments with detailed teacher feedback.' },
-  { icon: '📢', title: 'Batch Announcements', desc: 'Real-time notices for class changes, exam dates and important updates.' },
-  { icon: '🏆', title: 'Ranking System', desc: 'Track your position in the batch leaderboard and monitor your progress.' },
+  { icon: '📚', title: 'Solved Past Paper Bank', desc: 'Full archive of G.C.E. A/L past papers categorized by unit, accompanied by grading schemes and examiner notes.', color: 'border-blue-200 bg-blue-50/30 hover:border-blue-400' },
+  { icon: '🧩', title: 'Adaptive Physics Quizzes', desc: 'Evaluations that gauge your understanding of complex topics and help identify specific knowledge gaps.', color: 'border-indigo-200 bg-indigo-50/30 hover:border-indigo-400' },
+  { icon: '🎬', title: 'Full HD Class Recordings', desc: 'Every lecture is archived in 1080p high definition, with timestamped sections for easy revision.', color: 'border-cyan-200 bg-cyan-50/30 hover:border-cyan-400' },
+  { icon: '📊', title: 'Live Result Analytics', desc: 'Grades, performance metrics, and comparison stats are delivered instantly to your profile after assessments.', color: 'border-emerald-200 bg-emerald-50/30 hover:border-emerald-400' },
+  { icon: '📢', title: 'Real-Time Batch Notices', desc: 'Instant desktop notices for new lecture notes, timetable updates, and upcoming exam dates.', color: 'border-amber-200 bg-amber-50/30 hover:border-amber-400' },
+  { icon: '🏆', title: 'Leaderboards & Rankings', desc: 'Compete constructively with peer batches, earn rank points, and track your weekly status.', color: 'border-rose-200 bg-rose-50/30 hover:border-rose-400' },
 ];
 
 const FALLBACK_STATS = [
-  { value: '1,200+', label: 'Students Enrolled', color: '#3b82f6', bg: 'rgba(59,130,246,.12)', icon: '🎓' },
-  { value: '500+', label: 'Past Papers', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)', icon: '📄' },
-  { value: '300+', label: 'Recorded Sessions', color: '#06b6d4', bg: 'rgba(6,182,212,.12)', icon: '🎥' },
-  { value: '94%', label: 'Pass Rate', color: '#10b981', bg: 'rgba(16,185,129,.12)', icon: '✅' },
+  { value: '1,200+', label: 'Active Students', icon: '🎓', bg: 'bg-blue-50/70 border-blue-150 text-blue-600 shadow-blue-500/5' },
+  { value: '500+', label: 'Solved Papers', icon: '📄', bg: 'bg-indigo-50/70 border-indigo-150 text-indigo-600 shadow-indigo-500/5' },
+  { value: '300+', label: 'Lecture Videos', icon: '🎥', bg: 'bg-cyan-50/70 border-cyan-150 text-cyan-600 shadow-cyan-500/5' },
+  { value: '94%', label: 'Pass Rate (A/B)', icon: '✅', bg: 'bg-emerald-50/70 border-emerald-150 text-emerald-600 shadow-emerald-500/5' },
 ];
 
 const FAQS = [
-  { q: 'Who is Intelligent Physics for?', a: 'Sri Lankan A-Level Physics students following the national curriculum, from first-year through to exam year.' },
-  { q: 'How do I join a batch?', a: 'Register through the Learning Hub, select your batch during sign-up, and await admin approval within 24 hours.' },
-  { q: 'Can I access recordings after class?', a: 'Yes. All sessions are uploaded within 6 hours of the live class and remain accessible for your full enrolment period.' },
-  { q: 'How are marks and results shared?', a: 'Marks are published instantly through the portal after grading, with detailed feedback visible online.' },
+  { q: 'Who is Intelligent Physics designed for?', a: 'Sri Lankan A-Level Physics students following the national Sinhala or English medium syllabus, from first-year theory batches to exam-year crash revision classes.' },
+  { q: 'How do I join a batch and access the Learning Hub?', a: 'Click the "Learning Hub" button, sign up for a student profile, select your target exam batch, and await instant credentials once your student enrollment is validated.' },
+  { q: 'Can I watch classes if I miss the live sessions?', a: 'Yes. All live lessons are recorded in 1080p HD and uploaded to the platform within 6 hours, complete with navigation timeline tags so you can jump to specific concepts.' },
+  { q: 'How does the adaptive quiz system help me learn?', a: 'Our system tracks your quiz responses. If you struggle with a specific sub-topic like Rotational Dynamics, the quiz prioritizes simple mechanical concepts first and scales up as your speed and accuracy improve.' },
+  { q: 'How are results and answers processed?', a: 'Students submit answers via the Learning Hub. Assessment marks, correct answers, step-by-step explanations, and your rank in the batch are available immediately.' }
+];
+
+const BATCHES = [
+  {
+    name: 'A/L 2026 Theory',
+    status: 'Enrolling Now',
+    seatsLeft: '14 seats remaining',
+    schedule: 'Thursdays · 4:00 PM - 7:00 PM',
+    description: 'Perfect for students starting their A/Ls. Covers syllabus units from basic measurements to current electricity.',
+    features: ['100% Comprehensive coverage', 'Weekly adaptive assessments', 'Hardcopy study packs mailed', 'Personalized tutor support'],
+    color: 'border-blue-200 bg-blue-50/10 hover:border-blue-400'
+  },
+  {
+    name: 'A/L 2025 Revision',
+    status: 'Fast Filling',
+    seatsLeft: '8 seats remaining',
+    schedule: 'Sundays · 8:30 AM - 1:30 PM',
+    description: 'High-intensity session focused on solving complex problems, past papers, and structural question strategies.',
+    features: ['Full syllabus summarization', '500+ Past paper analysis', 'Full syllabus mock exams', 'Speed development strategies'],
+    color: 'border-indigo-200 bg-indigo-50/10 hover:border-indigo-400'
+  },
+  {
+    name: 'A/L 2025 Theory',
+    status: 'Completed / Archive Access',
+    seatsLeft: 'Video Access Only',
+    schedule: 'Tuesdays · 4:00 PM - 7:00 PM',
+    description: 'All core modules are archived. Available for students who want to self-pace through the entire curriculum.',
+    features: ['All recorded lectures archive', 'Full past paper repository', 'Online chapter quizzes', 'Instant auto-grading'],
+    color: 'border-teal-200 bg-teal-50/10 hover:border-teal-400'
+  }
+];
+
+const TESTIMONIALS = [
+  { quote: 'Intelligent Physics completely transformed my approach to mechanics and field theory. The adaptive quizzes and recorded sessions helped me secure my A/L island rank!', name: 'Sanduni Perera', result: 'Island Rank 12 — G.C.E. A/L Physics' },
+  { quote: 'The structured coverages of thermal physics and oscillation are top-tier. I went from a C to a solid A in my school term tests!', name: 'Amal Rodrigo', result: 'District Rank 3 — Gampaha' },
+  { quote: 'Best digital platform for Sri Lankan A/L students. The live results database and prompt video uploads make self-studying incredibly easy.', name: 'Fathima Ruzna', result: 'A/L 2025 Theory Batch' }
+];
+
+const FALLBACK_LEFT = [
+  { id: 'f1', badge: '🔥 Enrollment Open', title: 'A/L 2026 Batch Registration', description: 'Secure your virtual seat today for comprehensive theory coverages.', cta_text: 'Enroll Now', cta_link: '/login', gradient: 'linear-gradient(135deg,#2563eb,#4f46e5)' },
+  { id: 'f2', badge: '📄 Reference Bank', title: 'Solved Past Papers Vault', description: 'Instant, free downloads of physics model questions and marks schemes.', cta_text: 'Browse Papers', cta_link: '/knowledge-hub', gradient: 'linear-gradient(135deg,#0d9488,#059669)' },
+];
+
+const FALLBACK_RIGHT = [
+  { id: 'f3', badge: '🏆 Island Top Ranks', title: 'Proven Academic Results', description: 'Our custom portals guide students to elite district-wide scores.', cta_text: 'See Rankings', cta_link: '#testimonials', gradient: 'linear-gradient(135deg,#7c3aed,#db2777)' },
+  { id: 'f4', badge: '💡 Free Trial Lesson', title: 'Watch a Free Demo Class', description: 'Experience the digital features before completing registration.', cta_text: 'Try Demo', cta_link: '/login', gradient: 'linear-gradient(135deg,#f97316,#ef4444)' },
 ];
 
 const FALLBACK_SLIDES = [
-  { id: 1, title: 'Intelligent Physics', subtitle: "Sri Lanka's Premier A/L Physics Digital Platform", button_text: 'Access Portal', button_link: '/login', gradient: 'linear-gradient(160deg,#04091c 0%,#081530 50%,#0a1a42 100%)' },
-  { id: 2, title: 'A/L 2026 Batch — Now Open!', subtitle: 'Expert teaching · Full digital access · Limited seats available', button_text: 'Enroll Now', button_link: '/login', gradient: 'linear-gradient(160deg,#060412 0%,#11063a 50%,#180852 100%)' },
+  { id: 's1', badge: '🌌 Digital LMS Platform', title: 'Sri Lanka\'s Premier Physics LMS Portal', subtitle: 'Covering the entire advanced level national curriculum Sinhala and English mediums.', button_text: 'Launch Portal', button_link: '/login', gradient: 'linear-gradient(135deg,#2563eb,#4f46e5)' },
+  { id: 's2', badge: '🔥 Enrollment Open', title: 'Theory & Revision Batch Registration', subtitle: 'Live lectures, weekly assessments, and interactive grading reports are now active.', button_text: 'Secure a Seat', button_link: '/login', gradient: 'linear-gradient(135deg,#0f172a,#1e293b)' },
+  { id: 's3', badge: '📄 Free Study Guides', title: 'Download Physics Past Papers', subtitle: 'Archive repository containing structural essay papers and marking guides.', button_text: 'Browse Library', button_link: '/knowledge-hub', gradient: 'linear-gradient(135deg,#0d9488,#0f766e)' },
 ];
 
 const IMG = url => (!url ? '' : url.startsWith('/') ? `${API_URL}${url}` : url);
 
-
-/* ─── Fallback Ad Data (used when no ads exist in DB) ─── */
-const FALLBACK_LEFT = [
-  { id: 'f1', badge: '🔥 Now Open', title: 'A/L 2026 Batch', description: 'Limited seats left. Register now to secure your spot in the upcoming batch.', cta_text: 'Enroll Now', cta_link: '/login', gradient: 'linear-gradient(145deg,#0f0b2e,#1a116b)', accent: '#6366f1' },
-  { id: 'f2', badge: '📄 Free Access', title: 'Past Paper Bank', description: 'Access 500+ A/L Physics past papers with full mark schemes. First 2 are free.', cta_text: 'Browse Papers', cta_link: '/learning-hub', gradient: 'linear-gradient(145deg,#0a1a2e,#0d2b55)', accent: '#3b82f6' },
-  { id: 'f3', badge: '🏆 94% Pass Rate', title: 'Proven Results', description: 'Our students consistently achieve district-top results in the A/L examination.', cta_text: 'Learn More', cta_link: '#about', gradient: 'linear-gradient(145deg,#061a14,#0a2e20)', accent: '#10b981' },
-];
-
-/* ─── CSS ─── */
-const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800;900&display=swap');
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
-body{font-family:'Inter',system-ui,sans-serif;background:#04091c;color:#8b9ab5;overflow-x:hidden;-webkit-font-smoothing:antialiased;line-height:1.6;}
-::-webkit-scrollbar{width:5px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:99px;}
-
-@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(8px);}}
-@keyframes slideDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-@keyframes spin{to{transform:rotate(360deg);}}
-@keyframes barIn{from{width:0;}to{width:100%;}}
-@keyframes shimmer{from{left:-100%;}to{left:200%;}}
-@keyframes gradMove{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
-@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.3);}50%{box-shadow:0 0 0 8px rgba(99,102,241,0);}}
-
-/* NAVBAR */
-.nav{position:fixed;top:0;left:0;right:0;z-index:500;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent;}
-.nav.sc{background:rgba(4,9,28,.92);border-bottom-color:rgba(255,255,255,.06);backdrop-filter:blur(24px);}
-.nav-brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
-.nav-brand img{width:34px;height:34px;object-fit:contain;border-radius:8px;border:1px solid rgba(255,255,255,.12);}
-.nav-brand span{font-weight:800;font-size:.95rem;color:#e2e8f0;letter-spacing:-.01em;}
-.nav-links{display:flex;align-items:center;gap:6px;list-style:none;}
-.nav-links li button{background:none;border:none;cursor:pointer;color:#64748b;font-size:.85rem;font-weight:500;transition:color .2s;font-family:inherit;padding:7px 14px;border-radius:8px;}
-.nav-links li button:hover{color:#e2e8f0;background:rgba(255,255,255,.04);}
-.nav-cta{background:linear-gradient(135deg,#3b82f6,#6366f1)!important;color:#fff!important;font-weight:700!important;box-shadow:0 4px 14px rgba(59,130,246,.35)!important;padding:8px 20px!important;border-radius:9px!important;}
-.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(59,130,246,.5)!important;}
-.hbg{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#94a3b8;}
-.mob{display:none;position:fixed;top:64px;left:0;right:0;background:rgba(4,9,28,.98);backdrop-filter:blur(24px);padding:20px 24px 28px;z-index:499;border-bottom:1px solid rgba(255,255,255,.06);animation:slideDown .2s ease;}
-.mob.open{display:block;}
-.mob ul{list-style:none;display:flex;flex-direction:column;gap:12px;}
-.mob li button{background:none;border:none;cursor:pointer;color:#64748b;font-size:.95rem;font-weight:500;display:block;width:100%;text-align:left;padding:8px 0;font-family:inherit;border-bottom:1px solid rgba(255,255,255,.04);}
-@media(max-width:768px){.nav-links{display:none;}.hbg{display:block;}.nav{padding:0 18px;}}
-
-/* 3-COLUMN PAGE WRAPPER (below hero) */
-.page-wrap{display:grid;grid-template-columns:240px 1fr;gap:0;max-width:1440px;margin:0 auto;padding:0 24px;}
-@media(max-width:1200px){.page-wrap{grid-template-columns:200px 1fr;}}
-@media(max-width:960px){.page-wrap{grid-template-columns:1fr;padding:0 16px;}.ad-col{display:none;}}
-.ad-col{padding:28px 0;display:flex;flex-direction:column;gap:16px;}
-.ad-col-left{padding-right:20px;}
-.main-col{min-width:0;border-left:1px solid rgba(255,255,255,.04);}
-
-/* AD CARDS */
-.ad-card{border-radius:16px;padding:20px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.07);transition:transform .25s,box-shadow .25s;}
-.ad-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.3);}
-.ad-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac,.6) 50%,transparent);}
-.ad-badge{display:inline-flex;align-items:center;gap:5px;font-size:.63rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:9999px;padding:3px 9px;margin-bottom:11px;}
-.ad-title{font-family:'Space Grotesk',sans-serif;font-size:.98rem;font-weight:800;color:#f1f5f9;line-height:1.25;letter-spacing:-.02em;margin-bottom:8px;}
-.ad-desc{color:#3d5475;font-size:.76rem;line-height:1.65;margin-bottom:14px;}
-.ad-btn{display:block;width:100%;padding:9px 12px;border-radius:9px;border:none;font-size:.78rem;font-weight:700;cursor:pointer;text-align:center;transition:all .22s;font-family:inherit;text-decoration:none;position:relative;overflow:hidden;}
-.ad-shimmer{position:absolute;top:0;left:-100%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);animation:shimmer 3s ease-in-out infinite 1s;}
-
-/* sticky ad wrappers */
-.ad-sticky{position:sticky;top:88px;display:flex;flex-direction:column;gap:16px;}
-
-/* Quick links card */
-.ql-card{border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);padding:18px;overflow:hidden;}
-.ql-card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
-.ql-card-title{font-weight:700;color:#e2e8f0;font-size:.88rem;letter-spacing:-.01em;}
-.ql-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;text-decoration:none;transition:background .18s;border:1px solid transparent;}
-.ql-link:hover{background:rgba(59,130,246,.07);border-color:rgba(59,130,246,.15);}
-.ql-link-ico{width:28px;height:28px;border-radius:7px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:.76rem;flex-shrink:0;}
-.ql-link-lbl{color:#64748b;font-size:.78rem;font-weight:600;transition:color .18s;}
-.ql-link:hover .ql-link-lbl{color:#93c5fd;}
-
-/* Testimonial card */
-.tm-card{border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,.07);position:relative;overflow:hidden;}
-.tm-quote{color:#475569;font-size:.78rem;line-height:1.7;font-style:italic;margin-bottom:14px;position:relative;padding-left:14px;}
-.tm-quote::before{content:'"';position:absolute;left:0;top:-4px;font-size:1.8rem;color:rgba(6,182,212,.3);font-style:normal;line-height:1;}
-.tm-name{font-weight:700;color:#e2e8f0;font-size:.8rem;}
-.tm-result{color:#334155;font-size:.72rem;margin-top:2px;}
-
-/* Schedule card */
-.sched-card{border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,.07);overflow:hidden;}
-.sched-day{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:800;color:#f1f5f9;margin-bottom:4px;}
-.sched-time{color:#475569;font-size:.76rem;}
-.sched-icon{font-size:1.6rem;margin-bottom:10px;}
-
-/* MAIN SECTIONS */
-.sec{padding:64px 40px;}
-.sec-alt{background:rgba(255,255,255,.016);}
-.con{max-width:780px;margin:0 auto;}
-@media(max-width:768px){.sec{padding:52px 22px;}}
-
-.ew{display:inline-flex;align-items:center;gap:8px;color:#3b82f6;font-size:.7rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin-bottom:14px;}
-.ew::before{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:2px;flex-shrink:0;}
-.hd{font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.7rem,3.2vw,2.4rem);font-weight:800;line-height:1.15;letter-spacing:-.03em;margin-bottom:14px;color:#f1f5f9;}
-.hd b{background:linear-gradient(135deg,#60a5fa,#818cf8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
-.sb{color:#3d5475;font-size:.92rem;line-height:1.78;max-width:500px;}
-
-/* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
-@media(max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr);}}
-.stat-card{background:#040c20;padding:24px 20px;display:flex;flex-direction:column;gap:8px;transition:background .22s;cursor:default;position:relative;overflow:hidden;}
-.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--c,#3b82f6);opacity:.7;}
-.stat-card:hover{background:rgba(59,130,246,.04);}
-.stat-ico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.95rem;background:var(--bg);margin-bottom:2px;}
-.stat-val{font-family:'Space Grotesk',sans-serif;font-size:1.9rem;font-weight:900;color:var(--c,#3b82f6);line-height:1;}
-.stat-lbl{color:#2d3d54;font-size:.76rem;font-weight:600;}
-
-/* ABOUT */
-.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
-@media(max-width:680px){.about-grid{grid-template-columns:1fr;gap:32px;}}
-.about-visual{position:relative;border-radius:18px;border:1px solid rgba(255,255,255,.07);overflow:hidden;background:linear-gradient(145deg,#0b1628,#061022);display:flex;align-items:center;justify-content:center;min-height:280px;padding:40px;}
-.about-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(59,130,246,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03) 1px,transparent 1px);background-size:36px 36px;}
-.checklist{display:flex;flex-direction:column;gap:10px;margin-top:20px;}
-.check-item{display:flex;align-items:center;gap:10px;}
-.check-ico{width:20px;height:20px;border-radius:5px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.check-txt{color:#4f6180;font-size:.86rem;}
-
-/* SYLLABUS */
-.syl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
-.syl-card{background:#04091c;padding:20px 18px;transition:background .22s;display:flex;flex-direction:column;gap:7px;}
-.syl-card:hover{background:rgba(59,130,246,.04);}
-.syl-icon{font-size:1.2rem;margin-bottom:4px;}
-.syl-topic{font-weight:700;color:#e2e8f0;font-size:.87rem;letter-spacing:-.01em;}
-.syl-desc{color:#2d3d54;font-size:.76rem;line-height:1.65;}
-
-/* FEATURES */
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
-.feat-card{background:#04091c;padding:22px 18px;transition:background .22s;}
-.feat-card:hover{background:rgba(59,130,246,.04);}
-.feat-ico-wrap{width:38px;height:38px;border-radius:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:.95rem;}
-.feat-title{font-weight:700;color:#e2e8f0;font-size:.9rem;margin-bottom:6px;letter-spacing:-.01em;}
-.feat-desc{color:#2d3d54;font-size:.8rem;line-height:1.7;}
-
-/* FAQ */
-.faq-item{border-bottom:1px solid rgba(255,255,255,.05);padding:18px 0;}
-.faq-btn{background:none;border:none;cursor:pointer;width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:left;font-family:inherit;}
-.faq-q{color:#cbd5e1;font-weight:600;font-size:.92rem;line-height:1.45;}
-.faq-chevron{flex-shrink:0;transition:transform .22s;color:#3b82f6;}
-.faq-a{color:#3d5475;font-size:.86rem;line-height:1.75;margin-top:12px;padding-right:28px;}
-
-/* CONTACT */
-.contact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;}
-.contact-card{background:#04091c;padding:24px 20px;display:flex;flex-direction:column;gap:8px;text-decoration:none;transition:background .22s;}
-.contact-card:hover{background:rgba(59,130,246,.04);}
-.contact-ico{width:40px;height:40px;border-radius:11px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.18);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:4px;}
-.contact-lbl{font-weight:700;color:#e2e8f0;font-size:.88rem;}
-.contact-val{color:#2d3d54;font-size:.79rem;}
-
-/* CTA */
-.cta-section{padding:0 40px 80px;}
-@media(max-width:768px){.cta-section{padding:0 22px 60px;}}
-.cta-box{border-radius:18px;padding:60px 48px;background:linear-gradient(145deg,#0a1020,#0d1835);border:1px solid rgba(255,255,255,.07);text-align:center;position:relative;overflow:hidden;}
-.cta-top-bar{position:absolute;top:0;left:50%;transform:translateX(-50%);height:2px;background:linear-gradient(90deg,transparent,#3b82f6,#8b5cf6,#6366f1,transparent);width:0;animation:barIn 1.6s ease .2s forwards;}
-.cta-glow{position:absolute;top:-60%;left:50%;transform:translateX(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.08),transparent 70%);pointer-events:none;}
-@media(max-width:768px){.cta-box{padding:40px 22px;}}
-
-/* FOOTER */
-/* Tailwind classes are used instead for full responsiveness */
-
-/* HERO */
-.hero-wrap{position:relative;width:100%;height:65vh;min-height:480px;max-height:800px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-top:64px;background-color:#04091c;}
-.hero-content{position:relative;z-index:10;text-align:center;padding:0 24px;max-width:820px;width:100%;}
-.hero-slide-transition{transition:opacity .28s,transform .28s;}
-
-/* general util */
-.pbtn{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;border:none;cursor:pointer;padding:12px 26px;border-radius:9px;font-size:.9rem;font-weight:700;display:inline-flex;align-items:center;gap:8px;font-family:inherit;transition:all .22s;box-shadow:0 4px 16px rgba(59,130,246,.35);}
-.pbtn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(59,130,246,.5);}
-.gbtn{background:transparent;border:1px solid rgba(255,255,255,.12);color:#8b9ab5;cursor:pointer;padding:12px 22px;border-radius:9px;font-size:.9rem;font-weight:600;font-family:inherit;transition:all .22s;}
-.gbtn:hover{border-color:rgba(255,255,255,.28);color:#e2e8f0;}
-`;
-
-/* ─── Hero Slider ─── */
-function HeroSlider({ slides, navigate }) {
-  const [idx, setIdx] = useState(0);
-  const [fading, setFading] = useState(false);
-  const timer = useRef(null);
-  const go = useCallback(n => { setFading(true); setTimeout(() => { setIdx(n); setFading(false); }, 300); }, []);
-  const next = useCallback(() => go((idx + 1) % slides.length), [idx, go, slides.length]);
-  const prev = useCallback(() => go((idx - 1 + slides.length) % slides.length), [idx, go, slides.length]);
-  useEffect(() => { timer.current = setInterval(next, 6000); return () => clearInterval(timer.current); }, [next]);
-  const reset = () => { clearInterval(timer.current); timer.current = setInterval(next, 6000); };
-  const s = slides[idx];
-  const hasBg = !!s.image_url;
-  const goLink = link => {
-    if (!link || link === '/login') { navigate('/login'); return; }
-    if (link.startsWith('#')) document.getElementById(link.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-    else navigate(link);
-  };
-  return (
-    <div className="hero-wrap">
-      <div style={{ position: 'absolute', inset: 0, transition: 'opacity .3s', opacity: fading ? .5 : 1, ...(hasBg ? { backgroundImage: `url(${IMG(s.image_url)})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center top' } : { background: s.gradient || '#04091c' }) }}>
-        {hasBg && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,rgba(4,9,28,.1),rgba(4,9,28,.05) 50%,rgba(4,9,28,.95))' }} />}
-      </div>
-      {/* Grid overlay */}
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(59,130,246,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03) 1px,transparent 1px)', backgroundSize: '60px 60px', maskImage: 'radial-gradient(ellipse 80% 50% at 50% 0%,#000 30%,transparent 100%)', pointerEvents: 'none' }} />
-      {/* Glow */}
-      <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', width: 700, height: 350, borderRadius: '50%', background: 'radial-gradient(circle,rgba(99,102,241,.1),transparent 70%)', pointerEvents: 'none' }} />
-      {/* Content */}
-      <div className="hero-content hero-slide-transition" style={{ opacity: fading ? 0 : 1, transform: fading ? 'translateY(12px)' : 'translateY(0)' }}>
-
-        {s.title && <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(2.2rem,6vw,4rem)', fontWeight: 900, lineHeight: 1.07, letterSpacing: '-.04em', margin: '0 0 18px', color: '#f8fafc' }}>{s.title}</h1>}
-        {s.subtitle && <p style={{ fontSize: 'clamp(.88rem,1.8vw,1.05rem)', color: '#3d5475', lineHeight: 1.78, maxWidth: 540, margin: '0 auto 36px' }}>{s.subtitle}</p>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-          {s.button_text && s.button_text !== 'Access Portal' && (
-            <button className="gbtn" style={{ fontSize: '.97rem', padding: '14px 24px' }} onClick={() => goLink(s.button_link)}>{s.button_text}</button>
-          )}
-        </div>
-      </div>
-      {/* Arrows */}
-      {['left', 'right'].map(d => (
-        <button key={d} onClick={() => { d === 'left' ? prev() : next(); reset(); }} aria-label={d}
-          style={{ position: 'absolute', top: '50%', [d]: 20, transform: 'translateY(-50%)', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', color: '#94a3b8', borderRadius: '50%', width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 20, transition: 'background .2s' }}
-          onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,.12)'}
-          onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,.06)'}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points={d === 'left' ? '15 18 9 12 15 6' : '9 18 15 12 9 6'} /></svg>
-        </button>
-      ))}
-      {/* Dots */}
-      <div style={{ position: 'absolute', bottom: 44, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, zIndex: 20 }}>
-        {slides.map((_, i) => (
-          <button key={i} onClick={() => { go(i); reset(); }} aria-label={`Slide ${i + 1}`}
-            style={{ width: i === idx ? 24 : 7, height: 7, borderRadius: 9999, border: 'none', cursor: 'pointer', background: i === idx ? '#6366f1' : 'rgba(255,255,255,.15)', transition: 'all .25s' }} />
-        ))}
-      </div>
-      <div style={{ position: 'absolute', bottom: 14, left: '50%', color: '#1e293b', fontSize: '.62rem', letterSpacing: '.12em', textTransform: 'uppercase', zIndex: 20, transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, animation: 'bounce 2.2s ease-in-out infinite' }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
-        Scroll
-      </div>
-    </div>
-  );
-}
-
-/* ─── FAQ Item ─── */
-function FaqItem({ q, a }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="faq-item">
-      <button className="faq-btn" onClick={() => setOpen(v => !v)}>
-        <span className="faq-q">{q}</span>
-        <svg className="faq-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: open ? 'rotate(180deg)' : 'none' }}><polyline points="6 9 12 15 18 9" /></svg>
-      </button>
-      {open && <p className="faq-a">{a}</p>}
-    </div>
-  );
-}
-
-/* ─── Dynamic Ad Card (left OR right) ─── */
-function DynAdCard({ ad, navigate }) {
-  const accent = ad.accent || '#6366f1';
-  const grad = ad.gradient || 'linear-gradient(145deg,#0f0b2e,#1a116b)';
-  const imgSrc = ad.image_url?.startsWith('/') ? `${API_URL}${ad.image_url}` : ad.image_url;
-  const goLink = (link) => {
-    if (!link) return;
-    if (link.startsWith('/')) navigate(link);
-    else if (link.startsWith('#')) document.getElementById(link.slice(1))?.scrollIntoView({ behavior: 'smooth' });
-    else window.open(link, '_blank');
-  };
-  return (
-    <div className="ad-card" style={{ background: grad, '--ac': accent, position: 'relative', overflow: 'hidden' }}>
-      {imgSrc && (
-        <div style={{ margin: '-24px -24px 20px -24px' }}>
-          <img src={imgSrc} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
-        </div>
-      )}
-      {ad.badge && (
-        <div className="ad-badge" style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}44` }}>
-          {ad.badge}
-        </div>
-      )}
-      <div className="ad-title">{ad.title}</div>
-      {ad.description && <div className="ad-desc">{ad.description}</div>}
-      {ad.cta_text && (
-        <button className="ad-btn" style={{ background: accent, color: '#fff', boxShadow: `0 4px 16px ${accent}55` }}
-          onClick={() => goLink(ad.cta_link)}>
-          <span className="ad-shimmer" />
-          {ad.cta_text} →
-        </button>
-      )}
-    </div>
-  );
-}
-
-
-/* ─── Main Export ─── */
 export default function HomePage() {
   const navigate = useNavigate();
+
+  /* ─── State Hooks ─── */
   const [slides, setSlides] = useState([]);
   const [homeAds, setHomeAds] = useState([]);
   const [homeStats, setHomeStats] = useState([]);
@@ -347,229 +109,786 @@ export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Interactive Syllabus Search/Filter
+  const [syllabusSearch, setSyllabusSearch] = useState('');
+  const [expandedSyllabusIndex, setExpandedSyllabusIndex] = useState(null);
+
+  // Testimonial State
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+
+  // New CMS Content States
+  const [teacher, setTeacher] = useState(null);
+  const [syllabusList, setSyllabusList] = useState([]);
+  const [featuresList, setFeaturesList] = useState([]);
+  const [batchesList, setBatchesList] = useState([]);
+  const [testimonialsList, setTestimonialsList] = useState([]);
+  const [faqsList, setFaqsList] = useState([]);
+
+  /* ─── Fetch Home Data ─── */
   useEffect(() => {
     Promise.all([
-      fetch(`${API_URL}/sliders`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_URL}/home-ads`).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_URL}/home-stats`).then(r => r.ok ? r.json() : []).catch(() => []),
-    ]).then(([sliders, ads, stats]) => {
-      const active = (sliders || []).filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index);
-      setSlides(active.length ? active : FALLBACK_SLIDES);
-      setHomeAds((ads || []).filter(a => a.is_active));
-      setHomeStats((stats || []).filter(s => s.is_active));
-    }).finally(() => setLoaded(true));
+      fetch(`${API_URL}/sliders`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/home-ads`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/home-stats`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/teacher-profile`).then(r => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${API_URL}/syllabus-units`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/lms-features`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/home-batches`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/home-testimonials`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/home-faqs`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+    ])
+      .then(([sliders, ads, stats, teacherProf, syllabus, features, batches, testimonials, faqs]) => {
+        const activeSliders = (sliders || []).filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index);
+        setSlides(activeSliders.length > 0 ? activeSliders : FALLBACK_SLIDES);
+        setHomeAds((ads || []).filter(a => a.is_active));
+        setHomeStats((stats || []).filter(s => s.is_active));
+
+        setTeacher(teacherProf);
+        setSyllabusList((syllabus || []).sort((a, b) => a.order_index - b.order_index));
+        setFeaturesList((features || []).sort((a, b) => a.order_index - b.order_index));
+        setBatchesList((batches || []).sort((a, b) => a.order_index - b.order_index));
+        setTestimonialsList((testimonials || []).sort((a, b) => a.order_index - b.order_index));
+        setFaqsList((faqs || []).sort((a, b) => a.order_index - b.order_index));
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
-  // Derive left / right ads; fall back to FALLBACK_LEFT / empty when DB has nothing
+  const showStats = homeStats.length > 0 ? homeStats : FALLBACK_STATS;
+  const showSyllabus = syllabusList.length > 0 ? syllabusList : SYLLABUS;
+  const showFeatures = featuresList.length > 0 ? featuresList : FEATURES;
+  const showBatches = batchesList.length > 0 ? batchesList : BATCHES;
+  const showTestimonials = testimonialsList.length > 0 ? testimonialsList : TESTIMONIALS;
+  const showFaqs = faqsList.length > 0 ? faqsList : FAQS;
+
+  const fallbackTeacher = {
+    name: "Mr. R. Raakulan",
+    title: "Lead Lecturer",
+    credentials: "B.Sc. Physics · University of Jaffna",
+    bio_text: "Physics Teacher at New Science Hall (Tamil and English Medium classes). A dedicated tutor for Advanced Level Physics students with a proven record of helping 75% of students pass while sparking a genuine interest in learning. Zoom Webinar classes and interactive sessions have received exceptional feedback from both students and parents.",
+    image_url: "",
+    mediums: "Tamil and English Medium class"
+  };
+  const activeTeacher = teacher || fallbackTeacher;
+  const teacherImgSrc = activeTeacher.image_url ? IMG(activeTeacher.image_url) : teacherPic;
+
+  // Process Advertisement grid (High Priority Promo section)
   const leftAds = homeAds.filter(a => a.position === 'left');
   const rightAds = homeAds.filter(a => a.position === 'right');
-  const showLeftAds = leftAds.length > 0 ? leftAds : FALLBACK_LEFT;
+  const allAdsList = [
+    ...(leftAds.length > 0 ? leftAds : FALLBACK_LEFT),
+    ...(rightAds.length > 0 ? rightAds : FALLBACK_RIGHT)
+  ];
 
-  const showStats = homeStats.length > 0 ? homeStats : FALLBACK_STATS;
-
+  /* ─── Scroll Events ─── */
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 50);
+    const fn = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
 
-  const scrollTo = id => { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }); setMenuOpen(false); };
+  /* ─── Auto Testimonial slider ─── */
+  useEffect(() => {
+    if (showTestimonials.length <= 1) return;
+    const t = setInterval(() => {
+      setActiveTestimonial(idx => (idx + 1) % showTestimonials.length);
+    }, 8000);
+    return () => clearInterval(t);
+  }, [showTestimonials]);
+
+  const scrollTo = id => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setMenuOpen(false);
+  };
+
+  /* ─── Syllabus Helper Functions ─── */
+  const getSubtopics = (unit) => {
+    if (unit.subtopics) return unit.subtopics;
+    if (unit.subtopics_json) {
+      try {
+        return JSON.parse(unit.subtopics_json);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  /* ─── Syllabus Search filtering ─── */
+  const filteredSyllabus = showSyllabus.filter(unit => {
+    const q = syllabusSearch.toLowerCase();
+    const subtopics = getSubtopics(unit);
+    return unit.topic.toLowerCase().includes(q) || subtopics.some(s => s.toLowerCase().includes(q));
+  });
+
+  const goLink = link => {
+    if (!link) return;
+    if (link.startsWith('/')) navigate(link);
+    else if (link.startsWith('#')) document.getElementById(link.slice(1))?.scrollIntoView({ behavior: 'smooth' });
+    else window.open(link, '_blank');
+  };
 
   return (
-    <>
-      <style>{CSS}</style>
+    <div className="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-650 selection:text-white antialiased">
+      {/* ─── Ultra-Premium Core Styles & Animations ─── */}
+      <style>{`
+        body { 
+          background-color: #f8fafc !important; 
+          color: #0f172a !important; 
+        }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { 
+          background: #cbd5e1; 
+          border-radius: 99px; 
+          border: 2.5px solid #f1f5f9; 
+          transition: background 0.3s;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-      {/* ── NAV ── */}
-      <nav className={`nav${scrolled ? ' sc' : ''}`}>
-        <div className="nav-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <img src={logo} alt="" />
-          <span>Intelligent Physics</span>
+        /* Premium hover lifts and sweeps */
+        .glass-card-premium {
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(226, 232, 240, 0.7);
+          box-shadow: 0 4px 30px rgba(15, 23, 42, 0.015), 0 1px 3px rgba(0, 0, 0, 0.01);
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass-card-premium:hover {
+          transform: translateY(-5px);
+          background: rgba(255, 255, 255, 0.95);
+          border-color: rgba(99, 102, 241, 0.35);
+          box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.08), 0 1px 3px rgba(0, 0, 0, 0.01);
+        }
+
+        /* Ambient Glow animations */
+        @keyframes ambientLight {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(30px, -20px) scale(1.15); }
+        }
+        .animate-glow-spot {
+          animation: ambientLight 12s infinite ease-in-out;
+        }
+      `}</style>
+
+      {/* ─── Premium Light Glassmorphic Header ─── */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 py-3.5 shadow-sm shadow-slate-100/50' : 'bg-transparent py-7'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-300">
+              <img src={logo} alt="Intelligent Physics Logo" className="w-full h-full object-contain rounded-lg" />
+            </div>
+            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-600 to-blue-600">
+              Intelligent Physics
+            </span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-8 font-bold text-base">
+            <button onClick={() => scrollTo('promotions')} className="text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer">Promotions</button>
+            <button onClick={() => scrollTo('lms-features')} className="text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer">Features</button>
+            <button onClick={() => scrollTo('syllabus')} className="text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer">Syllabus</button>
+            <button onClick={() => scrollTo('batches')} className="text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer">Batches</button>
+            <button onClick={() => navigate('/knowledge-hub')} className="text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer">Knowledge Hub</button>
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
+            <button onClick={() => navigate('/login')} className="px-7 py-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 hover:opacity-95 text-white text-base font-extrabold rounded-xl transition-all duration-350 shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/35 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
+              <span className="relative z-10 flex items-center gap-2">
+                Student Portal <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+              </span>
+              <span className="absolute inset-0 bg-gradient-to-r from-sky-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </button>
+          </div>
+
+          {/* Hamburger button */}
+          <button className="md:hidden text-slate-700 hover:text-slate-900" onClick={() => setMenuOpen(!menuOpen)}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              {menuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
+            </svg>
+          </button>
         </div>
-        <ul className="nav-links">
-          <li><button onClick={() => scrollTo('contact')}>Contact Us</button></li>
-          <li><button onClick={() => navigate('/learning-hub')} style={{ color: '#93c5fd', fontWeight: 600 }}>Knowledge Hub</button></li>
-          <li><button className="nav-cta" onClick={() => navigate('/login')}>Learning Hub</button></li>
-        </ul>
-        <button className="hbg" onClick={() => setMenuOpen(v => !v)}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            {menuOpen ? <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></> : <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>}
-          </svg>
-        </button>
+
+        {/* Mobile Dropdown */}
+        {menuOpen && (
+          <div className="absolute top-full left-4 right-4 mt-2 bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 shadow-xl">
+            <button onClick={() => scrollTo('promotions')} className="text-left py-2 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-indigo-600 font-bold text-base">Promotions</button>
+            <button onClick={() => scrollTo('lms-features')} className="text-left py-2 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-indigo-600 font-bold text-base">Features</button>
+            <button onClick={() => scrollTo('syllabus')} className="text-left py-2 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-indigo-600 font-bold text-base">Syllabus</button>
+            <button onClick={() => scrollTo('batches')} className="text-left py-2 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-indigo-600 font-bold text-base">Batches</button>
+            <button onClick={() => { navigate('/knowledge-hub'); setMenuOpen(false); }} className="text-left py-2 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-indigo-600 font-bold text-base">Knowledge Hub</button>
+            <button onClick={() => { navigate('/login'); setMenuOpen(false); }} className="w-full py-3 mt-2 bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 text-center font-bold text-white rounded-xl text-base">Student Portal →</button>
+          </div>
+        )}
       </nav>
 
-      {/* ── MOBILE MENU ── */}
-      <div className={`mob${menuOpen ? ' open' : ''}`}>
-        <ul>
-          <li><button onClick={() => { scrollTo('contact'); setMenuOpen(false); }}>Contact Us</button></li>
-          <li><button onClick={() => { navigate('/learning-hub'); setMenuOpen(false); }} style={{ color: '#93c5fd', fontWeight: 600 }}>Knowledge Hub</button></li>
-          <li><button onClick={() => { navigate('/login'); setMenuOpen(false); }} style={{ color: '#60a5fa', fontWeight: 700 }}>Learning Hub →</button></li>
-        </ul>
-      </div>
+      {/* ─── Hero Section with Mesh Glow Backgrounds ─── */}
+      <section className="relative pt-32 pb-24 md:pt-48 md:pb-32 overflow-hidden bg-white border-b border-slate-200/50">
+        
+        {/* Ambient background glows */}
+        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-500/10 to-indigo-300/5 blur-[120px] rounded-full pointer-events-none animate-glow-spot" />
+        <div className="absolute bottom-0 left-1/4 w-[700px] h-[700px] bg-gradient-to-br from-blue-500/8 via-cyan-500/5 to-transparent blur-[140px] rounded-full pointer-events-none animate-glow-spot" style={{ animationDelay: '-4s' }} />
+        
+        {/* Soft, clean line grids */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#6366f108_1px,transparent_1px),linear-gradient(to_bottom,#6366f108_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none" />
 
-      {/* ── HERO (full width) ── */}
-      {loaded
-        ? <HeroSlider slides={slides} navigate={navigate} />
-        : <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#04091c' }}>
-          <div style={{ width: 40, height: 40, border: '3px solid rgba(99,102,241,.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
-        </div>
-      }
-
-      {/* ── 3-COLUMN LAYOUT ── */}
-      <div className="page-wrap">
-
-        {/* LEFT AD COLUMN */}
-        <div className="ad-col ad-col-left">
-          <div className="ad-sticky">
-            {showLeftAds.map(ad => <DynAdCard key={ad.id} ad={ad} navigate={navigate} />)}
-          </div>
-        </div>
-
-        {/* CENTER MAIN CONTENT */}
-        <div className="main-col">
-
-          {/* STATS */}
-          <section className="sec">
-            <div className="stats-grid">
-              {showStats.map(s => (
-                <div key={s.id || s.label} className="stat-card" style={{ '--c': s.color, '--bg': s.bg }}>
-                  <div className="stat-ico">{s.icon}</div>
-                  <div className="stat-val">{s.value}</div>
-                  <div className="stat-lbl">{s.label}</div>
-                </div>
-              ))}
+        <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          
+          <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left">
+            
+            {/* Live Indicator */}
+            <div className="inline-flex items-center gap-2.5 px-4.5 py-2.5 rounded-full bg-indigo-50/90 border border-indigo-100 text-sm font-extrabold text-indigo-800 mb-6 shadow-sm backdrop-blur-md">
+              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse" />
+              <span>1,248 Sri Lankan Students Online</span>
             </div>
-          </section>
 
-          {/* ABOUT */}
-          <section id="about" className="sec sec-alt">
-            <div className="con">
-              <div className="about-grid">
-                <div className="about-visual">
-                  <div className="about-grid-bg" />
-                  <img src={logo} alt="Intelligent Physics" style={{ width: 160, height: 160, objectFit: 'contain', borderRadius: 18, filter: 'drop-shadow(0 0 40px rgba(99,102,241,.4))', animation: 'float 5s ease-in-out infinite', position: 'relative', zIndex: 1 }} />
-                </div>
-                <div>
-                  <div className="ew">About</div>
-                  <h2 className="hd">A/L Physics, <b>Mastered Together</b></h2>
-                  <p className="sb">A dedicated Advanced-Level Physics platform built for Sri Lankan students — expert tuition, comprehensive digital tools, and a proven track record of top results.</p>
-                  <div className="checklist">
-                    {['National A/L syllabus fully covered', 'Expert teacher with district-topping results', 'Personal performance tracking per batch', 'Instant marks, detailed feedback', '24/7 access from any device'].map(t => (
-                      <div key={t} className="check-item">
-                        <div className="check-ico"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>
-                        <span className="check-txt">{t}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' }}>
-                    <button className="pbtn" onClick={() => navigate('/login')}>Enroll Now</button>
-                    <button className="gbtn" onClick={() => scrollTo('features')}>See Features</button>
-                  </div>
-                </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.08] text-slate-900">
+              Welcome to <br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-800">
+                Intelligent Physics
+              </span>
+            </h1>
+
+            {/* Teacher Intro Block - Metallic Glassmorphic Profile Card */}
+            <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 p-7 bg-gradient-to-tr from-white via-indigo-50/20 to-white border border-slate-200/90 rounded-3xl shadow-xl shadow-slate-100/40 backdrop-blur-xl text-left w-full max-w-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              <div className="relative shrink-0">
+                <div className="absolute -inset-0.5 bg-gradient-to-tr from-indigo-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-50 transition-opacity duration-300" />
+                <img 
+                  src={teacherImgSrc} 
+                  alt={activeTeacher.name} 
+                  className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border border-slate-250 shadow-md bg-slate-100" 
+                />
               </div>
-            </div>
-          </section>
-
-          {/* SYLLABUS */}
-          <section id="syllabus" className="sec">
-            <div style={{ marginBottom: 36, textAlign: 'center' }}>
-              <div className="ew">Curriculum</div>
-              <h2 className="hd">Full A/L Syllabus Coverage</h2>
-              <p className="sb" style={{ margin: '0 auto', textAlign: 'center' }}>Every unit of the national curriculum — structured, thorough and exam-focused.</p>
-            </div>
-            <div className="syl-grid">
-              {SYLLABUS.map(s => (
-                <div key={s.topic} className="syl-card">
-                  <div className="syl-icon">{s.icon}</div>
-                  <div className="syl-topic">{s.topic}</div>
-                  <div className="syl-desc">{s.desc}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* FEATURES */}
-          <section id="features" className="sec sec-alt">
-            <div style={{ textAlign: 'center', marginBottom: 36 }}>
-              <div className="ew">Platform</div>
-              <h2 className="hd">Built for Serious Students</h2>
-              <p className="sb" style={{ margin: '0 auto', textAlign: 'center' }}>Everything you need to reach your A/L Physics target.</p>
-            </div>
-            <div className="feat-grid">
-              {FEATURES.map(f => (
-                <div key={f.title} className="feat-card">
-                  <div className="feat-ico-wrap">{f.icon}</div>
-                  <div className="feat-title">{f.title}</div>
-                  <div className="feat-desc">{f.desc}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* FAQ */}
-          <section id="faq" className="sec">
-            <div style={{ maxWidth: 620, margin: '0 auto' }}>
-              <div className="ew">FAQ</div>
-              <h2 className="hd">Common Questions</h2>
-              {FAQS.map(f => <FaqItem key={f.q} q={f.q} a={f.a} />)}
-            </div>
-          </section>
-
-          {/* CONTACT */}
-          <section id="contact" className="sec sec-alt">
-            <div style={{ textAlign: 'center', marginBottom: 36 }}>
-              <div className="ew">Contact</div>
-              <h2 className="hd">Get in Touch</h2>
-              <p className="sb" style={{ margin: '0 auto', textAlign: 'center' }}>Have questions about Intelligent Physics? We're here to help.</p>
-            </div>
-            <div className="contact-grid">
-              {[
-                { icon: '📱', label: 'WhatsApp', value: 'Message us on WhatsApp', href: 'https://wa.me/94000000000' },
-                { icon: '📧', label: 'Email', value: 'info@intelligentphysics.lk', href: 'mailto:info@intelligentphysics.lk' },
-                { icon: '📍', label: 'Location', value: 'Sri Lanka', href: '#' },
-              ].map(c => (
-                <a key={c.label} href={c.href} target="_blank" rel="noreferrer" className="contact-card"
-                  onMouseOver={e => e.currentTarget.style.background = 'rgba(59,130,246,.04)'}
-                  onMouseOut={e => e.currentTarget.style.background = '#04091c'}>
-                  <div className="contact-ico">{c.icon}</div>
-                  <div className="contact-lbl">{c.label}</div>
-                  <div className="contact-val">{c.value}</div>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          {/* CTA */}
-          <div className="cta-section">
-            <div className="cta-box">
-              <div className="cta-top-bar" />
-              <div className="cta-glow" />
-              <div style={{ position: 'relative', maxWidth: 500, margin: '0 auto' }}>
-                <div className="ew" style={{ justifyContent: 'center' }}>Get Started</div>
-                <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 'clamp(1.6rem,3.5vw,2.2rem)', fontWeight: 900, color: '#f1f5f9', marginBottom: 14, letterSpacing: '-.03em', lineHeight: 1.15 }}>
-                  Ready to Excel in Physics?
-                </h2>
-                <p style={{ color: '#3d5475', fontSize: '.92rem', lineHeight: 1.75, marginBottom: 28 }}>
-                  Join over 1,200 students on the platform. Access your portal or enrol in the next batch.
+              
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-extrabold uppercase tracking-widest text-indigo-700 bg-indigo-50 border border-indigo-100 px-3.5 py-1.5 rounded-md self-start">{activeTeacher.title}</span>
+                <h3 className="font-extrabold text-slate-900 text-2xl tracking-tight">{activeTeacher.name}</h3>
+                <span className="text-sm font-bold text-slate-500 leading-tight">{activeTeacher.credentials}</span>
+                {activeTeacher.mediums && (
+                  <span className="text-xs font-bold text-slate-400 italic">({activeTeacher.mediums})</span>
+                )}
+                <p className="text-base text-slate-600 leading-relaxed font-sans mt-2">
+                  {activeTeacher.bio_text}
                 </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-                  <button className="pbtn" id="cta-portal-btn" style={{ padding: '13px 30px', fontSize: '.95rem' }} onClick={() => navigate('/login')}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
-                    Learning Hub
-                  </button>
-                  <button className="gbtn" style={{ padding: '13px 30px', fontSize: '.95rem' }} onClick={() => navigate('/register')}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                    Register Now
-                  </button>
-                </div>
               </div>
             </div>
+
+            <div className="mt-8 flex flex-wrap gap-4 justify-center lg:justify-start w-full sm:w-auto">
+              <button onClick={() => navigate('/login')} className="px-9 py-4 bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold rounded-xl transition-all duration-300 shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 cursor-pointer flex items-center gap-2 text-base">
+                Enter Student Portal 🎓
+              </button>
+              <button onClick={() => scrollTo('promotions')} className="px-9 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-250 hover:border-slate-350 font-bold rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-2 shadow-md text-base">
+                View Batch Offers
+              </button>
+            </div>
+
+          </div>
+
+          {/* Larger Announcement Slider on the Right */}
+          <div className="lg:col-span-5 flex justify-center items-center w-full relative">
+            <div className="absolute w-[350px] h-[350px] bg-indigo-500/10 blur-[90px] rounded-full pointer-events-none" />
+            
+            {/* The Image Slider Component */}
+            {loaded && slides.length > 0 ? (
+              <HeroCardSlider slides={slides} navigate={navigate} />
+            ) : (
+              <div className="w-full h-[480px] max-w-[560px] rounded-3xl bg-slate-900 flex items-center justify-center border border-slate-800 shadow-2xl">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-blue-500 rounded-full animate-spin" />
+              </div>
+            )}
           </div>
 
         </div>
+      </section>
 
+      {/* ─── Stats Banner Section ─── */}
+      <section className="py-14 bg-white border-b border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {showStats.map((s, index) => (
+              <div key={index} className="flex flex-col items-center p-6 bg-white border border-slate-200/70 rounded-2xl shadow-md relative group overflow-hidden">
+                <div className="text-4xl mb-2">{s.icon}</div>
+                <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">{s.value}</div>
+                <div className="text-base text-slate-500 font-bold uppercase tracking-wider text-center mt-2">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Promotions & Announcements Section (High Priority Ads) ─── */}
+      <section id="promotions" className="py-24 bg-slate-50 relative border-b border-slate-200/30">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/5 blur-[140px] rounded-full pointer-events-none animate-glow-spot" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="text-indigo-650 text-sm font-extrabold tracking-widest uppercase px-4 py-1.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 shadow-sm">Special Bulletins</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 text-slate-950">
+              Latest Promotions & <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Announcements</span>
+            </h2>
+            <p className="mt-4 text-slate-600 text-base">
+              Important alerts and registration links. Stay up to date with new batches, demo resources, and enrollment opportunities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {allAdsList.map((ad, index) => {
+              const imgSrc = ad.image_url?.startsWith('/') ? `${API_URL}${ad.image_url}` : ad.image_url;
+              return (
+                <div 
+                  key={ad.id || index}
+                  className="rounded-3xl p-9 text-white flex flex-col justify-between shadow-xl shadow-slate-200/60 transition-all duration-500 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-indigo-500/10 relative overflow-hidden group"
+                  style={{ background: ad.gradient || 'linear-gradient(135deg, #1e293b, #0f172a)' }}
+                >
+                  {/* Subtle sweep overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-out pointer-events-none" />
+                  
+                  <div>
+                    {imgSrc && (
+                      <div className="mb-6 rounded-2xl overflow-hidden h-44 border border-white/10 shadow-md">
+                        <img src={imgSrc} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500" />
+                      </div>
+                    )}
+                    
+                    <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 border border-white/20 text-sm font-extrabold uppercase tracking-wider mb-4">
+                      {ad.badge || 'Alert'}
+                    </span>
+                    
+                    <h3 className="text-2xl sm:text-3xl font-black leading-snug tracking-tight mb-4 drop-shadow-md">
+                      {ad.title}
+                    </h3>
+                    
+                    <p className="text-base text-white/90 leading-relaxed font-sans mb-6">
+                      {ad.description}
+                    </p>
+                  </div>
+
+                  {ad.cta_text && (
+                    <button 
+                      onClick={() => goLink(ad.cta_link)}
+                      className="w-full sm:w-auto px-7 py-3.5 bg-white text-slate-900 hover:bg-slate-100 font-extrabold text-base rounded-xl shadow-lg transition-all duration-200 text-center cursor-pointer relative z-10 self-start"
+                    >
+                      {ad.cta_text}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── LMS Features Section with Unique Color Themes ─── */}
+      <section id="lms-features" className="py-24 bg-white border-b border-slate-200/50 relative">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-blue-50/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="text-indigo-650 text-sm font-extrabold tracking-widest uppercase px-3.5 py-1.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 shadow-sm">Digital Platform</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 text-slate-950">
+              LMS Features & <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Student Tools</span>
+            </h2>
+            <p className="mt-4 text-slate-600 text-base">
+              Our custom learning management system has been constructed specifically for G.C.E. Advanced Level Physics. Here are the core tools available immediately upon login:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {showFeatures.map((f, idx) => (
+              <div 
+                key={f.id || idx}
+                className={`glass-card-premium rounded-3xl p-7 border ${f.color} shadow-sm relative group`}
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                  {f.icon}
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight mb-2.5 transition-colors">{f.title}</h3>
+                <p className="text-base text-slate-600 leading-relaxed font-sans">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── Curriculum Syllabus catalog with Search and Unique Colors ─── */}
+      <section id="syllabus" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-16">
+            <div>
+              <span className="text-blue-600 text-sm font-extrabold tracking-widest uppercase px-3.5 py-1.5 bg-blue-500/10 rounded-full border border-blue-500/20 shadow-sm">A/L National Syllabus</span>
+              <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 text-slate-950">
+                Syllabus Unit <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Coverage</span>
+              </h2>
+            </div>
+            
+            {/* Real-time search */}
+            <div className="w-full md:max-w-xs relative">
+              <input 
+                type="text" 
+                placeholder="Search physics topics (e.g. Waves)..." 
+                value={syllabusSearch}
+                onChange={e => setSyllabusSearch(e.target.value)}
+                className="w-full bg-white border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/25 text-base px-4 py-3.5 rounded-2xl outline-none shadow-sm transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredSyllabus.map((s, index) => {
+              const isExpanded = expandedSyllabusIndex === index;
+              const subtopics = getSubtopics(s);
+
+              return (
+                <div 
+                  key={s.id || s.topic}
+                  onClick={() => setExpandedSyllabusIndex(isExpanded ? null : index)}
+                  className={`p-6 border rounded-3xl transition-all duration-300 cursor-pointer shadow-sm relative group ${s.color} ${isExpanded ? 'ring-1 ring-indigo-500/35 shadow-md' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl group-hover:scale-105 transition-transform">{s.icon}</span>
+                    <h3 className="font-extrabold text-slate-900 text-lg tracking-tight group-hover:text-indigo-650 transition-colors">{s.topic}</h3>
+                  </div>
+
+                  <p className="text-base text-slate-600 leading-relaxed font-sans mt-3">
+                    {s.desc}
+                  </p>
+
+                  {/* Subtopics Checklist Panel */}
+                  <div className={`transition-all duration-350 overflow-hidden ${isExpanded ? 'max-h-[300px] mt-6 pt-4 border-t border-slate-200/50' : 'max-h-0'}`}>
+                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest block mb-3">Syllabus Breakdown</span>
+                    <ul className="flex flex-col gap-2.5">
+                      {subtopics.map(sub => (
+                        <li key={sub} className="flex items-center gap-2.5 text-base text-slate-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                          <span>{sub}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between text-sm font-bold text-slate-500 group-hover:text-slate-650">
+                    <span>{subtopics.length} Key Subtopics</span>
+                    <span className="text-indigo-650 font-extrabold">{isExpanded ? 'Collapse' : 'Explore Subtopics →'}</span>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── Batch schedules & pricing ─── */}
+      <section id="batches" className="py-24 bg-white border-t border-slate-200/50 relative">
+        <div className="max-w-7xl mx-auto px-6">
+
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="text-indigo-600 text-sm font-extrabold tracking-widest uppercase px-3.5 py-1.5 bg-indigo-50/80 rounded-full border border-indigo-100/50 shadow-sm">Class Enrollments</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 text-slate-950">
+              Choose Your Target <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-600">Batch Year</span>
+            </h2>
+            <p className="mt-4 text-slate-600 text-base">
+              Course materials, hardcopy revision packs, and digital credentials are included in every program.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {showBatches.map((b, idx) => {
+              const features = getSubtopics(b); // Safe dynamic/static inclusions
+              return (
+                <div 
+                  key={b.id || idx}
+                  className={`border rounded-3xl p-8 flex flex-col justify-between shadow-md hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 relative group min-h-[500px] ${b.color}`}
+                >
+                  <div>
+                    <div className="flex justify-between items-start gap-4 mb-6">
+                      <span className="text-sm font-extrabold uppercase px-3 py-1.5 rounded bg-white border border-slate-200 text-slate-600">{b.status}</span>
+                      <span className="text-sm font-bold text-amber-600">{b.seats_left || b.seatsLeft}</span>
+                    </div>
+
+                    <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight group-hover:text-indigo-650 transition-colors">{b.name}</h3>
+                    <div className="text-base text-indigo-600 font-bold font-mono mt-2 flex items-center gap-1.5">
+                      <span>📅</span> {b.schedule}
+                    </div>
+
+                    <p className="text-base text-slate-600 leading-relaxed font-sans mt-4">
+                      {b.description}
+                    </p>
+
+                    <div className="border-t border-slate-200/80 my-6 pt-6">
+                      <span className="text-sm font-bold text-slate-400 uppercase tracking-widest block mb-4">Course Inclusion Items</span>
+                      <ul className="flex flex-col gap-3">
+                        {features.map(f => (
+                          <li key={f} className="flex items-center gap-2.5 text-base text-slate-700">
+                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => goLink(b.enroll_link || '/login')}
+                    className="w-full py-3.5 mt-8 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-500 text-slate-700 text-base font-extrabold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    Request Portal Enrollment
+                  </button>
+
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── Student Reviews Testimonials ─── */}
+      <section id="testimonials" className="py-24 bg-slate-50 border-t border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <span className="text-indigo-600 text-sm font-extrabold tracking-widest uppercase px-3.5 py-1.5 bg-indigo-500/10 rounded-full border border-indigo-500/20 shadow-sm">Success Records</span>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-4 text-slate-950">
+              Stories from Our <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">High Achievers</span>
+            </h2>
+          </div>
+
+          <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-3xl p-8 md:p-12 relative shadow-lg shadow-slate-200/30 text-center">
+            
+            <div className="absolute top-6 left-6 text-7xl font-serif text-slate-100 opacity-80 pointer-events-none select-none">“</div>
+            
+            <div className="text-amber-500 text-xl mb-6">★★★★★</div>
+            
+            <p className="text-lg sm:text-xl md:text-2xl text-slate-700 leading-relaxed italic font-medium px-4">
+              "{(showTestimonials[activeTestimonial] || showTestimonials[0] || {}).quote}"
+            </p>
+
+            <h4 className="mt-8 font-extrabold text-slate-900 text-lg leading-tight">
+              {(showTestimonials[activeTestimonial] || showTestimonials[0] || {}).name}
+            </h4>
+            <span className="text-base text-indigo-600 font-bold uppercase tracking-wider block mt-1.5">
+              {(showTestimonials[activeTestimonial] || showTestimonials[0] || {}).result}
+            </span>
+
+            {/* Slider Dots */}
+            <div className="flex justify-center gap-2 mt-8">
+              {showTestimonials.map((_, index) => (
+                <button 
+                  key={index}
+                  onClick={() => setActiveTestimonial(index)}
+                  className={`w-2.5 h-2.5 rounded-full cursor-pointer transition-all duration-200 ${activeTestimonial === index ? 'bg-indigo-600 w-6' : 'bg-slate-300 hover:bg-slate-400'}`}
+                />
+              ))}
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ─── FAQ Accordions & WhatsApp support ─── */}
+      <section className="py-24 bg-white border-t border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            
+            {/* Left FAQ */}
+            <div className="lg:col-span-7 flex flex-col gap-6">
+              <div>
+                <span className="text-indigo-600 text-sm font-extrabold tracking-widest uppercase px-3.5 py-1.5 bg-indigo-50/80 rounded-full border border-indigo-100/50 shadow-sm">Common Inquiries</span>
+                <h2 className="text-3xl font-black tracking-tight mt-4 text-slate-950">Frequently Asked Questions</h2>
+              </div>
+
+              <div className="flex flex-col gap-3 mt-6">
+                {showFaqs.map((faq, idx) => {
+                  const q = faq.question || faq.q;
+                  const a = faq.answer || faq.a;
+                  return <FaqItem key={idx} q={q} a={a} />;
+                })}
+              </div>
+            </div>
+
+            {/* Right WhatsApp cards */}
+            <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-3xl p-6 md:p-8 flex flex-col gap-6 shadow-sm">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Instant Support Desk</span>
+              <h3 className="text-2xl font-extrabold text-slate-900 leading-tight">Need direct help?</h3>
+              <p className="text-base text-slate-600 leading-relaxed font-sans">
+                Our support team is available 24/7. Connect with us on WhatsApp or write us an email if you have specific registration errors.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                <a 
+                  href="https://wa.me/94000000000" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="p-4 bg-white border border-slate-200 hover:border-indigo-350 rounded-2xl text-left transition-all flex items-center gap-3 group decoration-transparent shadow-sm"
+                >
+                  <span className="text-2xl">📱</span>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900 leading-tight">WhatsApp Helpline</h4>
+                    <span className="text-xs text-slate-400 mt-1 block group-hover:text-emerald-500 transition-colors">Start Chat →</span>
+                  </div>
+                </a>
+
+                <a 
+                  href="mailto:info@intelligentphysics.lk" 
+                  className="p-4 bg-white border border-slate-200 hover:border-indigo-350 rounded-2xl text-left transition-all flex items-center gap-3 group decoration-transparent shadow-sm"
+                >
+                  <span className="text-2xl">📧</span>
+                  <div>
+                    <h4 className="text-sm font-extrabold text-slate-900 leading-tight">Email Support</h4>
+                    <span className="text-xs text-slate-400 mt-1 block group-hover:text-indigo-500 transition-colors">Write Email →</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+}
+
+/* ─── Slider Component ─── */
+function HeroCardSlider({ slides, navigate }) {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+  const timer = useRef(null);
+
+  const go = useCallback(n => {
+    setFading(true);
+    setTimeout(() => {
+      setIdx(n);
+      setFading(false);
+    }, 250);
+  }, []);
+
+  const next = useCallback(() => go((idx + 1) % slides.length), [idx, go, slides.length]);
+  const prev = useCallback(() => go((idx - 1 + slides.length) % slides.length), [idx, go, slides.length]);
+
+  useEffect(() => {
+    timer.current = setInterval(next, 6000);
+    return () => clearInterval(timer.current);
+  }, [next]);
+
+  const reset = () => {
+    clearInterval(timer.current);
+    timer.current = setInterval(next, 6000);
+  };
+
+  const currentSlide = slides[idx];
+  const hasImage = !!currentSlide.image_url;
+
+  return (
+    <div className="w-full h-[480px] max-w-[560px] rounded-3xl relative overflow-hidden shadow-2xl border border-slate-200/50 bg-slate-900 flex flex-col justify-between p-10 text-white group">
+      
+      {/* Background Graphic or Image */}
+      <div 
+        className="absolute inset-0 transition-opacity duration-300"
+        style={{
+          opacity: fading ? 0.35 : 1,
+          ...(hasImage 
+            ? { backgroundImage: `url(${IMG(currentSlide.image_url)})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+            : { background: currentSlide.gradient || 'linear-gradient(135deg,#1e3a8a,#3b82f6)' })
+        }}
+      />
+      {hasImage && <div className="absolute inset-0 bg-slate-950/70" />}
+      
+      {/* Subtle Matrix grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
+      {/* Slide Content */}
+      <div className="relative z-10 flex flex-col items-start gap-4">
+        <span className="px-4 py-1.5 rounded-full bg-white/15 border border-white/20 text-sm font-extrabold tracking-widest uppercase">
+          {currentSlide.badge || 'LMS Notice'}
+        </span>
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight mt-2 drop-shadow-md">
+          {currentSlide.title}
+        </h3>
+        <p className="text-sm sm:text-base md:text-lg text-white/80 leading-relaxed font-sans max-w-md mt-2">
+          {currentSlide.subtitle}
+        </p>
       </div>
 
-      <Footer />
-    </>
+      <div className="relative z-10 flex items-center justify-between w-full mt-6">
+        {currentSlide.button_text ? (
+          <button 
+            onClick={() => goLink(currentSlide.button_link)}
+            className="px-7 py-3 bg-white text-slate-900 font-extrabold text-base rounded-xl shadow-lg hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            {currentSlide.button_text}
+          </button>
+        ) : (
+          <div />
+        )}
+
+        {/* Indicators Dots */}
+        <div className="flex gap-1.5">
+          {slides.map((_, i) => (
+            <button 
+              key={i} 
+              onClick={() => { go(i); reset(); }}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 cursor-pointer ${idx === i ? 'bg-white w-5' : 'bg-white/30 hover:bg-white/60'}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Navigation Arrows */}
+      {slides.length > 1 && (
+        <>
+          <button 
+            onClick={() => { prev(); reset(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer duration-200"
+          >
+            ‹
+          </button>
+          <button 
+            onClick={() => { next(); reset(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer duration-200"
+          >
+            ›
+          </button>
+        </>
+      )}
+
+    </div>
+  );
+}
+
+/* ─── Reusable Accordion Item ─── */
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden transition-colors shadow-sm">
+      <button 
+        onClick={() => setOpen(!open)}
+        className="w-full px-6 py-4.5 text-left flex justify-between items-center gap-4 hover:bg-slate-50 cursor-pointer"
+      >
+        <span className="font-extrabold text-lg text-slate-800 leading-snug">{q}</span>
+        <span className={`text-slate-450 text-lg transition-transform duration-250 ${open ? 'rotate-180 text-indigo-650' : ''}`}>
+          ▼
+        </span>
+      </button>
+      
+      <div className={`transition-all duration-300 overflow-hidden ${open ? 'max-h-[300px] border-t border-slate-100' : 'max-h-0'}`}>
+        <p className="p-6 text-base sm:text-lg text-slate-600 leading-relaxed font-sans">
+          {a}
+        </p>
+      </div>
+    </div>
   );
 }

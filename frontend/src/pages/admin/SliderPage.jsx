@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    Image, Plus, Trash2, Edit3, Search, X, Upload,
+    Image as ImageIcon, Plus, Trash2, Edit3, Search, X, Upload,
     ChevronUp, ChevronDown, Eye, EyeOff, Loader2,
-    GripVertical, ExternalLink
+    GripVertical, ExternalLink, Sparkles, Navigation, CheckCircle
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
@@ -59,19 +59,17 @@ const SliderPage = () => {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        if (!imagePreview && !form.image_url) return alert('Please upload or provide an image');
+        if (!imagePreview && !form.image_url) return alert('Please select an image file');
 
         setIsSaving(true);
         try {
             let imageUrl = form.image_url;
-
-            // Upload image if new file selected
             if (imageFile) {
-                setUploadMsg('Uploading image...');
+                setUploadMsg('Uploading Image...');
                 const fd = new FormData();
                 fd.append('file', imageFile);
                 const r = await fetch(`${API_URL}/upload`, { method: 'POST', body: fd });
-                if (!r.ok) throw new Error('Image upload failed');
+                if (!r.ok) throw new Error('Upload Failed');
                 const d = await r.json();
                 imageUrl = d.file_url || d.url;
             }
@@ -93,10 +91,10 @@ const SliderPage = () => {
                 closeModal();
                 fetchSliders();
             } else {
-                alert('Failed to save slider');
+                throw new Error('Failed to save');
             }
         } catch (err) {
-            alert(err.message || 'Error');
+            alert(err.message || 'Operation failed');
         } finally {
             setIsSaving(false);
             setUploadMsg('');
@@ -112,7 +110,7 @@ const SliderPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('Delete this slide?')) return;
+        if (!window.confirm('Delete this slider permanently?')) return;
         await fetch(`${API_URL}/sliders/${id}`, { method: 'DELETE' });
         fetchSliders();
     };
@@ -130,7 +128,6 @@ const SliderPage = () => {
         const next = sliders[idx + dir];
         const cur = sliders[idx];
         if (!next) return;
-        // Swap order_index
         await Promise.all([
             fetch(`${API_URL}/sliders/${cur.id}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -147,256 +144,203 @@ const SliderPage = () => {
     const imgSrc = (url) => url?.startsWith('/') ? `${API_URL}${url}` : url;
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
+        <div className="space-y-10 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Image size={24} className="text-blue-600" /> Slider Management
+                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-4">
+                        <ImageIcon size={32} className="text-[#656CFF]" />
+                        Home Sliders
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Manage banners shown on the student dashboard hero section
-                    </p>
+                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1">Manage the image banners on the student home page</p>
                 </div>
                 <button
                     onClick={openAdd}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 shadow-sm transition"
+                    className="flex items-center gap-3 rounded-2xl bg-[#656CFF] px-8 py-4 text-sm font-black text-white shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:-translate-y-1 active:scale-95"
                 >
-                    <Plus size={16} /> Add Slide
+                    <Plus size={20} /> Add New Slide
                 </button>
             </div>
 
-            {/* Slides List */}
             {loading ? (
-                <div className="py-16 text-center text-gray-400">
-                    <Loader2 size={32} className="animate-spin mx-auto mb-3" />
-                    Loading slides...
+                <div className="py-32 text-center">
+                    <Loader2 className="animate-spin mx-auto text-[#656CFF] mb-4" size={40} />
+                    <span className="text-slate-500 font-black uppercase tracking-widest text-xs">Loading Sliders...</span>
                 </div>
             ) : sliders.length === 0 ? (
-                <div className="py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                    <Image size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500 font-semibold text-lg">No slides yet</p>
-                    <p className="text-gray-400 text-sm mt-1">Add a banner slide to display on the student dashboard</p>
-                    <button onClick={openAdd}
-                        className="mt-4 px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition">
-                        + Add First Slide
-                    </button>
+                <div className="py-32 text-center admin-card bg-transparent border-dashed border-2 border-[#23262D]">
+                    <ImageIcon className="mx-auto text-slate-800 mb-6 opacity-30" size={64} />
+                    <h4 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-2">No Sliders Found</h4>
+                    <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest leading-loose">Add your first slider to get started.</p>
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {sliders.map((s, idx) => (
-                        <div key={s.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden flex transition ${s.is_active ? 'border-gray-100' : 'border-gray-200 opacity-60'}`}>
-                            {/* Drag handle / order */}
-                            <div className="flex flex-col items-center justify-center px-3 bg-gray-50 border-r border-gray-100 gap-1">
-                                <button onClick={() => move(idx, -1)} disabled={idx === 0}
-                                    className="text-gray-400 hover:text-gray-700 disabled:opacity-20 p-0.5">
-                                    <ChevronUp size={16} />
-                                </button>
-                                <span className="text-xs font-bold text-gray-400">{idx + 1}</span>
-                                <button onClick={() => move(idx, 1)} disabled={idx === sliders.length - 1}
-                                    className="text-gray-400 hover:text-gray-700 disabled:opacity-20 p-0.5">
-                                    <ChevronDown size={16} />
-                                </button>
-                            </div>
+                <div className="space-y-8">
+                     <div className="flex items-center justify-between px-6 mb-4">
+                        <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                            <Navigation size={20} className="text-[#656CFF]" /> Slider List
+                        </h3>
+                        <div className="h-px flex-1 bg-white/5 mx-6" />
+                    </div>
 
-                            {/* Thumbnail */}
-                            <div className="w-40 h-28 flex-shrink-0 bg-gray-100 overflow-hidden">
-                                {s.image_url ? (
-                                    <img src={imgSrc(s.image_url)} alt={s.title}
-                                        className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                        <Image size={32} />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 p-5">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="font-bold text-gray-900">{s.title}</h3>
-                                        {s.subtitle && <p className="text-sm text-gray-500 mt-0.5">{s.subtitle}</p>}
-                                        {s.button_text && (
-                                            <div className="flex items-center gap-1 mt-2">
-                                                <span className="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full">
-                                                    CTA: {s.button_text}
-                                                </span>
-                                                {s.button_link && (
-                                                    <a href={s.button_link} target="_blank" rel="noreferrer"
-                                                        className="text-gray-400 hover:text-blue-600">
-                                                        <ExternalLink size={12} />
-                                                    </a>
-                                                )}
+                    <div className="grid grid-cols-1 gap-6">
+                        {sliders.sort((a,b) => a.order_index - b.order_index).map((s, idx) => (
+                            <div key={s.id} className="admin-card group p-6 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#656CFF]/30 transition-all bg-[#15171C]">
+                                <div className="flex items-center gap-8 w-full">
+                                    <div className="h-24 w-40 rounded-2xl bg-black/40 overflow-hidden border border-white/5 flex-shrink-0 relative">
+                                        <img src={imgSrc(s.image_url)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={s.title} />
+                                        {!s.is_active && (
+                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                                                <EyeOff size={24} className="text-white/50" />
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-2 ml-4">
-                                        <button onClick={() => toggleActive(s)}
-                                            className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full transition ${s.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                                            {s.is_active ? <Eye size={12} /> : <EyeOff size={12} />}
-                                            {s.is_active ? 'Active' : 'Hidden'}
-                                        </button>
-                                        <button onClick={() => openEdit(s)}
-                                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition">
-                                            <Edit3 size={16} />
-                                        </button>
-                                        <button onClick={() => handleDelete(s.id)}
-                                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition">
-                                            <Trash2 size={16} />
-                                        </button>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${s.is_active ? 'bg-[#10B981]/10 text-[#10B981] border-[#10B981]/20' : 'bg-slate-700/10 text-slate-500 border-white/5'}`}>
+                                                {s.is_active ? 'Active' : 'Hidden'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-xl font-black text-white leading-tight uppercase tracking-tight group-hover:text-[#656CFF] transition-colors">{s.title || 'Untitled Slide'}</h4>
+                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1 truncate">{s.subtitle || 'No subtitle provided'}</p>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
 
-            {/* Preview hint */}
-            {sliders.length > 0 && (
-                <div className="text-center text-sm text-gray-400 italic">
-                    Active slides appear as a scrolling hero banner on the student dashboard
+                                <div className="flex items-center gap-3">
+                                    <div className="flex flex-col gap-2 mr-4 border-r border-white/5 pr-6">
+                                        <button onClick={() => move(idx, -1)} disabled={idx === 0} className="h-8 w-8 rounded-lg bg-white/5 text-slate-500 hover:text-white disabled:opacity-20 flex items-center justify-center transition-all">
+                                            <ChevronUp size={16} />
+                                        </button>
+                                        <button onClick={() => move(idx, 1)} disabled={idx === sliders.length - 1} className="h-8 w-8 rounded-lg bg-white/5 text-slate-500 hover:text-white disabled:opacity-20 flex items-center justify-center transition-all">
+                                            <ChevronDown size={16} />
+                                        </button>
+                                    </div>
+                                    <button 
+                                        onClick={() => toggleActive(s)}
+                                        className={`h-12 w-12 rounded-2xl transition-all flex items-center justify-center ${s.is_active ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-slate-700/10 text-slate-500'}`}
+                                    >
+                                        {s.is_active ? <Eye size={20} /> : <EyeOff size={20} />}
+                                    </button>
+                                    <button 
+                                        onClick={() => openEdit(s)}
+                                        className="h-12 w-12 rounded-2xl bg-[#656CFF]/10 text-[#656CFF] hover:bg-[#656CFF] hover:text-white transition-all flex items-center justify-center"
+                                    >
+                                        <Edit3 size={20} />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDelete(s.id)}
+                                        className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl"
+                                    >
+                                        <Trash2 size={20} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-                            <h2 className="text-xl font-bold text-gray-800">
-                                {editingSlider ? 'Edit Slide' : 'Add New Slide'}
-                            </h2>
-                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-1">
-                                <X size={20} />
-                            </button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={closeModal} />
+                    <div className="bg-[#15171C] border border-[#23262D] w-full max-w-4xl rounded-[3rem] p-12 relative animate-in zoom-in-95 duration-300 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+                         <div className="absolute top-0 right-0 w-32 h-32 bg-[#656CFF]/10 blur-[80px] rounded-full -translate-y-12 translate-x-12" />
+                         
+                         <div className="flex items-center justify-between mb-12">
+                             <div>
+                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">{editingSlider ? 'Edit' : 'Add'} <span className="text-[#656CFF]">Slider</span></h3>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black mt-2">Home screen visual configuration</p>
+                             </div>
+                             <button onClick={closeModal} className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-500 hover:text-white transition-all shadow-xl">
+                                 <X size={24} />
+                             </button>
                         </div>
 
-                        <form onSubmit={handleSave} className="p-6 space-y-5">
-                            {/* Image Upload */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Slide Image *</label>
-                                <div
-                                    onClick={() => fileRef.current?.click()}
-                                    className={`cursor-pointer rounded-xl border-2 border-dashed overflow-hidden transition
-                                        ${imagePreview ? 'border-blue-400' : 'border-gray-300 hover:border-blue-400'}`}
-                                >
-                                    {imagePreview ? (
-                                        <div className="relative">
-                                            <img src={imagePreview} alt="preview"
-                                                className="w-full h-44 object-cover" />
-                                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition">
-                                                <span className="text-white font-semibold text-sm">Click to change</span>
+                        <form onSubmit={handleSave} className="space-y-10">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                <div className="space-y-8">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 ml-1">Hero Title</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800 shadow-xl"
+                                            placeholder="E.G. WELCOME TO PHYSICS"
+                                            value={form.title}
+                                            onChange={e => setForm({...form, title: e.target.value})}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 ml-1">Subtitle Description</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800 shadow-xl"
+                                            placeholder="E.G. NEW LESSONS UPLOADED"
+                                            value={form.subtitle}
+                                            onChange={e => setForm({...form, subtitle: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 ml-1">Button Text</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800 shadow-xl"
+                                                placeholder="START NOW"
+                                                value={form.button_text}
+                                                onChange={e => setForm({...form, button_text: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 ml-1">Button Redirect Link</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800 shadow-xl"
+                                                placeholder="/knowledge-hub"
+                                                value={form.button_link}
+                                                onChange={e => setForm({...form, button_link: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-3 ml-1">Background Image</label>
+                                    <div 
+                                        onClick={() => fileRef.current.click()}
+                                        className={`group relative h-[300px] rounded-[2.5rem] border-2 border-dashed transition-all flex flex-col items-center justify-center overflow-hidden bg-white/[0.01] ${imagePreview ? 'border-[#10B981]' : 'border-[#23262D] hover:border-[#656CFF]/50'}`}
+                                    >
+                                        {imagePreview ? (
+                                            <>
+                                                <img src={imagePreview} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-700" alt="Preview" />
+                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                                                     <Upload className="text-white mb-2" size={32} />
+                                                     <span className="text-[10px] font-black text-white uppercase tracking-widest">Change Visual</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="text-center p-8">
+                                                <ImageIcon className="mx-auto text-slate-700 group-hover:text-[#656CFF] mb-4 transition-colors" size={48} />
+                                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">Drop Media or Click</p>
+                                                <p className="text-[9px] text-slate-800 font-bold uppercase tracking-widest mt-2">{'(1920x800 RECOMMENDED)'}</p>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div className="h-44 flex flex-col items-center justify-center text-gray-400">
-                                            <Upload size={32} className="mb-2" />
-                                            <p className="font-semibold text-sm">Click to upload slide image</p>
-                                            <p className="text-xs mt-1">Recommended: 1280×480px, JPG or PNG</p>
-                                        </div>
-                                    )}
-                                </div>
-                                <input ref={fileRef} type="file" accept="image/*" className="hidden"
-                                    onChange={handleFileChange} />
-                                {/* Or paste URL */}
-                                <div className="mt-2">
-                                    <input
-                                        type="url"
-                                        placeholder="Or paste an image URL..."
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                                        value={imageFile ? '' : form.image_url}
-                                        onChange={e => {
-                                            setForm({ ...form, image_url: e.target.value });
-                                            setImagePreview(e.target.value);
-                                            setImageFile(null);
-                                        }}
-                                    />
+                                        )}
+                                        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Title */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                    Title <span className="font-normal text-gray-400">(Optional)</span>
-                                </label>
-                                <input
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g. Welcome to Intelligent Physics"
-                                    value={form.title}
-                                    onChange={e => setForm({ ...form, title: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Subtitle */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                    Subtitle <span className="font-normal text-gray-400">(Optional)</span>
-                                </label>
-                                <input
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g. Your journey to excellence starts here"
-                                    value={form.subtitle}
-                                    onChange={e => setForm({ ...form, subtitle: e.target.value })}
-                                />
-                            </div>
-
-                            {/* CTA Button */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Button Text <span className="font-normal text-gray-400">(Optional)</span>
-                                    </label>
-                                    <input
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
-                                        placeholder="e.g. Start Learning"
-                                        value={form.button_text}
-                                        onChange={e => setForm({ ...form, button_text: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                        Button Link <span className="font-normal text-gray-400">(Optional)</span>
-                                    </label>
-                                    <input
-                                        type="url"
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
-                                        placeholder="https://..."
-                                        value={form.button_link}
-                                        onChange={e => setForm({ ...form, button_link: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Active Toggle */}
-                            <div className="flex items-center gap-3">
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" className="sr-only peer"
-                                        checked={form.is_active}
-                                        onChange={e => setForm({ ...form, is_active: e.target.checked })} />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                                <span className="text-sm font-semibold text-gray-700">
-                                    {form.is_active ? '✅ Visible to students' : '🔴 Hidden from students'}
-                                </span>
-                            </div>
-
-                            {uploadMsg && (
-                                <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                                    <Loader2 size={16} className="animate-spin" /> {uploadMsg}
-                                </div>
-                            )}
-
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={closeModal}
-                                    className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={isSaving}
-                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 transition disabled:opacity-60">
-                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                    {isSaving ? 'Saving...' : (editingSlider ? 'Update Slide' : 'Add Slide')}
+                            <div className="pt-8 border-t border-white/5 flex flex-col gap-6">
+                                {uploadMsg && (
+                                    <div className="flex items-center gap-3 text-sm font-black text-[#656CFF] animate-pulse">
+                                        <Loader2 size={18} className="animate-spin" /> {uploadMsg}
+                                    </div>
+                                )}
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="h-16 w-full bg-[#656CFF] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
+                                >
+                                    {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
+                                    {isSaving ? 'Processing...' : (editingSlider ? 'Update Slider' : 'Save Slider')}
                                 </button>
                             </div>
                         </form>

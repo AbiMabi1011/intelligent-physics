@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ClipboardList, Trash2, Search, Loader2, Upload, FileText } from 'lucide-react';
+import { ClipboardList, Trash2, Search, Loader2, Upload, FileText, CheckCircle, X, Download } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const MarksPage = () => {
@@ -36,8 +36,7 @@ const MarksPage = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm("Delete this marks record?")) return;
-        // The backend doesn't have delete /marks/:id yet, so we assume it exists or we add it next
+        if (!window.confirm("Delete these results permanently?")) return;
         try {
             const res = await fetch(`${API_URL}/marks/${id}`, { method: 'DELETE' });
             if (res.ok) fetchData();
@@ -47,12 +46,11 @@ const MarksPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!newMark.title || !uploadFile) {
-            return alert("Please enter a title and select a PDF file.");
+            return alert("Title and PDF file are required.");
         }
 
         setIsSaving(true);
         try {
-            // Upload PDF
             const formData = new FormData();
             formData.append('file', uploadFile);
             const uploadRes = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
@@ -81,7 +79,7 @@ const MarksPage = () => {
             }
         } catch (err) {
             console.error(err);
-            alert("Error saving marks PDF");
+            alert("Error saving results");
         } finally {
             setIsSaving(false);
         }
@@ -93,171 +91,193 @@ const MarksPage = () => {
     );
 
     return (
-        <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                <FileText size={28} className="text-blue-600" />
-                Marks & Results (PDF)
-            </h1>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-4">
+                        <FileText size={32} className="text-[#656CFF]" />
+                        Class Results
+                    </h1>
+                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1 italic">Manage and upload student result sheets</p>
+                </div>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center gap-3 rounded-2xl bg-[#656CFF] px-6 py-4 text-sm font-black text-white shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:-translate-y-1 active:scale-95"
+                >
+                    <Upload size={20} /> Upload Results
+                </button>
+            </div>
 
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
-                <strong>How it works:</strong> Upload result sheets (PDF format) for specific batches and terms. Students in the Learning Hub will be able to download and view these PDFs to check their marks.
+            <div className="admin-card p-6 bg-gradient-to-r from-[#656CFF]/5 to-transparent border-l-4 border-l-[#656CFF]">
+                <div className="flex items-start gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] shrink-0 mt-1">
+                        <ClipboardList size={20} />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-1">How to upload</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-bold">
+                            Upload your class result sheets in <span className="text-[#656CFF]">PDF format</span>. These will be available for students to view in their dashboard.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <div className="admin-card p-6 flex flex-wrap items-center gap-6">
+                <div className="relative flex-1 min-w-[300px] group">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#656CFF] transition-colors" size={20} />
                     <input
                         type="text"
-                        placeholder="Search marks..."
-                        className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        placeholder="Search by title or term..."
+                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl pl-14 pr-6 py-4 text-sm font-bold text-white placeholder:text-slate-600 focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition"
-                >
-                    <Upload size={16} className="mr-2" /> Upload Results PDF
-                </button>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto rounded-xl bg-white shadow-sm border border-gray-100">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Title</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Batch</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Subject</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">Term</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-500">PDF File</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium uppercase text-gray-500">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                        {loading ? (
-                            <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading marks...</td></tr>
-                        ) : filteredMarks.length === 0 ? (
-                            <tr><td colSpan="6" className="p-8 text-center text-gray-500 text-sm">No results uploaded yet.</td></tr>
-                        ) : filteredMarks.map((m) => (
-                            <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{m.title || 'Untitled Results'}</td>
-                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{m.class_name || 'All'}</td>
-                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{m.subject}</td>
-                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{m.term}</td>
-                                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                                    {m.file_url ? (
-                                        <a href={`${API_URL}${m.file_url}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1 font-semibold">
-                                            <FileText size={16} /> View PDF
-                                        </a>
-                                    ) : <span className="text-gray-400 text-xs">No PDF</span>}
-                                </td>
-                                <td className="whitespace-nowrap px-6 py-4 text-center">
-                                    <button onClick={() => handleDelete(m.id)} className="text-gray-400 hover:text-red-500 p-1">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </td>
+            {/* Table Container */}
+            <div className="admin-card overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-[#23262D]">
+                        <thead className="bg-white/[0.02]">
+                            <tr>
+                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Title</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Batch</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Subject</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Term</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">File Link</th>
+                                <th className="px-8 py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 bg-[#15171C]">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="6" className="px-8 py-20 text-center">
+                                        <Loader2 size={32} className="animate-spin mx-auto text-[#656CFF] mb-4" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Loading results...</span>
+                                    </td>
+                                </tr>
+                            ) : filteredMarks.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="px-8 py-20 text-center text-slate-600 uppercase tracking-widest text-[10px] font-black">
+                                        No results found matching your search
+                                    </td>
+                                </tr>
+                            ) : filteredMarks.map((mark) => (
+                                <tr key={mark.id} className="group hover:bg-white/[0.01] transition-all">
+                                    <td className="px-8 py-5">
+                                        <p className="text-sm font-black text-white group-hover:text-[#656CFF] transition-colors uppercase tracking-tight">{mark.title}</p>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{mark.class_name}</span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{mark.subject}</span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-[10px] font-black text-[#FEBC2E] uppercase tracking-widest">{mark.term}</span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <a href={mark.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[10px] font-black text-[#656CFF] bg-[#656CFF]/10 px-3 py-1.5 rounded-lg border border-[#656CFF]/20 hover:bg-[#656CFF] hover:text-white transition-all w-fit">
+                                            <Download size={12} /> View File
+                                        </a>
+                                    </td>
+                                    <td className="px-8 py-5 text-center">
+                                        <button 
+                                            onClick={() => handleDelete(mark.id)}
+                                            className="h-9 w-9 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all mx-auto active:scale-90"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Add Modal */}
+            {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4 backdrop-blur-sm">
-                    <form onSubmit={handleSave} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl animate-scale-in">
-                        <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
-                            <Upload className="text-blue-500" size={20} /> Upload Results PDF
-                        </h2>
-
-                        <div className="space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={() => setShowModal(false)} />
+                    <div className="bg-[#15171C] border border-[#23262D] w-full max-w-xl rounded-[2.5rem] p-10 relative animate-in zoom-in-95 duration-300 shadow-2xl overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#656CFF]/5 blur-[80px] rounded-full translate-x-12 translate-y-[-12px]" />
+                        
+                        <div className="flex items-center justify-between mb-10">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
+                                <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">Upload <span className="text-[#656CFF]">Results</span></h3>
+                                <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">Publish new student results PDF</p>
+                            </div>
+                            <button onClick={() => setShowModal(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all shadow-xl">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSave} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Title of Results</label>
                                 <input
                                     type="text"
-                                    className="w-full rounded-lg border p-2.5 text-sm"
-                                    placeholder="e.g. Mid-Term Top 100 Results"
+                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl px-5 py-4 text-sm font-bold text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800"
+                                    placeholder="E.G. MID-TERM PHYSICS UNIT 01"
                                     value={newMark.title}
-                                    onChange={e => setNewMark({ ...newMark, title: e.target.value })}
-                                    required
+                                    onChange={(e) => setNewMark({ ...newMark, title: e.target.value })}
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Batch / Class</label>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Batch</label>
                                     <select
-                                        className="w-full rounded-lg border p-2.5 text-sm bg-white"
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl px-5 py-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none appearance-none"
                                         value={newMark.class_name}
-                                        onChange={e => setNewMark({ ...newMark, class_name: e.target.value })}
+                                        onChange={(e) => setNewMark({ ...newMark, class_name: e.target.value })}
                                     >
-                                        <option value="A/L 2024">A/L 2024</option>
-                                        <option value="A/L 2025">A/L 2025</option>
                                         <option value="A/L 2026">A/L 2026</option>
-                                        <option value="General">General</option>
+                                        <option value="A/L 2025">A/L 2025</option>
+                                        <option value="A/L 2027">A/L 2027</option>
+                                        <option value="Revision 2025">Revision 2025</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Term</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">Exam Term</label>
                                     <select
-                                        className="w-full rounded-lg border p-2.5 text-sm bg-white"
+                                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl px-5 py-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none appearance-none"
                                         value={newMark.term}
-                                        onChange={e => setNewMark({ ...newMark, term: e.target.value })}
+                                        onChange={(e) => setNewMark({ ...newMark, term: e.target.value })}
                                     >
                                         <option value="Mid-Term">Mid-Term</option>
                                         <option value="Final Term">Final Term</option>
+                                        <option value="Monthly Test">Monthly Test</option>
                                         <option value="Unit Test">Unit Test</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">PDF Document *</label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-blue-400 transition cursor-pointer bg-gray-50"
-                                    onClick={() => fileRef.current?.click()}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 italic">PDF Result Sheet</label>
+                                <div 
+                                    onClick={() => fileRef.current.click()}
+                                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all hover:bg-white/[0.02] ${uploadFile ? 'border-[#10B981] bg-[#10B981]/5' : 'border-[#23262D]'}`}
                                 >
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        className="hidden"
-                                        ref={fileRef}
-                                        onChange={e => setUploadFile(e.target.files[0])}
-                                    />
-                                    {uploadFile ? (
-                                        <div className="text-blue-600 font-semibold flex items-center justify-center gap-2">
-                                            <FileText size={20} /> {uploadFile.name}
-                                        </div>
-                                    ) : (
-                                        <div className="text-gray-500 text-sm">
-                                            <span className="block mb-1 text-gray-700 font-medium">Click to select PDF file</span>
-                                            Maximum size 10MB
-                                        </div>
-                                    )}
+                                    {uploadFile ? <CheckCircle className="mx-auto text-[#10B981] mb-2" size={32} /> : <Upload className="mx-auto text-slate-700 mb-2" size={32} />}
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{uploadFile ? uploadFile.name : 'Select PDF File'}</p>
+                                    <input type="file" ref={fileRef} className="hidden" accept=".pdf" onChange={(e) => setUploadFile(e.target.files[0])} />
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mt-8 flex justify-end gap-3">
-                            <button
-                                type="button"
-                                onClick={() => { setShowModal(false); setUploadFile(null); }}
-                                className="px-5 py-2.5 border rounded-lg hover:bg-gray-50 font-medium text-sm"
-                            >
-                                Cancel
-                            </button>
                             <button
                                 type="submit"
-                                disabled={isSaving || !uploadFile}
-                                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-semibold flex items-center gap-2"
+                                disabled={isSaving}
+                                className="w-full flex items-center justify-center gap-3 py-5 bg-[#656CFF] text-white rounded-xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 mt-4"
                             >
-                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : null}
+                                {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
                                 {isSaving ? 'Uploading...' : 'Save Results'}
                             </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             )}
         </div>

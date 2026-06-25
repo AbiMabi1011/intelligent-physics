@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     FileText, Upload, Search, Download, Trash2,
-    Loader2, Plus, X, Eye, CheckCircle
+    Loader2, Plus, X, Eye, CheckCircle, Globe, Lock, Layers
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
@@ -53,7 +53,7 @@ const PapersPage = () => {
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch(`${API_URL}/upload`, { method: 'POST', body: formData });
-        if (!res.ok) throw new Error(`Failed to upload ${label}`);
+        if (!res.ok) throw new Error(`Upload Failed: ${label}`);
         const data = await res.json();
         return data.file_url || data.url;
     };
@@ -61,17 +61,17 @@ const PapersPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         if (!form.title.trim()) return alert('Title is required');
-        if (!paperFile) return alert('Please select a paper PDF');
-        if (form.selectedBatches.length === 0) return alert('Select at least one batch');
+        if (!paperFile) return alert('Please select a paper file');
+        if (form.selectedBatches.length === 0) return alert('Please select at least one batch');
 
         setIsSaving(true);
         try {
-            const fileUrl = await uploadPdf(paperFile, 'Paper PDF');
+            const fileUrl = await uploadPdf(paperFile, 'Question Paper');
             let schemeUrl = '';
             if (schemeFile) {
-                schemeUrl = await uploadPdf(schemeFile, 'Marking Scheme PDF');
+                schemeUrl = await uploadPdf(schemeFile, 'Marking Scheme');
             }
-            setUploadProgress('Saving record...');
+            setUploadProgress('Finishing up...');
             const payload = {
                 title: form.title,
                 subject: form.subject,
@@ -90,11 +90,11 @@ const PapersPage = () => {
                 resetModal();
                 fetchPapers();
             } else {
-                alert('Failed to save paper');
+                throw new Error('Failed to save to database');
             }
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Upload failed');
+            alert(err.message || 'Operation failed');
         } finally {
             setIsSaving(false);
             setUploadProgress('');
@@ -110,7 +110,7 @@ const PapersPage = () => {
     };
 
     const deletePaper = async (id) => {
-        if (!window.confirm('Delete this paper?')) return;
+        if (!window.confirm('Delete this paper permanently?')) return;
         await fetch(`${API_URL}/papers/${id}`, { method: 'DELETE' });
         fetchPapers();
     };
@@ -120,254 +120,224 @@ const PapersPage = () => {
         p.subject?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const typeColor = {
-        'Past Paper': { bg: 'bg-orange-50', text: 'text-orange-600', badge: 'bg-orange-100 text-orange-800' },
-        'FWC Paper': { bg: 'bg-purple-50', text: 'text-purple-600', badge: 'bg-purple-100 text-purple-800' },
-        'Model Paper': { bg: 'bg-blue-50', text: 'text-blue-600', badge: 'bg-blue-100 text-blue-800' },
-        'Other': { bg: 'bg-gray-50', text: 'text-gray-600', badge: 'bg-gray-100 text-gray-800' },
+    const typeColorMap = {
+        'Past Paper': 'from-orange-500/20 to-orange-500/5 text-orange-400 border-orange-500/20',
+        'FWC Paper': 'from-purple-500/20 to-purple-500/5 text-purple-400 border-purple-500/20',
+        'Model Paper': 'from-[#656CFF]/20 to-[#656CFF]/5 text-[#656CFF] border-[#656CFF]/20',
+        'Other': 'from-slate-500/20 to-slate-500/5 text-slate-400 border-slate-500/20',
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800">Exam Papers</h1>
+                <div>
+                    <h1 className="text-3xl font-black text-white tracking-tight">Study Materials</h1>
+                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1">Manage past papers and marking schemes</p>
+                </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition"
+                    className="flex items-center gap-3 rounded-2xl bg-[#656CFF] px-6 py-4 text-sm font-black text-white shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:-translate-y-1 active:scale-95"
                 >
-                    <Plus size={16} className="mr-2" /> Upload Paper
+                    <Plus size={20} /> Upload New Paper
                 </button>
             </div>
 
-            {/* Search */}
-            <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                    type="text"
-                    placeholder="Search papers..."
-                    className="w-full rounded-lg border border-gray-200 pl-10 pr-4 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            {/* Filters */}
+            <div className="admin-card p-6 flex flex-wrap items-center gap-6">
+                <div className="relative flex-1 min-w-[300px] group">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#656CFF] transition-colors" size={20} />
+                    <input
+                        type="text"
+                        placeholder="Search by paper title or subject..."
+                        className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-4 pl-14 pr-6 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800 shadow-xl"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
+                    <div className="h-10 w-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500">
+                        <FileText size={20} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Total Papers</p>
+                        <p className="text-sm font-black text-white uppercase tracking-wider">{papers.length} Files</p>
+                    </div>
+                </div>
             </div>
 
-            {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    <div className="col-span-full py-12 text-center text-gray-500">Loading papers...</div>
-                ) : filteredPapers.length === 0 ? (
-                    <div className="col-span-full py-16 text-center bg-white rounded-xl border-2 border-dashed border-gray-200">
-                        <FileText size={40} className="mx-auto text-gray-300 mb-3" />
-                        <p className="text-gray-500 font-medium">No papers found</p>
-                    </div>
-                ) : filteredPapers.map((p) => {
-                    const colors = typeColor[p.paper_type] || typeColor['Other'];
-                    return (
-                        <div key={p.id} className="rounded-xl bg-white p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
-                            <div className="flex items-start justify-between">
-                                <div className={`rounded-lg p-3 ${colors.bg} ${colors.text}`}>
-                                    <FileText size={24} />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${colors.badge}`}>
-                                        {p.paper_type || 'Paper'}
-                                    </span>
-                                    <button
-                                        onClick={() => deletePaper(p.id)}
-                                        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition"
+            {loading ? (
+                <div className="py-24 text-center">
+                    <Loader2 size={40} className="animate-spin mx-auto text-[#656CFF] mb-4" />
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Loading materials...</span>
+                </div>
+            ) : filteredPapers.length === 0 ? (
+                <div className="py-32 text-center border-2 border-dashed border-[#23262D] rounded-[3rem] bg-white/[0.01]">
+                    <FileText className="mx-auto text-slate-800 mb-6 opacity-30" size={64} />
+                    <h4 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-2">No Papers Found</h4>
+                    <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Upload your first paper to get started.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredPapers.map((paper) => (
+                        <div key={paper.id} className="admin-card group hover:scale-[1.02] active:scale-95 transition-all p-8 flex flex-col justify-between bg-[#15171C] border-[#23262D] relative overflow-hidden">
+                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#656CFF]/5 blur-[60px] rounded-full translate-x-12 translate-y-[-12px]" />
+                             
+                             <div>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className={`px-4 py-2 bg-gradient-to-br ${typeColorMap[paper.paper_type] || typeColorMap['Other']} rounded-xl border text-[9px] font-black uppercase tracking-widest`}>
+                                        {paper.paper_type}
+                                    </div>
+                                    <button 
+                                        onClick={() => deletePaper(paper.id)}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-xl"
                                     >
-                                        <Trash2 size={15} />
+                                        <Trash2 size={18} />
                                     </button>
                                 </div>
-                            </div>
-                            <div className="mt-4 flex-grow">
-                                <h3 className="font-bold text-gray-800 line-clamp-2">{p.title}</h3>
-                                <p className="text-sm text-gray-500 mt-1">{p.subject} • {p.class_name}</p>
-                                <div className="mt-2 text-xs font-semibold px-2 py-0.5 inline-block rounded-md bg-blue-50 text-blue-700 border border-blue-100">
-                                    Visibility: {p.visibility === 'portal' ? 'Portal Only' : p.visibility === 'hub' ? 'Public Hub Only' : 'Both (Hub & Portal)'}
-                                </div>
-                            </div>
-                            <div className="mt-4 flex flex-col gap-2 pt-4 border-t border-gray-50">
-                                <a
-                                    href={p.file_url?.startsWith('/') ? `${API_URL}${p.file_url}` : p.file_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center justify-center gap-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg transition"
-                                >
-                                    <Eye size={14} /> View Paper PDF
-                                </a>
-                                {p.scheme_url && (
-                                    <a
-                                        href={p.scheme_url?.startsWith('/') ? `${API_URL}${p.scheme_url}` : p.scheme_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center justify-center gap-2 text-sm font-semibold text-green-700 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-lg transition"
+                                
+                                <h4 className="text-xl font-black text-white uppercase tracking-tight mb-3 truncate group-hover:text-[#656CFF] transition-colors">{paper.title}</h4>
+                                <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest flex items-center gap-2 mb-8"><Layers size={14} /> {paper.class_name}</p>
+
+                                <div className="grid grid-cols-1 gap-4 pt-6 border-t border-white/5">
+                                    <a 
+                                        href={paper.file_url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="h-12 w-full flex items-center justify-center gap-3 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#656CFF] hover:bg-[#656CFF] hover:text-white transition-all shadow-xl group-active:scale-95"
                                     >
-                                        <Eye size={14} /> View Marking Scheme
+                                        <Download size={14} /> Question Paper
                                     </a>
-                                )}
-                            </div>
+                                    {paper.scheme_url && (
+                                        <a 
+                                            href={paper.scheme_url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="h-12 w-full flex items-center justify-center gap-3 bg-[#10B981]/10 border border-[#10B981]/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-[#10B981] hover:bg-[#10B981] hover:text-white transition-all shadow-xl group-active:scale-95"
+                                        >
+                                            <CheckCircle size={14} /> Marking Scheme
+                                        </a>
+                                    )}
+                                </div>
+                             </div>
                         </div>
-                    );
-                })}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Upload Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-xl font-bold text-gray-800">Upload Exam Paper</h2>
-                            <button onClick={resetModal} className="text-gray-400 hover:text-gray-600 p-1"><X size={20} /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={resetModal} />
+                    <div className="bg-[#15171C] border border-[#23262D] w-full max-w-3xl rounded-[3rem] p-12 relative animate-in zoom-in-95 duration-300 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#656CFF]/10 blur-[80px] rounded-full -translate-y-12 translate-x-12" />
+                        
+                        <div className="flex items-center justify-between mb-12">
+                             <div>
+                                <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">Upload <span className="text-[#656CFF]">Paper</span></h3>
+                                <p className="text-[10px] text-slate-500 uppercase tracking-[0.4em] font-black mt-2">New study material distribution</p>
+                             </div>
+                             <button onClick={resetModal} className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white/5 text-slate-500 hover:text-white transition-all shadow-xl">
+                                 <X size={24} />
+                             </button>
                         </div>
-                        <form onSubmit={handleSave} className="space-y-4">
-                            {/* Title */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
-                                <input
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={form.title}
-                                    onChange={e => setForm({ ...form, title: e.target.value })}
-                                    placeholder="e.g. 2024 Mid-term Paper"
-                                    required
-                                />
-                            </div>
 
-                            {/* Type & Visibility & Batches */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Paper Type</label>
-                                    <select
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm"
-                                        value={form.paper_type}
-                                        onChange={e => setForm({ ...form, paper_type: e.target.value })}
-                                    >
-                                        <option>Past Paper</option>
-                                        <option>FWC Paper</option>
-                                        <option>Model Paper</option>
-                                        <option>Other</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Display Where?</label>
-                                    <select
-                                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm"
-                                        value={form.visibility}
-                                        onChange={e => setForm({ ...form, visibility: e.target.value })}
-                                    >
-                                        <option value="both">Both (Learning Hub & Knowledge Center)</option>
-                                        <option value="portal">Learning Hub Only</option>
-                                        <option value="hub">Public Knowledge Center Only</option>
-                                    </select>
-                                </div>
-                                <div className="col-span-2">
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Batches *</label>
-                                    <div className="max-h-24 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-gray-50 space-y-1">
-                                        {batches.length === 0 ? (
-                                            <p className="text-xs text-gray-400">No batches found.</p>
-                                        ) : batches.map(b => (
-                                            <label key={b.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.selectedBatches.includes(b.name)}
-                                                    onChange={e => {
-                                                        const arr = form.selectedBatches;
-                                                        if (e.target.checked) setForm({ ...form, selectedBatches: [...arr, b.name] });
-                                                        else setForm({ ...form, selectedBatches: arr.filter(x => x !== b.name) });
+                        <form onSubmit={handleSave} className="space-y-10">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Paper Title</label>
+                                        <input
+                                            type="text"
+                                            className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all placeholder:text-slate-800"
+                                            placeholder="E.G. PHYSICS A/L 2023"
+                                            value={form.title}
+                                            onChange={e => setForm({...form, title: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Paper Type</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {['Past Paper', 'FWC Paper', 'Model Paper', 'Other'].map(type => (
+                                                <button
+                                                    key={type}
+                                                    type="button"
+                                                    onClick={() => setForm({...form, paper_type: type})}
+                                                    className={`px-4 py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                        form.paper_type === type 
+                                                        ? 'bg-[#656CFF] border-[#656CFF] text-white shadow-xl' 
+                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Target Batches</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {batches.map(batch => (
+                                                <button
+                                                    key={batch.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const current = form.selectedBatches;
+                                                        const next = current.includes(batch.name)
+                                                            ? current.filter(b => b !== batch.name)
+                                                            : [...current, batch.name];
+                                                        setForm({...form, selectedBatches: next});
                                                     }}
-                                                    className="rounded text-blue-600"
-                                                />
-                                                <span>{b.name}</span>
-                                            </label>
-                                        ))}
+                                                    className={`px-4 py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                        form.selectedBatches.includes(batch.name)
+                                                        ? 'bg-[#FEBC2E] border-[#FEBC2E] text-black shadow-xl'
+                                                        : 'bg-white/5 border-white/5 text-slate-500 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {batch.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Upload Question Paper (PDF)</label>
+                                        <div 
+                                            onClick={() => paperInputRef.current.click()}
+                                            className={`p-10 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all ${paperFile ? 'border-[#10B981] bg-[#10B981]/5' : 'border-[#23262D] bg-white/[0.02] hover:border-[#656CFF]/50'}`}
+                                        >
+                                            {paperFile ? <CheckCircle className="mx-auto text-[#10B981] mb-3" size={32} /> : <Upload className="mx-auto text-slate-700 mb-3" size={32} />}
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{paperFile ? paperFile.name : 'Select PDF'}</p>
+                                            <input type="file" ref={paperInputRef} className="hidden" accept=".pdf" onChange={e => setPaperFile(e.target.files[0])} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Upload Marking Scheme (Optional PDF)</label>
+                                        <div 
+                                            onClick={() => schemeInputRef.current.click()}
+                                            className={`p-10 border-2 border-dashed rounded-[2rem] text-center cursor-pointer transition-all ${schemeFile ? 'border-[#10B981] bg-[#10B981]/5' : 'border-[#23262D] bg-white/[0.02] hover:border-[#656CFF]/50'}`}
+                                        >
+                                            {schemeFile ? <CheckCircle className="mx-auto text-[#10B981] mb-3" size={32} /> : <Upload className="mx-auto text-slate-700 mb-3" size={32} />}
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{schemeFile ? schemeFile.name : 'Select PDF'}</p>
+                                            <input type="file" ref={schemeInputRef} className="hidden" accept=".pdf" onChange={e => setSchemeFile(e.target.files[0])} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Paper PDF Upload */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Paper PDF *</label>
-                                <div
-                                    onClick={() => paperInputRef.current?.click()}
-                                    className={`cursor-pointer border-2 border-dashed rounded-xl p-4 flex items-center gap-3 transition
-                                        ${paperFile ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-blue-400 bg-gray-50'}`}
+                            <div className="flex flex-col gap-6">
+                                {uploadProgress && (
+                                    <div className="flex items-center gap-3 text-sm font-black text-[#656CFF] animate-pulse">
+                                        <Loader2 size={18} className="animate-spin" /> {uploadProgress}
+                                    </div>
+                                )}
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="h-16 w-full bg-[#656CFF] text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
                                 >
-                                    <div className={`p-2 rounded-lg ${paperFile ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                        <FileText size={20} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {paperFile ? (
-                                            <>
-                                                <p className="font-semibold text-blue-700 text-sm truncate">{paperFile.name}</p>
-                                                <p className="text-xs text-gray-400">{(paperFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p className="font-semibold text-gray-600 text-sm">Click to upload Paper PDF</p>
-                                                <p className="text-xs text-gray-400">PDF files only</p>
-                                            </>
-                                        )}
-                                    </div>
-                                    {paperFile && (
-                                        <button type="button" onClick={e => { e.stopPropagation(); setPaperFile(null); }}
-                                            className="text-red-400 hover:text-red-600">
-                                            <X size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                                <input ref={paperInputRef} type="file" accept=".pdf" className="hidden" onChange={e => setPaperFile(e.target.files[0])} />
-                            </div>
-
-                            {/* Scheme PDF Upload */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Marking Scheme PDF <span className="text-gray-400 font-normal">(Optional)</span></label>
-                                <div
-                                    onClick={() => schemeInputRef.current?.click()}
-                                    className={`cursor-pointer border-2 border-dashed rounded-xl p-4 flex items-center gap-3 transition
-                                        ${schemeFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-400 bg-gray-50'}`}
-                                >
-                                    <div className={`p-2 rounded-lg ${schemeFile ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                        <CheckCircle size={20} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {schemeFile ? (
-                                            <>
-                                                <p className="font-semibold text-green-700 text-sm truncate">{schemeFile.name}</p>
-                                                <p className="text-xs text-gray-400">{(schemeFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <p className="font-semibold text-gray-600 text-sm">Click to upload Marking Scheme PDF</p>
-                                                <p className="text-xs text-gray-400">PDF files only</p>
-                                            </>
-                                        )}
-                                    </div>
-                                    {schemeFile && (
-                                        <button type="button" onClick={e => { e.stopPropagation(); setSchemeFile(null); }}
-                                            className="text-red-400 hover:text-red-600">
-                                            <X size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                                <input ref={schemeInputRef} type="file" accept=".pdf" className="hidden" onChange={e => setSchemeFile(e.target.files[0])} />
-                            </div>
-
-                            {uploadProgress && (
-                                <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                                    <Loader2 size={16} className="animate-spin" />
-                                    {uploadProgress}
-                                </div>
-                            )}
-
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={resetModal}
-                                    className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
-                                    Cancel
-                                </button>
-                                <button type="submit" disabled={isSaving}
-                                    className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-2 transition disabled:opacity-60">
-                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                                    {isSaving ? (uploadProgress || 'Uploading...') : 'Upload Paper'}
+                                    {isSaving ? 'Processing...' : 'Upload Now'}
                                 </button>
                             </div>
                         </form>

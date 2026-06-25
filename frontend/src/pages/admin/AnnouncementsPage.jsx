@@ -9,7 +9,12 @@ import {
     Send,
     Users,
     Clock,
-    CheckCircle
+    CheckCircle,
+    Eye,
+    Globe,
+    Lock,
+    Loader2,
+    Activity
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
@@ -76,7 +81,6 @@ const AnnouncementsPage = () => {
 
         setIsSubmitting(true);
         try {
-            // Upload image if exists
             let imageUrl = '';
             if (imageFile) {
                 const formData = new FormData();
@@ -108,10 +112,6 @@ const AnnouncementsPage = () => {
             });
 
             if (res.ok) {
-                alert(sendEmail
-                    ? '✅ Announcement posted and emails sent to students!'
-                    : '✅ Announcement posted successfully!'
-                );
                 resetForm();
                 fetchAnnouncements();
             } else {
@@ -134,223 +134,214 @@ const AnnouncementsPage = () => {
         } catch (err) { console.error(err); }
     };
 
-    // --- Create Form ---
     if (mode === 'create') {
         return (
-            <div className="space-y-6 animate-fade-in-up">
+            <div className="space-y-8 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        <Megaphone size={24} className="text-blue-600" /> New Announcement
-                    </h1>
-                    <button onClick={resetForm} className="text-gray-500 hover:text-gray-700 font-semibold px-4 py-2 border rounded-lg bg-white">
-                        Cancel
-                    </button>
+                    <div>
+                        <h1 className="text-2xl font-black text-white tracking-tight">New Announcement</h1>
+                        <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-1">Write and post a new update</p>
+                    </div>
+                    <button onClick={resetForm} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-bold text-slate-400 hover:text-white transition-all">Cancel</button>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5">
-                    {/* Title */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Title *</label>
-                        <input
-                            type="text"
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            placeholder="e.g. Special Class This Saturday"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Content */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Message *</label>
-                        <textarea
-                            rows={5}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                            placeholder="Write your announcement message here..."
-                            value={content}
-                            onChange={e => setContent(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Image Upload */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Attach Image (Optional)</label>
-                        <div
-                            onClick={() => imageInputRef.current?.click()}
-                            className="cursor-pointer border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition"
-                        >
-                            {imagePreview ? (
-                                <div className="relative w-full">
-                                    <img src={imagePreview} alt="preview" className="rounded-lg max-h-48 w-full object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={e => { e.stopPropagation(); setImageFile(null); setImagePreview(''); }}
-                                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <>
-                                    <ImageIcon size={32} className="mb-2" />
-                                    <span className="text-sm font-medium">Click to upload an image</span>
-                                    <span className="text-xs mt-1">PNG, JPG, GIF up to 10MB</span>
-                                </>
-                            )}
-                        </div>
-                        <input
-                            ref={imageInputRef}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleImageChange}
-                        />
-                    </div>
-
-                    {/* Visibility */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Display Where? *</label>
-                        <select
-                            value={visibility}
-                            onChange={e => setVisibility(e.target.value)}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                        >
-                            <option value="both">Both (Learning Hub & Public Knowledge Center)</option>
-                            <option value="portal">Learning Hub Only (Requires Login)</option>
-                            <option value="hub">Public Knowledge Center Only (Homepage)</option>
-                        </select>
-                    </div>
-
-                    {/* Target Batches */}
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Target Batches *</label>
-                        <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-2 max-h-40 overflow-y-auto">
-                            {batches.length === 0 ? (
-                                <p className="text-sm text-gray-400">No batches found. Add batches first.</p>
-                            ) : batches.map(b => (
-                                <label key={b.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedBatches.includes(b.name)}
-                                        onChange={e => {
-                                            if (e.target.checked) setSelectedBatches(prev => [...prev, b.name]);
-                                            else setSelectedBatches(prev => prev.filter(x => x !== b.name));
-                                        }}
-                                        className="rounded border-gray-300 text-blue-600"
-                                    />
-                                    <span className="text-gray-700 font-medium">{b.name}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Email Notification Option */}
-                    <div
-                        onClick={() => setSendEmail(!sendEmail)}
-                        className={`cursor-pointer flex items-center justify-between p-4 rounded-xl border-2 transition-all ${sendEmail ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-gray-50 hover:border-blue-300'}`}
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-full ${sendEmail ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                <Mail size={18} />
+                <div className="admin-card p-10 space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Announcement Title</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all"
+                                    placeholder="Enter title..."
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                />
                             </div>
                             <div>
-                                <p className="font-semibold text-gray-800">Send Email Notifications</p>
-                                <p className="text-xs text-gray-500">
-                                    {sendEmail
-                                        ? 'Emails will be sent to all students in selected batches'
-                                        : 'Only show on website (no email)'}
-                                </p>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Update Content</label>
+                                <textarea
+                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl px-6 py-4 text-sm font-black text-white focus:border-[#656CFF]/50 outline-none transition-all h-64 resize-none"
+                                    placeholder="Enter your message here..."
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                />
                             </div>
                         </div>
-                        <div className={`w-12 h-6 rounded-full transition-colors flex items-center ${sendEmail ? 'bg-blue-500' : 'bg-gray-300'}`}>
-                            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${sendEmail ? 'translate-x-6' : 'translate-x-0'}`} />
+
+                        <div className="space-y-8">
+                             <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Target Batches / Classes</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {batches.map((batch) => (
+                                        <button
+                                            key={batch.id}
+                                            onClick={() => {
+                                                const next = selectedBatches.includes(batch.name)
+                                                    ? selectedBatches.filter(b => b !== batch.name)
+                                                    : [...selectedBatches, batch.name];
+                                                setSelectedBatches(next);
+                                            }}
+                                            className={`px-4 py-3 rounded-xl border text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                selectedBatches.includes(batch.name)
+                                                    ? 'bg-[#656CFF] border-[#656CFF] text-white'
+                                                    : 'bg-white/5 border-white/5 text-slate-500 hover:text-white hover:border-white/10'
+                                            }`}
+                                        >
+                                            {batch.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Update Image (Optional)</label>
+                                <div 
+                                    onClick={() => imageInputRef.current?.click()}
+                                    className="border-2 border-dashed border-[#23262D] rounded-[2rem] p-8 text-center cursor-pointer hover:border-[#656CFF]/50 transition-all group relative overflow-hidden h-48 flex flex-col items-center justify-center bg-white/[0.02]"
+                                >
+                                    {imagePreview ? (
+                                        <img src={imagePreview} className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all" />
+                                    ) : (
+                                        <ImageIcon className="text-slate-700 group-hover:text-[#656CFF] mb-4 transition-colors" size={40} />
+                                    )}
+                                    <span className="text-[10px] font-black text-slate-500 group-hover:text-white uppercase tracking-[0.2em] relative z-10">{imagePreview ? 'Change Image' : 'Select Hero Image'}</span>
+                                    <input type="file" ref={imageInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-6 bg-white/5 rounded-2xl border border-white/5">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+                                        <Mail size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none mb-1">Send Email Notification?</p>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Send to all students in batches</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSendEmail(!sendEmail)}
+                                    className={`h-7 w-12 rounded-full p-1 transition-all ${sendEmail ? 'bg-[#10B981]' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`h-5 w-5 bg-white rounded-full transition-all ${sendEmail ? 'translate-x-[20px]' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    {sendEmail && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700 flex items-start gap-2">
-                            <Mail size={16} className="mt-0.5 shrink-0" />
-                            <span>Emails will be sent to all students in: <strong>{selectedBatches.join(', ') || 'No batches selected yet'}</strong></span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg hover:bg-blue-700 transition disabled:opacity-60"
-                    >
-                        <Send size={20} />
-                        {isSubmitting ? 'Posting...' : (sendEmail ? 'Post & Send Emails' : 'Post Announcement')}
-                    </button>
+                    <div className="pt-8 border-t border-white/5 flex justify-end">
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className="h-14 bg-[#656CFF] text-white rounded-2xl px-12 font-black text-xs uppercase tracking-[0.4em] shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all flex items-center gap-3 active:scale-95 disabled:opacity-50"
+                        >
+                            {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+                            {isSubmitting ? 'Posting...' : 'Post Announcement'}
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // --- List View ---
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Megaphone size={24} className="text-blue-600" /> Announcements
-                </h1>
+        <div className="space-y-12 animate-in fade-in duration-700 pb-10">
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="w-full">
+                    <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-4">
+                        <Megaphone size={32} className="text-[#FEBC2E]" /> Announcements
+                    </h1>
+                    <p className="text-sm text-slate-500 font-black uppercase tracking-[0.2em] mt-2 italic">
+                        Post important updates and news for all students
+                    </p>
+                </div>
                 <button
                     onClick={() => setMode('create')}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 shadow-sm transition"
+                    className="h-14 bg-[#656CFF] text-white rounded-2xl px-10 font-black text-xs uppercase tracking-widest shadow-2xl shadow-[#656CFF]/30 hover:bg-[#545bd9] transition-all flex items-center gap-3 active:scale-95 whitespace-nowrap"
                 >
-                    <Plus size={16} /> New Announcement
+                    <Plus size={20} /> New Post
                 </button>
             </div>
 
-            {loading ? (
-                <div className="text-center py-16 text-gray-400">Loading announcements...</div>
-            ) : announcements.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-200">
-                    <Megaphone size={40} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium">No announcements yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Create your first announcement to notify students</p>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="admin-card p-8 flex items-center gap-6">
+                    <div className="h-14 w-14 rounded-[1.25rem] bg-[#FEBC2E]/10 flex items-center justify-center text-[#FEBC2E]">
+                        <Activity size={28} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Posts</p>
+                        <h4 className="text-3xl font-black text-white leading-none tracking-tighter">{announcements.length}</h4>
+                    </div>
                 </div>
-            ) : (
-                <div className="space-y-4">
-                    {announcements.map(ann => (
-                        <div key={ann.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
-                            {ann.image_url && (
-                                <img src={ann.image_url} alt={ann.title} className="w-full h-48 object-cover" />
-                            )}
-                            <div className="p-6">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-bold text-gray-900">{ann.title}</h3>
-                                        <p className="text-gray-600 mt-2 whitespace-pre-wrap">{ann.content}</p>
+            </div>
+
+            {/* Announcements List */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                        <Clock size={20} className="text-[#656CFF]" /> Recent Updates
+                    </h3>
+                    <div className="h-px flex-1 bg-white/5 mx-6" />
+                </div>
+
+                {loading ? (
+                    <div className="py-24 text-center">
+                        <Loader2 className="animate-spin mx-auto text-[#656CFF] mb-4" size={40} />
+                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Loading announcements...</span>
+                    </div>
+                ) : announcements.length === 0 ? (
+                    <div className="py-32 text-center border-2 border-dashed border-[#23262D] rounded-[3rem] bg-white/[0.01]">
+                        <Megaphone className="mx-auto text-slate-800 mb-6 opacity-30" size={64} />
+                        <h4 className="text-xl font-black text-slate-700 uppercase tracking-tight mb-2">No Announcements Found</h4>
+                        <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">Create your first update to get started.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-6">
+                        {announcements.map((ann) => (
+                            <div key={ann.id} className="admin-card group p-8 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#656CFF]/30 transition-all bg-[#15171C]">
+                                <div className="flex items-center gap-8 w-full">
+                                    <div className="h-20 w-32 rounded-2xl bg-black/40 overflow-hidden border border-white/5 flex-shrink-0">
+                                        {ann.image_url ? (
+                                            <img src={ann.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-800">
+                                                <ImageIcon size={32} />
+                                            </div>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(ann.id)}
-                                        className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition shrink-0"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[9px] font-black text-[#656CFF] uppercase tracking-[0.3em] mb-2">{ann.class_name}</p>
+                                        <h4 className="text-xl font-black text-white leading-tight uppercase tracking-tight mb-2 truncate group-hover:text-[#656CFF] transition-colors">{ann.title}</h4>
+                                        <div className="flex items-center gap-6 mt-3">
+                                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                <Clock size={12} /> {new Date(ann.created_at).toLocaleDateString()}
+                                            </div>
+                                            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                                                <Users size={12} /> {ann.class_name?.split(',').length} Batches
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-                                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                        <Users size={12} /> {ann.class_name}
-                                    </span>
-                                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-full font-medium">
-                                        Visibility: {
-                                            ann.visibility === 'portal' ? 'Portal Only' :
-                                                ann.visibility === 'hub' ? 'Public Hub Only' : 'Both (Hub & Portal)'
-                                        }
-                                    </span>
-                                    <span className="flex items-center gap-1 text-xs text-gray-400">
-                                        <Clock size={12} /> {ann.created_at ? new Date(ann.created_at).toLocaleString() : 'N/A'}
-                                    </span>
+                                
+                                <div className="flex items-center gap-4">
+                                     <button className="h-12 w-12 rounded-2xl bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center">
+                                         <Eye size={20} />
+                                     </button>
+                                     <button 
+                                        onClick={() => handleDelete(ann.id)}
+                                        className="h-12 w-12 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-xl"
+                                     >
+                                         <Trash2 size={20} />
+                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

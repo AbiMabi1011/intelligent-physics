@@ -162,3 +162,67 @@ class HomeStat(Base):
     bg = Column(String, default="rgba(59,130,246,.12)") # hex/rgba background
     is_active = Column(Boolean, default=True)
     order_index = Column(Integer, default=0)
+
+class TeacherProfile(Base):
+    __tablename__ = "teacher_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    title = Column(String, default="Lead Lecturer")
+    credentials = Column(String)
+    bio_text = Column(String)
+    image_url = Column(String, nullable=True)
+    mediums = Column(String)
+
+class SyllabusUnit(Base):
+    __tablename__ = "syllabus_units"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String, index=True)
+    icon = Column(String)
+    desc = Column(String)
+    subtopics_json = Column(String) # JSON string list of subtopics
+    color = Column(String)
+    order_index = Column(Integer, default=0)
+
+class LmsFeature(Base):
+    __tablename__ = "lms_features"
+
+    id = Column(Integer, primary_key=True, index=True)
+    icon = Column(String)
+    title = Column(String)
+    desc = Column(String)
+    color = Column(String)
+    order_index = Column(Integer, default=0)
+
+class HomeBatch(Base):
+    __tablename__ = "home_batches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    status = Column(String)
+    seats_left = Column(String)
+    schedule = Column(String)
+    description = Column(String)
+    features_json = Column(String) # JSON string list of inclusion items
+    color = Column(String)
+    enroll_link = Column(String, default="/login")
+    order_index = Column(Integer, default=0)
+
+class Testimonial(Base):
+    __tablename__ = "testimonials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    quote = Column(String)
+    name = Column(String)
+    result = Column(String)
+    stars = Column(Integer, default=5)
+    order_index = Column(Integer, default=0)
+
+class HomeFaq(Base):
+    __tablename__ = "home_faqs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question = Column(String)
+    answer = Column(String)
+    order_index = Column(Integer, default=0)
