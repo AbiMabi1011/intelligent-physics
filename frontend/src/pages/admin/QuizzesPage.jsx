@@ -18,36 +18,124 @@ import {
 import { API_URL } from '../../config';
 
 /* ─── Smart Physics Notation Auto-Fixer ─────────────────────────────────────
-   Converts patterns like "m2", "s-1", "kg m2 s-2" → "m²", "s⁻¹", "kg m² s⁻²"
-   when pasting from PDF. Also works as a manual "fix" button.
+   Handles both:
+   1. LaTeX strings: $\text{kg}\ \text{m}^2\ \text{s}^{-2}$ → kg m² s⁻²
+   2. Plain PDF patterns: kg m2 s-2 → kg m² s⁻²
 ──────────────────────────────────────────────────────────────────────────── */
 const SUP_MAP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺' };
+const SUB_MAP = { '0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','n':'ₙ','i':'ᵢ','e':'ₑ' };
 
 function toSuperscript(str) {
     return str.split('').map(c => SUP_MAP[c] ?? c).join('');
 }
+function toSubscript(str) {
+    return str.split('').map(c => SUB_MAP[c] ?? c).join('');
+}
 
-// Known A/L Physics unit letters — only convert after these
-const UNIT_CHARS = 'msCJKNWVAΩFHTBPcℓdgkMGμnpf';
+const GREEK_MAP = {
+    'alpha':'α','beta':'β','gamma':'γ','Gamma':'Γ','delta':'δ','Delta':'Δ',
+    'epsilon':'ε','zeta':'ζ','eta':'η','theta':'θ','Theta':'Θ','iota':'ι',
+    'kappa':'κ','lambda':'λ','Lambda':'Λ','mu':'μ','nu':'ν','xi':'ξ','Xi':'Ξ',
+    'pi':'π','Pi':'Π','rho':'ρ','sigma':'σ','Sigma':'Σ','tau':'τ',
+    'upsilon':'υ','phi':'φ','Phi':'Φ','chi':'χ','psi':'ψ','Psi':'Ψ',
+    'omega':'ω','Omega':'Ω',
+};
 
-function autoFixPhysicsNotation(text) {
-    // Step 1: Convert negative/positive superscript patterns after unit letters
-    // e.g. "s-1" → "s⁻¹", "m-2" → "m⁻²", "m2" → "m²"
-    // Pattern: a unit letter optionally followed by a sign then 1-2 digits (no space before)
-    let fixed = text.replace(
+const SYMBOL_MAP = {
+    'times':'×','div':'÷','pm':'±','mp':'∓','approx':'≈','neq':'≠',
+    'leq':'≤','geq':'≥','infty':'∞','sqrt':'√','cdot':'·','cdots':'⋯',
+    'propto':'∝','partial':'∂','sum':'∑','nabla':'∇','degree':'°',
+    'rightarrow':'→','leftarrow':'←','Rightarrow':'⇒','Leftarrow':'⇐',
+    'leftrightarrow':'↔','sim':'~','simeq':'≃','equiv':'≡',
+};
+
+function latexToUnicode(latex) {
+    // Trim whitespace
+    let t = latex.trim();
+
+    // Remove surrounding $ or $$ delimiters (single or double, inline or display)
+    t = t.replace(/^\$\$?([\s\S]*?)\$\$?$/, '$1').trim();
+    // Also handle \( ... \) and \[ ... \]
+    t = t.replace(/^\\\[?([\s\S]*?)\\\]?$/, '$1').trim();
+    t = t.replace(/^\\\(([\s\S]*?)\\\)$/, '$1').trim();
+
+    // Replace \text{...}, \mathrm{...}, \mathbf{...}, \mathit{...} with content
+    t = t.replace(/\\(?:text|mathrm|mathbf|mathit|mathsf|mbox)\{([^}]*)\}/g, '$1');
+
+    // Replace ^{...} with Unicode superscripts
+    t = t.replace(/\^\{([^}]*)\}/g, (_, content) => toSuperscript(content));
+    // Replace ^x (single character superscript — digit or sign)
+    t = t.replace(/\^([0-9\-\+nN])/g, (_, c) => toSuperscript(c));
+
+    // Replace _{...} with Unicode subscripts
+    t = t.replace(/\_\{([^}]*)\}/g, (_, content) => toSubscript(content));
+    // Replace _x (single character subscript — digit)
+    t = t.replace(/\_([0-9nNiIeE])/g, (_, c) => toSubscript(c));
+
+    // Replace \frac{a}{b} → a/b
+    t = t.replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '$1/$2');
+
+    // Replace Greek letters
+    Object.entries(GREEK_MAP).forEach(([name, char]) => {
+        t = t.replace(new RegExp(`\\\\${name}(?![a-zA-Z])`, 'g'), char);
+    });
+
+    // Replace math symbols
+    Object.entries(SYMBOL_MAP).forEach(([name, char]) => {
+        t = t.replace(new RegExp(`\\\\${name}(?![a-zA-Z])`, 'g'), char);
+    });
+
+    // Replace LaTeX spacing commands with a space
+    t = t.replace(/\\[,;: !]/g, ' ');
+    t = t.replace(/\\ /g, ' ');
+    t = t.replace(/\\quad\b/g, '  ');
+    t = t.replace(/\\qquad\b/g, '   ');
+
+    // Remove remaining backslash commands (unknown ones)
+    t = t.replace(/\\[a-zA-Z]+/g, '');
+
+    // Remove remaining braces and backslashes
+    t = t.replace(/[{}\\]/g, '');
+
+    // Collapse multiple spaces
+    t = t.replace(/\s+/g, ' ').trim();
+
+    return t;
+}
+
+// Known A/L Physics unit letters — only convert after these for plain-text mode
+const UNIT_CHARS = 'msCJKNWVAΩFHTBPcgkMGμnpf';
+
+function fixPlainTextNotation(text) {
+    return text.replace(
         new RegExp(`([${UNIT_CHARS}])([+-]?\\d{1,2})(?=[^\\d]|$)`, 'g'),
         (match, unit, power) => {
-            // Don't convert standalone numbers like "(1)" or "30" etc.
-            // Only convert if power is 1-2 digits and looks like an exponent (not a multi-digit number)
-            if (Math.abs(parseInt(power)) > 9) return match; // skip if big number
+            if (Math.abs(parseInt(power)) > 9) return match;
             return unit + toSuperscript(power);
         }
     );
-
-    // Step 2: Convert explicit superscript digit characters PDF sometimes exports as plain text
-    // e.g. "kg m2 s-2" already handled above, but also handle "kgm2s-2" without spaces
-    return fixed;
 }
+
+function autoFixPhysicsNotation(text) {
+    // If the text looks like LaTeX (contains $ or \text or ^{ etc.), use LaTeX converter
+    const isLatex = /\$|\\text\{|\\mathrm\{|\^\{|\_\{|\\[a-zA-Z]/.test(text);
+
+    if (isLatex) {
+        // Split by lines, convert each line independently (handles multi-line paste)
+        return text.split('\n').map(line => {
+            const trimmed = line.trim();
+            // Each line may be a separate LaTeX expression
+            if (/\$|\\/.test(trimmed)) {
+                return latexToUnicode(trimmed);
+            }
+            return line;
+        }).join('\n');
+    }
+
+    // Otherwise apply plain-text physics notation fix
+    return fixPlainTextNotation(text);
+}
+
 
 function setNativeValue(el, newVal) {
     const setter = Object.getOwnPropertyDescriptor(
