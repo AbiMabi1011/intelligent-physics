@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Plus,
     Trash2,
@@ -16,6 +16,211 @@ import {
     Loader2
 } from 'lucide-react';
 import { API_URL } from '../../config';
+
+/* ─── Smart Physics Notation Auto-Fixer ─────────────────────────────────────
+   Converts patterns like "m2", "s-1", "kg m2 s-2" → "m²", "s⁻¹", "kg m² s⁻²"
+   when pasting from PDF. Also works as a manual "fix" button.
+──────────────────────────────────────────────────────────────────────────── */
+const SUP_MAP = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺' };
+
+function toSuperscript(str) {
+    return str.split('').map(c => SUP_MAP[c] ?? c).join('');
+}
+
+// Known A/L Physics unit letters — only convert after these
+const UNIT_CHARS = 'msCJKNWVAΩFHTBPcℓdgkMGμnpf';
+
+function autoFixPhysicsNotation(text) {
+    // Step 1: Convert negative/positive superscript patterns after unit letters
+    // e.g. "s-1" → "s⁻¹", "m-2" → "m⁻²", "m2" → "m²"
+    // Pattern: a unit letter optionally followed by a sign then 1-2 digits (no space before)
+    let fixed = text.replace(
+        new RegExp(`([${UNIT_CHARS}])([+-]?\\d{1,2})(?=[^\\d]|$)`, 'g'),
+        (match, unit, power) => {
+            // Don't convert standalone numbers like "(1)" or "30" etc.
+            // Only convert if power is 1-2 digits and looks like an exponent (not a multi-digit number)
+            if (Math.abs(parseInt(power)) > 9) return match; // skip if big number
+            return unit + toSuperscript(power);
+        }
+    );
+
+    // Step 2: Convert explicit superscript digit characters PDF sometimes exports as plain text
+    // e.g. "kg m2 s-2" already handled above, but also handle "kgm2s-2" without spaces
+    return fixed;
+}
+
+function setNativeValue(el, newVal) {
+    const setter = Object.getOwnPropertyDescriptor(
+        el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype,
+        'value'
+    )?.set;
+    if (setter) {
+        setter.call(el, newVal);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+}
+
+/* Hook: attach smart paste to an input/textarea ref */
+function useSmartPaste(ref, onFixed) {
+    useEffect(() => {
+        const el = ref?.current;
+        if (!el) return;
+        const handler = (e) => {
+            const raw = (e.clipboardData || window.clipboardData).getData('text');
+            const fixed = autoFixPhysicsNotation(raw);
+            if (fixed !== raw) {
+                e.preventDefault();
+                const start = el.selectionStart ?? 0;
+                const end = el.selectionEnd ?? 0;
+                const before = el.value.substring(0, start);
+                const after = el.value.substring(end);
+                setNativeValue(el, before + fixed + after);
+                // Count fixes
+                const count = [...fixed].filter((c, i) => c !== raw[i]).length;
+                if (onFixed) onFixed(count);
+                requestAnimationFrame(() => {
+                    el.setSelectionRange(start + fixed.length, start + fixed.length);
+                });
+            }
+        };
+        el.addEventListener('paste', handler);
+        return () => el.removeEventListener('paste', handler);
+    }, [ref, onFixed]);
+}
+
+/* Small toast notification */
+function FixToast({ msg, onDone }) {
+    useEffect(() => {
+        const t = setTimeout(onDone, 2800);
+        return () => clearTimeout(t);
+    }, [onDone]);
+    return (
+        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 bg-[#10B981] text-white rounded-2xl shadow-2xl shadow-emerald-500/30 animate-in slide-in-from-bottom-4 duration-300">
+            <span className="text-base">✅</span>
+            <span className="text-xs font-black uppercase tracking-widest">{msg}</span>
+        </div>
+    );
+}
+
+/* Formula toolbar + auto-fix button */
+const FORMULA_GROUPS = [
+    {
+        label: 'Superscripts',
+        chars: [
+            { label: '⁻¹', val: '⁻¹' }, { label: '⁻²', val: '⁻²' }, { label: '⁻³', val: '⁻³' },
+            { label: '²', val: '²' }, { label: '³', val: '³' }, { label: '⁴', val: '⁴' },
+            { label: '⁰', val: '⁰' }, { label: '¹', val: '¹' },
+        ]
+    },
+    {
+        label: 'Subscripts',
+        chars: [
+            { label: '₀', val: '₀' }, { label: '₁', val: '₁' }, { label: '₂', val: '₂' },
+            { label: '₃', val: '₃' }, { label: '₄', val: '₄' }, { label: 'ₙ', val: 'ₙ' },
+        ]
+    },
+    {
+        label: 'Greek',
+        chars: [
+            { label: 'α', val: 'α' }, { label: 'β', val: 'β' }, { label: 'γ', val: 'γ' },
+            { label: 'δ', val: 'δ' }, { label: 'ε', val: 'ε' }, { label: 'θ', val: 'θ' },
+            { label: 'λ', val: 'λ' }, { label: 'μ', val: 'μ' }, { label: 'π', val: 'π' },
+            { label: 'ρ', val: 'ρ' }, { label: 'σ', val: 'σ' }, { label: 'τ', val: 'τ' },
+            { label: 'φ', val: 'φ' }, { label: 'ω', val: 'ω' }, { label: 'Ω', val: 'Ω' },
+        ]
+    },
+    {
+        label: 'Units & Symbols',
+        chars: [
+            { label: '·', val: '·' }, { label: '×', val: '×' }, { label: '÷', val: '÷' },
+            { label: '±', val: '±' }, { label: '≈', val: '≈' }, { label: '≠', val: '≠' },
+            { label: '≤', val: '≤' }, { label: '≥', val: '≥' }, { label: '∞', val: '∞' },
+            { label: '√', val: '√' }, { label: '∑', val: '∑' }, { label: '∝', val: '∝' },
+            { label: '∆', val: '∆' }, { label: '∂', val: '∂' }, { label: '°', val: '°' },
+        ]
+    },
+];
+
+function FormulaToolbar({ onFixApplied }) {
+    const [open, setOpen] = useState(false);
+
+    const insertChar = useCallback((char) => {
+        const el = document.activeElement;
+        if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return;
+        const start = el.selectionStart ?? el.value.length;
+        const end = el.selectionEnd ?? el.value.length;
+        const newVal = el.value.substring(0, start) + char + el.value.substring(end);
+        setNativeValue(el, newVal);
+        const newPos = start + char.length;
+        requestAnimationFrame(() => {
+            el.focus();
+            el.setSelectionRange(newPos, newPos);
+        });
+    }, []);
+
+    const autoFixCurrent = useCallback(() => {
+        const el = document.activeElement;
+        if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) {
+            alert('Click inside a text field first, then press Auto-fix.');
+            return;
+        }
+        const fixed = autoFixPhysicsNotation(el.value);
+        if (fixed !== el.value) {
+            setNativeValue(el, fixed);
+            if (onFixApplied) onFixApplied('Notation fixed automatically ✅');
+        } else {
+            if (onFixApplied) onFixApplied('Already correct — no changes needed');
+        }
+    }, [onFixApplied]);
+
+    return (
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
+            {/* Auto-fix button — most important for PDF paste workflow */}
+            <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); autoFixCurrent(); }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all"
+                title="Click inside a field, then click this to auto-convert m2→m², s-1→s⁻¹ etc."
+            >
+                🔧 Auto-fix Notation
+            </button>
+
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#656CFF]/10 border border-[#656CFF]/30 text-[#656CFF] text-[10px] font-black uppercase tracking-widest hover:bg-[#656CFF]/20 transition-all"
+            >
+                <span className="text-sm">Σ</span> Insert Symbol {open ? '▲' : '▼'}
+            </button>
+
+            {open && (
+                <div className="w-full mt-2 p-4 bg-[#0D0E12] border border-[#23262D] rounded-2xl space-y-3 animate-in fade-in duration-200">
+                    {FORMULA_GROUPS.map(group => (
+                        <div key={group.label}>
+                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 block mb-1.5">{group.label}</span>
+                            <div className="flex flex-wrap gap-1.5">
+                                {group.chars.map(c => (
+                                    <button
+                                        key={c.val}
+                                        type="button"
+                                        onMouseDown={(e) => { e.preventDefault(); insertChar(c.val); }}
+                                        className="min-w-[32px] h-8 px-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs font-bold hover:bg-[#656CFF]/30 hover:border-[#656CFF]/50 transition-all active:scale-95"
+                                    >
+                                        {c.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    <p className="text-[9px] text-slate-600 font-semibold pt-1">
+                        💡 Click a symbol to insert at cursor. Or paste from PDF — notation auto-fixes on paste!
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+}
 
 const QuizzesPage = () => {
     // Mode: 'list', 'create', or 'view'
@@ -37,6 +242,7 @@ const QuizzesPage = () => {
         { text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A' }
     ]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [fixToast, setFixToast] = useState(null); // { msg } | null
 
     // Fetch Quizzes & Batches
     useEffect(() => {
@@ -296,12 +502,22 @@ const QuizzesPage = () => {
                                 </div>
 
                                 <div className="space-y-6">
+                                    <FormulaToolbar onFixApplied={(msg) => setFixToast(msg)} />
                                     <textarea
                                         className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-4 px-6 text-sm font-bold text-white placeholder:text-slate-600 focus:ring-2 focus:ring-[#656CFF]/20 transition-all outline-none"
-                                        placeholder="Enter your question here..."
+                                        placeholder="Paste from PDF or type your question — superscripts auto-fix on paste!"
                                         rows="3"
                                         value={q.text}
                                         onChange={(e) => updateQuestion(idx, 'text', e.target.value)}
+                                        onPaste={(e) => {
+                                            const raw = (e.clipboardData || window.clipboardData).getData('text');
+                                            const fixed = autoFixPhysicsNotation(raw);
+                                            if (fixed !== raw) {
+                                                e.preventDefault();
+                                                updateQuestion(idx, 'text', q.text + fixed);
+                                                setFixToast('Notation auto-fixed from paste ✅');
+                                            }
+                                        }}
                                     ></textarea>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -313,6 +529,15 @@ const QuizzesPage = () => {
                                                     className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl py-3 px-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none transition-all"
                                                     value={q[`option_${opt}`]}
                                                     onChange={(e) => updateQuestion(idx, `option_${opt}`, e.target.value)}
+                                                    onPaste={(e) => {
+                                                        const raw = (e.clipboardData || window.clipboardData).getData('text');
+                                                        const fixed = autoFixPhysicsNotation(raw);
+                                                        if (fixed !== raw) {
+                                                            e.preventDefault();
+                                                            updateQuestion(idx, `option_${opt}`, q[`option_${opt}`] + fixed);
+                                                            setFixToast('Notation auto-fixed from paste ✅');
+                                                        }
+                                                    }}
                                                 />
                                             </div>
                                         ))}
@@ -361,6 +586,8 @@ const QuizzesPage = () => {
 
     return (
         <div className="space-y-12 animate-in fade-in duration-700 pb-10">
+            {/* Smart Paste Toast Notification */}
+            {fixToast && <FixToast msg={fixToast} onDone={() => setFixToast(null)} />}
             {/* Header */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
                 <div className="w-full">
