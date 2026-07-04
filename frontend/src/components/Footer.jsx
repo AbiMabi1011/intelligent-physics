@@ -106,17 +106,34 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <p className="text-slate-600 text-sm font-semibold text-center md:text-left">
+                    <p className="text-slate-500 text-sm font-semibold text-center md:text-left">
                         &copy; {new Date().getFullYear()} <span className="text-slate-700 font-bold">Intelligent Physics</span>. All rights reserved.
                     </p>
-                    <div className="flex items-center gap-6 text-slate-600 text-sm font-semibold justify-center">
+                    <div className="flex items-center gap-6 text-slate-500 text-sm font-semibold justify-center">
                         <span className="hover:text-slate-900 cursor-pointer transition-colors">Privacy Policy</span>
                         <span className="hover:text-slate-900 cursor-pointer transition-colors">Terms of Service</span>
                     </div>
-                    <p className="text-slate-600 text-sm font-semibold text-center md:text-right">
-                        Made with 💙 by <a href="https://www.linkedin.com/in/ravindu-prabashana/" target="_blank" rel="noreferrer" className="text-slate-700 hover:text-blue-600 transition-colors decoration-transparent font-extrabold">Dev</a>
-                    </p>
+
+                    {/* Applomic Powered By Badge */}
+                    <a
+                        href="https://applomic.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group flex items-center gap-2.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:shadow-md hover:shadow-indigo-500/10 hover:-translate-y-0.5 transition-all duration-300 decoration-transparent no-underline"
+                    >
+                        {/* Applomic Logo mark */}
+                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#656CFF] to-[#a855f7] flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                            <span className="text-white font-black text-[10px] leading-none">A</span>
+                        </div>
+                        <div className="flex flex-col leading-none">
+                            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 group-hover:text-slate-500 transition-colors">Powered by</span>
+                            <span className="text-[13px] font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#656CFF] to-[#a855f7] group-hover:from-[#545bd9] group-hover:to-[#9333ea] transition-all">
+                                Applomic
+                            </span>
+                        </div>
+                    </a>
                 </div>
+
             </div>
         </footer>
     );
