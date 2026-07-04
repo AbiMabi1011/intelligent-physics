@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from '../components/admin/Sidebar';
 import Topbar from '../components/admin/Topbar';
@@ -8,6 +8,26 @@ import { useAuth } from '../context/AuthContext';
 const AdminLayout = () => {
     const { user, logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [theme, setTheme] = useState(() => localStorage.getItem('admin-theme') || 'dark');
+
+    useEffect(() => {
+        if (theme === 'light') {
+            document.documentElement.classList.add('admin-theme-light');
+        } else {
+            document.documentElement.classList.remove('admin-theme-light');
+        }
+
+        // Clean up theme class when admin dashboard is unmounted
+        return () => {
+            document.documentElement.classList.remove('admin-theme-light');
+        };
+    }, [theme]);
+
+    const toggleTheme = () => {
+        const nextTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(nextTheme);
+        localStorage.setItem('admin-theme', nextTheme);
+    };
 
     if (!user || user.role !== 'admin') {
         return <Navigate to="/" replace />;
@@ -30,6 +50,8 @@ const AdminLayout = () => {
                     onToggleSidebar={() => setSidebarOpen(prev => !prev)}
                     displayName={user.full_name || user.email}
                     onLogout={logout}
+                    theme={theme}
+                    onToggleTheme={toggleTheme}
                 />
 
                 {/* Page Content */}

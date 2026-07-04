@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Home, Plus, Trash2, Edit2, X, Loader2,
     ToggleLeft, ToggleRight, Eye, EyeOff, Upload, Image,
-    Layout, Megaphone, Save, BarChart3, GripVertical, Sparkles, Navigation, CheckCircle, User, MessageSquare, HelpCircle
+    Layout, Megaphone, Save, BarChart3, GripVertical, Sparkles, Navigation, CheckCircle, User, MessageSquare, HelpCircle, Layers
 } from 'lucide-react';
 import { API_URL } from '../../config';
 

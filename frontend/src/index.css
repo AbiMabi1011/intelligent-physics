@@ -419,3 +419,180 @@ body {
   font-weight: bold;
   opacity: 0.8;
 }
+
+/* ========================================================
+   ADMIN LIGHT THEME SYSTEM
+   ======================================================== */
+.admin-theme-light {
+  --admin-bg: #F8FAFC;
+  --admin-card-bg: #FFFFFF;
+  --admin-card: #FFFFFF;
+  --admin-border: #E2E8F0;
+  --admin-text: #0F172A;
+  --admin-text-dim: #64748B;
+  --admin-sidebar-bg: #FFFFFF;
+  --admin-accent-glow: rgba(101, 108, 255, 0.1);
+
+  /* Background overrides */
+  &.bg-\[\#0D0E12\],
+  .bg-\[\#0D0E12\] {
+    background-color: var(--admin-bg) !important;
+  }
+  .bg-\[\#15171C\] {
+    background-color: var(--admin-card-bg) !important;
+  }
+  .bg-\[\#111317\] {
+    background-color: var(--admin-sidebar-bg) !important;
+  }
+  .bg-\[\#1C1F26\],
+  .bg-\[\#1c1f26\],
+  .bg-\[\#1a1c23\] {
+    background-color: #F1F5F9 !important;
+  }
+  
+  /* Semi-transparent backgrounds */
+  .bg-white\/5 {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+  .hover\:bg-white\/5:hover {
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  .hover\:bg-white\/10:hover {
+    background-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  .bg-\[\#656CFF\]\/10 {
+    background-color: rgba(101, 108, 255, 0.1) !important;
+  }
+  .bg-gradient-to-br.from-\[\#15171C\].to-\[\#0D0E12\] {
+    background-image: none !important;
+    background-color: var(--admin-card-bg) !important;
+  }
+  .bg-gradient-to-br.from-\[\#1c1f26\].to-transparent {
+    background-image: none !important;
+    background-color: #F1F5F9 !important;
+  }
+
+  /* Borders */
+  .border-\[\#23262D\] {
+    border-color: var(--admin-border) !important;
+  }
+  .border-white\/5 {
+    border-color: var(--admin-border) !important;
+  }
+  .border-white\/10 {
+    border-color: var(--admin-border) !important;
+  }
+  .border-slate-800 {
+    border-color: var(--admin-border) !important;
+  }
+
+  /* Texts */
+  h1, h2, h3, h4, h5, h6, th, td, label {
+    color: var(--admin-text) !important;
+  }
+  p.text-white,
+  span.text-white,
+  div.text-white,
+  .text-white {
+    color: var(--admin-text) !important;
+  }
+  
+  /* Exclusion list to keep text white on colored backgrounds */
+  .bg-\[\#656CFF\] .text-white,
+  .bg-\[\#656CFF\] p,
+  .bg-\[\#656CFF\] span,
+  .bg-gradient-to-r.from-\[\#656CFF\] .text-white,
+  .bg-gradient-to-r.from-\[\#656CFF\] span,
+  .admin-sidebar-link-active,
+  .admin-sidebar-link-active span,
+  .btn-primary,
+  .bg-red-500 .text-white,
+  .bg-red-500 span,
+  .bg-\[\#10B981\] .text-white,
+  .bg-\[\#10B981\] span,
+  .bg-green-500 .text-white,
+  .bg-green-500 span,
+  .bg-emerald-500 .text-white,
+  .bg-emerald-500 span,
+  .bg-amber-500 .text-white,
+  .bg-amber-500 span,
+  .bg-yellow-500 .text-white,
+  .bg-yellow-500 span,
+  button.bg-\[\#656CFF\],
+  a.bg-\[\#656CFF\] {
+    color: #FFFFFF !important;
+  }
+
+  /* Specific dim slate colors */
+  .text-slate-500 {
+    color: var(--admin-text-dim) !important;
+  }
+  .text-slate-400 {
+    color: var(--admin-text-dim) !important;
+  }
+  .text-slate-300 {
+    color: var(--admin-text-dim) !important;
+  }
+  .text-slate-600 {
+    color: var(--admin-text-dim) !important;
+  }
+  .text-slate-700 {
+    color: var(--admin-text-dim) !important;
+  }
+  .text-slate-800 {
+    color: #94A3B8 !important;
+  }
+
+  /* Form Controls */
+  input, select, textarea {
+    background-color: #FFFFFF !important;
+    border-color: var(--admin-border) !important;
+    color: var(--admin-text) !important;
+    &::placeholder {
+      color: #94A3B8 !important;
+    }
+  }
+
+  /* Scrollbar override */
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--admin-bg) !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--admin-border) !important;
+    border-color: var(--admin-bg) !important;
+  }
+
+  /* Card highlights & shadows */
+  .admin-card {
+    box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.05) !important;
+  }
+  .admin-card:hover {
+    box-shadow: 0 20px 40px -15px rgba(101, 108, 255, 0.15) !important;
+    border-color: rgba(101, 108, 255, 0.4) !important;
+  }
+  
+  /* Recharts custom styling for light theme */
+  .recharts-cartesian-grid line {
+    stroke: var(--admin-border) !important;
+  }
+  .recharts-tooltip-wrapper .recharts-default-tooltip {
+    background-color: var(--admin-card-bg) !important;
+    border-color: var(--admin-border) !important;
+    color: var(--admin-text) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  /* Glow backgrounds to look subtle and premium in light mode */
+  .bg-\[\#656CFF\]\/5 {
+    background-color: rgba(101, 108, 255, 0.02) !important;
+  }
+  .bg-\[\#FEBC2E\]\/5 {
+    background-color: rgba(254, 188, 46, 0.02) !important;
+  }
+  .bg-white\/\[0\.02\] {
+    background-color: #FFFFFF !important;
+  }
+  .hover\:bg-white\/\[0\.02\]:hover {
+    background-color: rgba(0, 0, 0, 0.01) !important;
+  }
+}

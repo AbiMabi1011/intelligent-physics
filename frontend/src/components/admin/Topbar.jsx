@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, Bell, LogOut, Search, Settings, Mail, Grid, Zap, Activity, ShieldCheck, ChevronDown, User } from 'lucide-react';
+import { Menu, Bell, LogOut, Search, Settings, Mail, Grid, Zap, Activity, ShieldCheck, ChevronDown, User, Sun, Moon } from 'lucide-react';
 
-const Topbar = ({ onToggleSidebar, displayName, onLogout }) => {
+const Topbar = ({ onToggleSidebar, displayName, onLogout, theme, onToggleTheme }) => {
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
     return (
@@ -57,6 +57,19 @@ const Topbar = ({ onToggleSidebar, displayName, onLogout }) => {
                             <Grid size={20} />
                         </button>
                     </div>
+
+                    {/* Theme Toggle */}
+                    <button 
+                        onClick={onToggleTheme}
+                        className="h-11 w-11 flex items-center justify-center rounded-xl text-slate-500 hover:bg-white/5 hover:text-[#656CFF] transition-all shadow-inner"
+                        title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                    >
+                        {theme === 'dark' ? (
+                            <Sun size={20} className="transition-transform duration-500 hover:rotate-45" />
+                        ) : (
+                            <Moon size={20} className="transition-transform duration-500 hover:-rotate-12" />
+                        )}
+                    </button>
 
                     {/* User Profile */}
                     <div className="relative">
