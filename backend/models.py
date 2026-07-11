@@ -43,7 +43,13 @@ class Question(Base):
     option_c = Column(String)
     option_d = Column(String)
     option_e = Column(String, nullable=True)
-    correct_option = Column(String) # 'A', 'B', 'C', 'D', 'E'
+    correct_option = Column(String, nullable=True)  # 'A', 'B', 'C', 'D', 'E', or None/blank (ungraded)
+    image_url = Column(String, nullable=True)  # optional graph/diagram image
+    option_a_image_url = Column(String, nullable=True)
+    option_b_image_url = Column(String, nullable=True)
+    option_c_image_url = Column(String, nullable=True)
+    option_d_image_url = Column(String, nullable=True)
+    option_e_image_url = Column(String, nullable=True)
 
     quiz = relationship("Quiz", back_populates="questions")
 

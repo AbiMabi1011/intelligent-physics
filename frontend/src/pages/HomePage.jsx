@@ -311,11 +311,12 @@ export default function HomePage() {
 
   /* ─── State Hooks ─── */
   const [slides, setSlides] = useState([]);
-  const [homeAds, setHomeAds] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [homeStats, setHomeStats] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
 
   // Interactive Syllabus Search/Filter
   const [syllabusSearch, setSyllabusSearch] = useState('');
@@ -336,7 +337,7 @@ export default function HomePage() {
   useEffect(() => {
     Promise.all([
       fetch(`${API_URL}/sliders`).then(r => (r.ok ? r.json() : [])).catch(() => []),
-      fetch(`${API_URL}/home-ads`).then(r => (r.ok ? r.json() : [])).catch(() => []),
+      fetch(`${API_URL}/announcements`).then(r => (r.ok ? r.json() : [])).catch(() => []),
       fetch(`${API_URL}/home-stats`).then(r => (r.ok ? r.json() : [])).catch(() => []),
       fetch(`${API_URL}/teacher-profile`).then(r => (r.ok ? r.json() : null)).catch(() => null),
       fetch(`${API_URL}/syllabus-units`).then(r => (r.ok ? r.json() : [])).catch(() => []),
@@ -345,10 +346,10 @@ export default function HomePage() {
       fetch(`${API_URL}/home-testimonials`).then(r => (r.ok ? r.json() : [])).catch(() => []),
       fetch(`${API_URL}/home-faqs`).then(r => (r.ok ? r.json() : [])).catch(() => []),
     ])
-      .then(([sliders, ads, stats, teacherProf, syllabus, features, batches, testimonials, faqs]) => {
+      .then(([sliders, ann, stats, teacherProf, syllabus, features, batches, testimonials, faqs]) => {
         const activeSliders = (sliders || []).filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index);
         setSlides(activeSliders.length > 0 ? activeSliders : FALLBACK_SLIDES);
-        setHomeAds((ads || []).filter(a => a.is_active));
+        setAnnouncements(ann || []);
         setHomeStats((stats || []).filter(s => s.is_active));
 
         setTeacher(teacherProf);
@@ -380,12 +381,7 @@ export default function HomePage() {
   const activeTeacher = teacher || fallbackTeacher;
   const teacherImgSrc = activeTeacher.image_url ? IMG(activeTeacher.image_url) : teacherPic;
 
-  const leftAds = homeAds.filter(a => a.position === 'left');
-  const rightAds = homeAds.filter(a => a.position === 'right');
-  const allAdsList = [
-    ...(leftAds.length > 0 ? leftAds : FALLBACK_LEFT),
-    ...(rightAds.length > 0 ? rightAds : FALLBACK_RIGHT)
-  ];
+  const isNew = date => date && new Date() - new Date(date) < 7 * 24 * 60 * 60 * 1000;
 
   /* ─── Scroll Events ─── */
   useEffect(() => {
@@ -393,6 +389,34 @@ export default function HomePage() {
     window.addEventListener('scroll', fn, { passive: true });
     return () => window.removeEventListener('scroll', fn);
   }, []);
+
+  /* ─── Active Section via IntersectionObserver ─── */
+  useEffect(() => {
+    const sectionIds = ['announcements', 'syllabus', 'lms-features', 'batches'];
+    const observers = [];
+    const visible = new Set();
+
+    const pick = () => {
+      // Pick topmost visible section
+      for (const id of sectionIds) {
+        if (visible.has(id)) { setActiveSection(id); return; }
+      }
+      setActiveSection('');
+    };
+
+    sectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) visible.add(id); else visible.delete(id);
+        pick();
+      }, { threshold: 0.25 });
+      obs.observe(el);
+      observers.push(obs);
+    });
+
+    return () => observers.forEach(o => o.disconnect());
+  }, [loaded]); // re-run after data loads so sections exist
 
   /* ─── Auto Testimonial slider ─── */
   useEffect(() => {
@@ -513,6 +537,48 @@ export default function HomePage() {
           left: 150%;
           transition: all 0.8s ease-in-out;
         }
+
+        /* ── Liquid Navbar ── */
+        .hn-link {
+          position: relative; zIndex: 1;
+          display: inline-flex; align-items: center;
+          padding: 6px 14px; border-radius: 10px;
+          font-size: 0.8rem; font-weight: 400;
+          color: rgba(255,255,255,0.5);
+          background: none; border: none;
+          cursor: pointer; white-space: nowrap;
+          text-decoration: none;
+          transition: color 0.22s;
+        }
+        .hn-link:hover { color: rgba(255,255,255,0.88); }
+        .hn-link.active { color: #e0e7ff; font-weight: 700; }
+
+        .hn-cta {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 20px; border-radius: 999px;
+          background: transparent; color: #fff;
+          font-size: 0.82rem; font-weight: 500;
+          border: 1px solid rgba(255,255,255,0.22);
+          cursor: pointer; white-space: nowrap;
+          transition: background 0.2s, border-color 0.2s, transform 0.18s;
+        }
+        .hn-cta:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.5); transform: translateY(-1px); }
+        .hn-cta:active { transform: translateY(0); }
+
+        @keyframes hnMenuDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hn-menu-anim { animation: hnMenuDown 0.2s ease both; }
+        .hn-mob-link {
+          display: flex; align-items: center; gap: 12px;
+          width: 100%; padding: 11px 14px; border-radius: 10px;
+          font-size: 0.875rem; font-weight: 400;
+          color: rgba(255,255,255,0.65);
+          background: none; border: none; cursor: pointer;
+          text-align: left; transition: background 0.15s, color 0.15s;
+        }
+        .hn-mob-link:hover { background: rgba(255,255,255,0.07); color: #fff; }
       `}</style>
 
       {/* Global Glowing Mesh Orbs (Light Mode) */}
@@ -520,57 +586,181 @@ export default function HomePage() {
       <div className="absolute top-[20%] right-[-10%] w-[50%] h-[40%] bg-[#06b6d4]/3 blur-[140px] rounded-full pointer-events-none z-0 animate-glow-spot" style={{ animationDelay: '-4s' }} />
       <div className="absolute bottom-[10%] left-[10%] w-[60%] h-[50%] bg-[#a855f7]/3 blur-[150px] rounded-full pointer-events-none z-0 animate-glow-spot" style={{ animationDelay: '-8s' }} />
 
-      {/* ─── Premium Sticky Light Navigation Header ─── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-2xl border-b border-slate-200/50 py-3.5 shadow-sm shadow-slate-100/50' : 'bg-transparent py-8'}`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          
-          <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#656CFF] via-[#a855f7] to-[#06b6d4] p-0.5 shadow-lg shadow-[#656CFF]/20 group-hover:scale-105 transition-transform duration-300">
-              <img src={logo} alt="Intelligent Physics Logo" className="w-full h-full object-contain rounded-lg" />
-            </div>
-            <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-650 to-blue-600 uppercase italic">
-              Intelligent <span className="text-[#656CFF]">Physics</span>
-            </span>
-          </div>
+      {/* ─── Liquid HomePage Navbar ─── */}
+      {(() => {
+        const navItems = [
+          { label: 'Announcements', id: 'announcements', action: () => scrollTo('announcements') },
+          { label: 'Syllabus',      id: 'syllabus',     action: () => scrollTo('syllabus') },
+          { label: 'Features',      id: 'lms-features', action: () => scrollTo('lms-features') },
+          { label: 'Batches',       id: 'batches',      action: () => scrollTo('batches') },
+        ];
 
-          <div className="hidden md:flex items-center gap-8 font-black text-xs uppercase tracking-widest text-slate-655">
-            <button onClick={() => scrollTo('promotions')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Promotions</button>
-            <button onClick={() => scrollTo('demo-sandbox')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Sandbox</button>
-            <button onClick={() => scrollTo('lms-features')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Features</button>
-            <button onClick={() => scrollTo('syllabus')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Syllabus</button>
-            <button onClick={() => scrollTo('batches')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Batches</button>
-            <button onClick={() => navigate('/knowledge-hub')} className="hover:text-[#656CFF] transition-colors cursor-pointer">Knowledge Hub</button>
-          </div>
+        // Liquid pill sub-component (valid hooks usage)
+        const LiquidHomeNav = () => {
+          const navRef = useRef(null);
+          const linkRefs = useRef({});
+          const [pill, setPill] = useState({ left: 0, width: 0, opacity: 0 });
+          const [hoverId, setHoverId] = useState(null);
 
-          <div className="hidden md:flex items-center gap-4">
-            <button onClick={() => navigate('/login')} className="px-7 py-3 bg-gradient-to-r from-[#656CFF] to-[#545bd9] hover:opacity-95 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-[#656CFF]/20 hover:shadow-[#656CFF]/35 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group btn-shine-sweep">
-              <span className="relative z-10 flex items-center gap-2">
-                Portal Login <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </span>
-            </button>
-          </div>
+          const moveTo = (id) => {
+            const el = linkRefs.current[id];
+            const nav = navRef.current;
+            if (!el || !nav) return;
+            const nr = nav.getBoundingClientRect();
+            const lr = el.getBoundingClientRect();
+            setPill({ left: lr.left - nr.left, width: lr.width, opacity: 1 });
+          };
 
-          {/* Hamburger button */}
-          <button className="md:hidden text-slate-700 hover:text-slate-900" onClick={() => setMenuOpen(!menuOpen)}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              {menuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
-            </svg>
-          </button>
-        </div>
+          useEffect(() => {
+            const targetId = hoverId || activeSection;
+            if (targetId) {
+              moveTo(targetId);
+            } else {
+              setPill(p => ({ ...p, opacity: 0 }));
+            }
+          }, [hoverId, activeSection]);
 
-        {/* Mobile Dropdown */}
-        {menuOpen && (
-          <div className="absolute top-full left-4 right-4 mt-2 bg-white/95 backdrop-blur-2xl border border-slate-200 rounded-2xl p-5 flex flex-col gap-3 shadow-xl">
-            <button onClick={() => scrollTo('promotions')} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Promotions</button>
-            <button onClick={() => scrollTo('demo-sandbox')} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Sandbox</button>
-            <button onClick={() => scrollTo('lms-features')} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Features</button>
-            <button onClick={() => scrollTo('syllabus')} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Syllabus</button>
-            <button onClick={() => scrollTo('batches')} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Batches</button>
-            <button onClick={() => { navigate('/knowledge-hub'); setMenuOpen(false); }} className="text-left py-2.5 px-3 hover:bg-slate-50 rounded-lg text-slate-700 hover:text-[#656CFF] font-black text-xs uppercase tracking-wider">Knowledge Hub</button>
-            <button onClick={() => { navigate('/login'); setMenuOpen(false); }} className="w-full py-4 bg-gradient-to-r from-[#656CFF] to-[#545bd9] text-center font-black uppercase text-xs tracking-widest text-white rounded-xl">Portal Login →</button>
-          </div>
-        )}
-      </nav>
+          return (
+            <nav style={{
+              position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+              background: scrolled ? 'rgba(8,8,12,0.97)' : 'linear-gradient(180deg,rgba(8,8,12,0.9) 0%,rgba(8,8,12,0) 100%)',
+              backdropFilter: scrolled ? 'blur(24px)' : 'none',
+              WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'none',
+              borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+              transition: 'background 0.4s, border-color 0.4s',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {/* Aurora glow */}
+              {scrolled && (
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+                  <div style={{ position: 'absolute', top: '-50%', left: '25%', width: '38%', height: '200%', background: 'radial-gradient(ellipse,rgba(99,102,241,0.07) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                  <div style={{ position: 'absolute', top: '-50%', right: '18%', width: '28%', height: '200%', background: 'radial-gradient(ellipse,rgba(168,85,247,0.05) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', height: 62, position: 'relative', zIndex: 1 }}>
+
+                {/* Logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                  <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: -2, borderRadius: 11, background: 'linear-gradient(135deg,#6366f1,#a855f7,#06b6d4)', opacity: 0.7, filter: 'blur(4px)' }} />
+                    <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 9, overflow: 'hidden', background: '#0a0a0e' }}>
+                      <img src={logo} alt="IP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    </div>
+                  </div>
+                  <div style={{ lineHeight: 1.2 }}>
+                    <p style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>Intelligent Physics</p>
+                    <p style={{ fontSize: '0.58rem', fontWeight: 700, background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>A/L Physics Academy</p>
+                  </div>
+                </div>
+
+                {/* Liquid centre pill nav */}
+                <div ref={navRef} className="hidden md:flex"
+                  style={{
+                    position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+                    alignItems: 'center', gap: 2,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: 14, padding: '4px',
+                    backdropFilter: 'blur(12px)',
+                  }}>
+                  {/* Glowing pill */}
+                  <div style={{
+                    position: 'absolute', top: 4, bottom: 4,
+                    left: pill.left + 4, width: pill.width, opacity: pill.opacity,
+                    background: 'linear-gradient(135deg,rgba(99,102,241,0.38),rgba(168,85,247,0.28))',
+                    borderRadius: 10,
+                    border: '1px solid rgba(139,92,246,0.35)',
+                    boxShadow: '0 0 18px rgba(99,102,241,0.28), inset 0 1px 0 rgba(255,255,255,0.09)',
+                    transition: 'left 0.45s cubic-bezier(0.34,1.56,0.64,1), width 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s',
+                    pointerEvents: 'none', zIndex: 0,
+                  }} />
+                  {navItems.map(item => (
+                    <button key={item.id}
+                      ref={el => { linkRefs.current[item.id] = el; }}
+                      onClick={item.action}
+                      onMouseEnter={() => setHoverId(item.id)}
+                      onMouseLeave={() => setHoverId(null)}
+                      style={{
+                        position: 'relative', zIndex: 1,
+                        display: 'flex', alignItems: 'center',
+                        padding: '6px 14px', borderRadius: 10,
+                        fontSize: '0.8rem',
+                        fontWeight: (hoverId === item.id || activeSection === item.id) ? 700 : 400,
+                        color: (hoverId === item.id || activeSection === item.id) ? '#e0e7ff' : 'rgba(255,255,255,0.48)',
+                        background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                        transition: 'color 0.2s, font-weight 0.2s',
+                      }}>
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {/* Knowledge Hub ghost link */}
+                  <button className="hidden md:inline-flex"
+                    onClick={() => navigate('/knowledge-hub')}
+                    style={{
+                      padding: '7px 14px', borderRadius: 999,
+                      background: 'transparent', color: 'rgba(255,255,255,0.5)',
+                      fontSize: '0.8rem', fontWeight: 400,
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                      transition: 'color 0.2s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}>
+                    Knowledge Hub
+                  </button>
+
+                  {/* Learning Hub CTA (was Portal Login) */}
+                  <button className="hn-cta hidden md:inline-flex" onClick={() => navigate('/login')}>Learning Hub</button>
+
+                  {/* Mobile hamburger */}
+                  <button onClick={() => setMenuOpen(!menuOpen)}
+                    className="md:hidden flex flex-col justify-center items-center"
+                    style={{ width: 36, height: 36, gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, cursor: 'pointer' }}>
+                    <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: menuOpen ? 'translateY(6.5px) rotate(45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                    <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', opacity: menuOpen ? 0 : 1, transition: 'all 0.25s', display: 'block' }} />
+                    <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: menuOpen ? 'translateY(-6.5px) rotate(-45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile drawer */}
+              {menuOpen && (
+                <div className="hn-menu-anim md:hidden" style={{
+                  position: 'absolute', top: '100%', left: 10, right: 10, marginTop: 6,
+                  background: 'rgba(10,10,16,0.99)', backdropFilter: 'blur(24px)',
+                  border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16,
+                  padding: '8px 8px 12px',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.55)',
+                }}>
+                  {navItems.map(item => (
+                    <button key={item.id} onClick={item.action} className="hn-mob-link">{item.label}</button>
+                  ))}
+                  <div style={{ padding: '6px 6px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <button onClick={() => { navigate('/knowledge-hub'); setMenuOpen(false); }}
+                      style={{ width: '100%', padding: '11px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', transition: 'background 0.2s', textAlign: 'center' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      Knowledge Hub
+                    </button>
+                    <button onClick={() => { navigate('/login'); setMenuOpen(false); }}
+                      style={{ width: '100%', padding: '11px', borderRadius: 12, border: '1px solid rgba(139,92,246,0.35)', background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(168,85,247,0.15))', color: '#e0e7ff', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s', textAlign: 'center' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.32),rgba(168,85,247,0.24))'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(168,85,247,0.15))'  }>
+                      Learning Hub
+                    </button>
+                  </div>
+                </div>
+              )}
+            </nav>
+          );
+        };
+        return <LiquidHomeNav />;
+      })()}
 
       {/* ─── Hero Section with Dynamic Morphing Wave Canvas ─── */}
       <section className="relative pt-36 pb-24 md:pt-48 md:pb-32 overflow-hidden bg-gradient-to-b from-indigo-50/20 via-white to-transparent">
@@ -670,117 +860,79 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── Concept Sandbox Playground and portal preview ─── */}
-      <section id="demo-sandbox" className="py-28 relative border-b border-slate-200/30 overflow-hidden">
-        
-        {/* Stripe-style horizontal grids */}
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-        
+
+
+      {/* ─── Latest Announcements Section ─── */}
+      <section id="announcements" className="py-24 relative border-b border-slate-200/30">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           
           <ScrollReveal>
             <div className="max-w-3xl mx-auto text-center mb-20">
-              <span className="text-[#656CFF] text-[10px] font-black uppercase tracking-[0.25em] px-4.5 py-2 bg-[#656CFF]/10 rounded-full border border-[#656CFF]/20 shadow-sm animate-pulse">Interactive Learning Preview</span>
+              <span className="text-[#656CFF] text-[10px] font-black uppercase tracking-[0.25em] px-4.5 py-2 bg-[#656CFF]/10 rounded-full border border-[#656CFF]/20 shadow-sm">News & updates</span>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-6 text-slate-950 uppercase italic">
-                Concept-First <span className="text-[#656CFF]">Graphical Simulators</span>
-              </h2>
-              <p className="mt-4 text-slate-500 text-xs font-semibold uppercase tracking-wider leading-relaxed">
-                Experience the custom graphical modules designed to simplify Sri Lankan G.C.E. A/L derivations. Drag controls to modulate vector projections and waves instantly.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="flex flex-col gap-16">
-            {/* Real Wave / Vector Simulator Sandbox - no tilt so sliders work freely */}
-            <ScrollReveal delay={200}>
-              <PhysicsSandbox />
-            </ScrollReveal>
-
-            {/* LMS Student Portal Dashboard Showcase mock */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center mt-8">
-              <div className="lg:col-span-5 text-center lg:text-left flex flex-col gap-5">
-                <ScrollReveal delay={100}>
-                  <span className="text-purple-600 text-[10px] font-black uppercase tracking-widest bg-purple-50 border border-purple-100 px-3.5 py-1.5 rounded-md self-center lg:self-start">Next-Gen LMS Portal</span>
-                  <h3 className="text-3xl font-black text-slate-900 uppercase italic leading-tight mt-3">Adaptive Quiz and <br />Lecture Archives</h3>
-                  <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Our advanced students login into a personalized dashboard where they access real-time results analytics, leaderboards, G.C.E. A/L past paper vaults, and 1080p high definition class streams.
-                  </p>
-                  <div className="flex justify-center lg:justify-start mt-2">
-                    <button onClick={() => navigate('/login')} className="px-6 py-3 bg-[#656CFF] hover:bg-[#545bd9] text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md btn-shine-sweep flex items-center gap-2">
-                      Enter Portal Preview <span className="transition-transform group-hover:translate-x-1">→</span>
-                    </button>
-                  </div>
-                </ScrollReveal>
-              </div>
-              <div className="lg:col-span-7">
-                <ScrollReveal delay={300}>
-                  <PortalMockPreview />
-                </ScrollReveal>
-              </div>
-            </div>
-          </div>
-          
-        </div>
-      </section>
-
-      {/* ─── Promotions & Announcements Section (High Priority Ads) ─── */}
-      <section id="promotions" className="py-24 relative border-b border-slate-200/30">
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          
-          <ScrollReveal>
-            <div className="max-w-3xl mx-auto text-center mb-20">
-              <span className="text-[#656CFF] text-[10px] font-black uppercase tracking-[0.25em] px-4.5 py-2 bg-[#656CFF]/10 rounded-full border border-[#656CFF]/20 shadow-sm">Special Bulletins</span>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight mt-6 text-slate-950 uppercase italic">
-                Latest Promotions & <span className="text-[#656CFF]">Announcements</span>
+                Latest <span className="text-[#656CFF]">Announcements</span>
               </h2>
               <p className="mt-4 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-                Stay up to date with new batches, demo resources, and enrollment opportunities
+                Stay up to date with notices, updates, and classroom notifications
               </p>
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
-            {allAdsList.map((ad, index) => {
-              const imgSrc = ad.image_url?.startsWith('/') ? `${API_URL}${ad.image_url}` : ad.image_url;
-              return (
-                <ScrollReveal key={ad.id || index} delay={index * 200}>
-                  <TiltCard className="h-full">
-                    <div className="rounded-[2rem] overflow-hidden border border-slate-200 bg-white shadow-md relative flex flex-col justify-between p-8 md:p-10 group hover:border-[#656CFF]/45 h-full">
-                      <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#656CFF]/10 to-transparent group-hover:via-[#656CFF]/30 transition-all duration-700" />
-                      
-                      {imgSrc && (
-                        <div className="mb-6 w-full h-48 rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50">
-                          <img src={imgSrc} alt={ad.title} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" />
+          {announcements.length === 0 ? (
+            <ScrollReveal delay={100}>
+              <div className="flex flex-col items-center justify-center py-16 rounded-3xl border border-dashed border-slate-200 bg-slate-50/50">
+                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-4">
+                  <Lucide.Bell size={20} className="text-slate-400" />
+                </div>
+                <p className="font-bold text-slate-700 text-sm mb-1">No announcements yet</p>
+                <p className="text-xs text-slate-400">Class notices and updates will be displayed here</p>
+              </div>
+            </ScrollReveal>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+              {announcements.map((ann, index) => {
+                const imgSrc = ann.image_url ? (ann.image_url.startsWith('/') ? `${API_URL}${ann.image_url}` : ann.image_url) : null;
+                return (
+                  <ScrollReveal key={ann.id || index} delay={index * 150}>
+                    <TiltCard className="h-full">
+                      <div className="rounded-[2rem] overflow-hidden border border-slate-200 bg-white shadow-md relative flex flex-col justify-between p-8 md:p-10 group hover:border-[#656CFF]/45 h-full">
+                        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#656CFF]/10 to-transparent group-hover:via-[#656CFF]/30 transition-all duration-700" />
+                        
+                        {imgSrc && (
+                          <div className="mb-6 w-full h-48 rounded-2xl overflow-hidden border border-slate-200 relative bg-slate-50">
+                            <img src={imgSrc} alt="" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700" />
+                          </div>
+                        )}
+
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            {isNew(ann.created_at) && (
+                              <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-500 text-white animate-pulse">
+                                NEW
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-400 font-semibold ml-auto">
+                              {ann.created_at?.slice(0, 10)}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-black text-slate-900 leading-tight uppercase italic">{ann.title}</h3>
+                          <p className="text-xs text-slate-600 font-semibold leading-relaxed">
+                            {ann.content}
+                          </p>
                         </div>
-                      )}
 
-                      <div className="space-y-4">
-                        <span className="px-3.5 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-[#656CFF]/10 text-[#656CFF] border border-[#656CFF]/20 inline-block">
-                          {ad.badge}
-                        </span>
-                        <h3 className="text-2xl font-black text-slate-900 leading-tight uppercase italic">{ad.title}</h3>
-                        <p className="text-xs text-slate-600 font-semibold leading-relaxed">
-                          {ad.description}
-                        </p>
+                        <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                            Notice ID: AN-0{index + 1}
+                          </span>
+                        </div>
                       </div>
-
-                      <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
-                        <button 
-                          onClick={() => goLink(ad.cta_link)}
-                          className="px-6 py-3 bg-[#656CFF] hover:bg-[#545bd9] text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-[#656CFF]/10 active:scale-95 btn-shine-sweep"
-                        >
-                          {ad.cta_text || 'Learn More'}
-                        </button>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          Bulletin ID: AD-0{index + 1}
-                        </span>
-                      </div>
-                    </div>
-                  </TiltCard>
-                </ScrollReveal>
-              );
-            })}
-          </div>
+                    </TiltCard>
+                  </ScrollReveal>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

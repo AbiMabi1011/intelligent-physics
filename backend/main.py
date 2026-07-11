@@ -10,6 +10,11 @@ import shutil
 from pathlib import Path
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import io
+import json
+import urllib.request
+import urllib.error
+from pypdf import PdfReader
 
 import models
 import schemas
@@ -903,7 +908,8 @@ def create_quiz(quiz: schemas.QuizCreate, db: Session = Depends(get_db)):
             option_c=q.option_c,
             option_d=q.option_d,
             option_e=q.option_e,
-            correct_option=q.correct_option
+            correct_option=q.correct_option,
+            image_url=q.image_url
         )
         db.add(new_q)
     
@@ -939,7 +945,8 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
             option_c=q.option_c,
             option_d=q.option_d,
             option_e=q.option_e,
-            correct_option=q.correct_option
+            correct_option=q.correct_option,
+            image_url=q.image_url
         )
         db.add(new_q)
         
@@ -1208,3 +1215,171 @@ def delete_home_faq(faq_id: int, db: Session = Depends(get_db)):
     db.delete(db_faq)
     db.commit()
     return {"message": "Deleted successfully"}
+
+# --- PDF QUIZ GENERATOR ---
+import io
+import json
+import urllib.request
+import urllib.error
+from pypdf import PdfReader
+
+# 1. Consonant translation matrix
+CONSONANTS = {
+    'f': 'க', 'r': 'ச', 'l': 'ட', 'z': 'ண', 'j': 'த', 'n': 'ந', 'g': 'ப', 'k': 'ம',
+    'a': 'ய', 'u': 'ர', 'y': 'ல', 't': 'வ', 's': 'ள', 'w': 'ற', 'd': 'ன', 'q': 'ங', 'o': 'ழ'
+}
+
+B_REPLACEMENT = []
+
+# 1. Prefix and suffix combinations
+for k, val in CONSONANTS.items():
+    B_REPLACEMENT.append(('N' + k + 'h;', val + 'ோ'))
+    B_REPLACEMENT.append(('N' + k + 'h', val + 'ோ'))
+    B_REPLACEMENT.append(('N' + k + ';', val + 'ே'))
+    B_REPLACEMENT.append(('N' + k, val + 'ே'))
+    
+    B_REPLACEMENT.append(('e' + k + 'h;', val + 'ொ'))
+    B_REPLACEMENT.append(('e' + k + 'h', val + 'ொ'))
+    B_REPLACEMENT.append(('e' + k + ';', val + 'ெ'))
+    B_REPLACEMENT.append(('e' + k, val + 'ெ'))
+    
+    B_REPLACEMENT.append(('i' + k + ';', val + 'ை'))
+    B_REPLACEMENT.append(('i' + k, val + 'ை'))
+
+    # base combinations
+    B_REPLACEMENT.append((k + 'p;', val + 'ீ'))
+    B_REPLACEMENT.append((k + 'p', val + 'ி'))
+    B_REPLACEMENT.append((k + 'P', val + 'ீ'))
+    B_REPLACEMENT.append((k + 'h;', val + 'ா'))
+    B_REPLACEMENT.append((k + 'h', val + 'ா'))
+    B_REPLACEMENT.append((k + ';', val + '்'))
+
+# Extra static rules
+EXTRA_RULES = [
+    ('A', 'அ'), ('M', 'ஆ'), ('I', 'ஐ'), ('X', 'ஓ'), ('x', 'ஒ'),
+    ('c', 'உ'), ('C', 'ஊ'), ('v', 'எ'), ('V', 'ஏ'), (',', 'இ'),
+    ('<', 'ஈ'), ('F', 'கு'), ('G', 'பு'), ('K', 'ழு'), ('W', 'று'),
+    ('J', 'து'), ('L', 'ட'), ('S', 'ளு'), ('T', 'வு'), ('U', 'ரு'), ('D', 'னு'),
+    ('Jh', 'தூ'), ('\\', 'ஹ')
+]
+
+for k, val in CONSONANTS.items():
+    B_REPLACEMENT.append((k, val))
+
+B_REPLACEMENT.extend(EXTRA_RULES)
+
+# Sort replacements by pattern length descending to guarantee longest matches replace first!
+B_REPLACEMENT.sort(key=lambda x: len(x[0]), reverse=True)
+
+def convert_bamini_to_unicode(text: str) -> str:
+    unicode_text = text
+    for p, r in B_REPLACEMENT:
+        unicode_text = unicode_text.replace(p, r)
+    return unicode_text
+
+def is_bamini(text: str) -> bool:
+    import re
+    return bool(re.search(r'MdJ|Nthy;w;W|,yj;jpud;|[jrlztngkahyvwdqcs];', text))
+
+def translate_bamini_text(text: str) -> str:
+    import re
+    if is_bamini(text):
+        def replace_token(match):
+            token = match.group(0)
+            if len(token) <= 1:
+                return token
+            if re.match(r'^(GMm|GM|eV|N|G|M|m|r|r\^2|GMm\/r|GMm\/r\^2|GM\/r)$', token, re.IGNORECASE):
+                return token
+            if re.match(r'^[Mmr],?[Mmr]?$', token):
+                return token
+            if '/' in token or '^' in token:
+                return token
+            return convert_bamini_to_unicode(token)
+            
+        return re.sub(r'[a-zA-Z;,<>\\^\\/\\*\\-\\+0-9]+', replace_token, text)
+    return text
+
+@app.post("/quizzes/generate-from-pdf")
+async def generate_quiz_from_pdf(file: UploadFile = File(...)):
+    # 1. Extract text from uploaded PDF
+    try:
+        pdf_bytes = await file.read()
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        extracted_text = ""
+        for page in reader.pages:
+            extracted_text += page.extract_text() or ""
+            extracted_text += "\n"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read PDF: {str(e)}")
+
+    if not extracted_text.strip():
+        raise HTTPException(status_code=400, detail="The uploaded PDF contains no readable text content.")
+
+    # 2. Decode legacy Bamini Tamil to Unicode Tamil
+    decoded_text = translate_bamini_text(extracted_text)
+
+    # 3. Call Google Gemini API
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY environment variable is not configured on the server.")
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    
+    prompt = (
+        "You are an expert physics teacher. Extract all the multiple choice questions (MCQs) from the following exam text. "
+        "Structure them exactly matching the JSON response format requested. Ensure all question texts, options A through E, "
+        "and correct_option (A, B, C, D, or E) are populated. If option E is not present in the question, set option_e to empty string. "
+        "Format any mathematical expressions or variables nicely.\n\n"
+        "Exam Text:\n" + decoded_text
+    )
+
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": prompt
+            }]
+        }],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "responseSchema": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "text": { "type": "STRING" },
+                        "option_a": { "type": "STRING" },
+                        "option_b": { "type": "STRING" },
+                        "option_c": { "type": "STRING" },
+                        "option_d": { "type": "STRING" },
+                        "option_e": { "type": "STRING" },
+                        "correct_option": { "type": "STRING", "description": "A, B, C, D, or E" }
+                    },
+                    "required": ["text", "option_a", "option_b", "option_c", "option_d", "option_e", "correct_option"]
+                }
+            }
+        }
+    }
+
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=30) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            
+        candidate = res_data.get("candidates", [{}])[0]
+        text_content = candidate.get("content", {}).get("parts", [{}])[0].get("text", "[]")
+        
+        questions = json.loads(text_content)
+        return {"questions": questions}
+    except urllib.error.HTTPError as he:
+        err_msg = he.read().decode("utf-8")
+        print(f"Gemini API HTTP Error: {err_msg}")
+        raise HTTPException(status_code=502, detail=f"Gemini API returned error: {err_msg}")
+    except Exception as e:
+        print(f"Failed to generate quiz: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse and generate quiz: {str(e)}")
+

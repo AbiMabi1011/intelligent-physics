@@ -55,6 +55,18 @@ def migrate():
         cursor.execute("ALTER TABLE questions ADD COLUMN option_e TEXT")
         print("option_e column added.")
 
+    if "image_url" not in q_columns:
+        print("Adding image_url column to questions...")
+        cursor.execute("ALTER TABLE questions ADD COLUMN image_url TEXT")
+        print("image_url column added.")
+
+    option_img_cols = ["option_a_image_url", "option_b_image_url", "option_c_image_url", "option_d_image_url", "option_e_image_url"]
+    for col in option_img_cols:
+        if col not in q_columns:
+            print(f"Adding {col} column to questions...")
+            cursor.execute(f"ALTER TABLE questions ADD COLUMN {col} TEXT")
+            print(f"{col} column added.")
+
     # Check for quiz class_name
     cursor.execute("PRAGMA table_info(quizzes)")
     quiz_cols = [col[1] for col in cursor.fetchall()]

@@ -63,6 +63,177 @@ const StatCard = ({ label, value, icon, gradient, visible }) => {
     );
 };
 
+/* ─── Liquid Navbar Component ─── */
+const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, logo, user, myClass, mobileOpen, setMobileOpen, scrolled, logout, navigate }) => {
+    const navRef = useRef(null);
+    const linkRefs = useRef({});
+    const [pill, setPill] = React.useState({ left: 0, width: 0, opacity: 0 });
+
+    React.useEffect(() => {
+        const update = () => {
+            const active = linkRefs.current[activeSection];
+            const nav = navRef.current;
+            if (!active || !nav) return;
+            const navRect = nav.getBoundingClientRect();
+            const rect = active.getBoundingClientRect();
+            setPill({ left: rect.left - navRect.left, width: rect.width, opacity: 1 });
+        };
+        update();
+        window.addEventListener('resize', update);
+        return () => window.removeEventListener('resize', update);
+    }, [activeSection]);
+
+    return (
+        <nav style={{
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
+            background: scrolled ? 'rgba(8,8,12,0.97)' : 'linear-gradient(180deg,rgba(8,8,12,0.88) 0%,rgba(8,8,12,0.0) 100%)',
+            backdropFilter: scrolled ? 'blur(24px)' : 'none',
+            WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'none',
+            borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+            transition: 'background 0.4s, border-color 0.4s',
+            display: 'flex', flexDirection: 'column',
+        }}>
+            {/* Aurora glow strip */}
+            {scrolled && (
+                <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
+                    <div style={{ position: 'absolute', top: '-50%', left: '20%', width: '40%', height: '200%', background: 'radial-gradient(ellipse,rgba(99,102,241,0.07) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                    <div style={{ position: 'absolute', top: '-50%', right: '15%', width: '30%', height: '200%', background: 'radial-gradient(ellipse,rgba(168,85,247,0.05) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 62, position: 'relative', zIndex: 1 }}>
+
+                {/* Logo */}
+                <a href="#home" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
+                    <div style={{ position: 'relative' }}>
+                        <div style={{ position: 'absolute', inset: -2, borderRadius: 11, background: 'linear-gradient(135deg,#6366f1,#a855f7,#06b6d4)', opacity: 0.7, filter: 'blur(4px)' }} />
+                        <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 9, overflow: 'hidden', background: '#0a0a0e' }}>
+                            <img src={logo} alt="IP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </div>
+                    </div>
+                    <div style={{ lineHeight: 1.2 }}>
+                        <p style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>Intelligent Physics</p>
+                        <p style={{ fontSize: '0.58rem', fontWeight: 700, background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Hub</p>
+                    </div>
+                </a>
+
+                {/* Liquid centre nav */}
+                <div ref={navRef} className="hidden md:flex"
+                    style={{
+                        position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+                        alignItems: 'center', gap: 2,
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                        borderRadius: 14, padding: '4px',
+                        backdropFilter: 'blur(12px)',
+                    }}>
+                    {/* Sliding liquid pill */}
+                    <div style={{
+                        position: 'absolute', top: 4, bottom: 4,
+                        left: pill.left + 4, width: pill.width, opacity: pill.opacity,
+                        background: 'linear-gradient(135deg,rgba(99,102,241,0.38),rgba(168,85,247,0.28))',
+                        borderRadius: 10,
+                        border: '1px solid rgba(139,92,246,0.35)',
+                        boxShadow: '0 0 18px rgba(99,102,241,0.28), inset 0 1px 0 rgba(255,255,255,0.09)',
+                        transition: 'left 0.45s cubic-bezier(0.34,1.56,0.64,1), width 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s',
+                        pointerEvents: 'none', zIndex: 0,
+                    }} />
+                    {sections.map(l => (
+                        <a key={l.id} href={`#${l.id}`}
+                            ref={el => { linkRefs.current[l.id] = el; }}
+                            style={{
+                                position: 'relative', zIndex: 1,
+                                display: 'flex', alignItems: 'center', gap: 5,
+                                padding: '6px 13px', borderRadius: 10,
+                                fontSize: '0.8rem',
+                                fontWeight: activeSection === l.id ? 700 : 400,
+                                color: activeSection === l.id ? '#e0e7ff' : 'rgba(255,255,255,0.45)',
+                                textDecoration: 'none', whiteSpace: 'nowrap',
+                                transition: 'color 0.22s',
+                            }}
+                            onMouseEnter={e => { if (activeSection !== l.id) e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
+                            onMouseLeave={e => { if (activeSection !== l.id) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}>
+                            <span style={{ opacity: activeSection === l.id ? 1 : 0.6 }}>{l.icon}</span>
+                            {l.label}
+                            {l.id === 'quizzes' && visibleQ.length > 0 && (
+                                <span style={{ fontSize: 9, background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontWeight: 800, padding: '1px 6px', borderRadius: 99, boxShadow: '0 0 8px rgba(99,102,241,0.5)' }}>{visibleQ.length}</span>
+                            )}
+                            {l.id === 'announcements' && announcements.some(a => isNew(a.created_at)) && (
+                                <span style={{ width: 5, height: 5, background: '#ef4444', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 6px #ef4444' }} />
+                            )}
+                            {l.count > 0 && l.id !== 'quizzes' && l.id !== 'announcements' && (
+                                <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', fontWeight: 700, padding: '1px 5px', borderRadius: 99 }}>{l.count}</span>
+                            )}
+                        </a>
+                    ))}
+                </div>
+
+                {/* Right */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {/* Avatar chip */}
+                    <div className="hidden sm:flex" style={{ alignItems: 'center', gap: 8, padding: '4px 12px 4px 4px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800, flexShrink: 0, boxShadow: '0 0 10px rgba(99,102,241,0.4)' }}>
+                            {user?.full_name?.charAt(0) || 'S'}
+                        </div>
+                        <div style={{ lineHeight: 1.2 }}>
+                            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', margin: 0 }}>{user?.full_name?.split(' ')[0]}</p>
+                            {myClass && <p style={{ fontSize: '0.58rem', fontWeight: 700, background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>{myClass}</p>}
+                        </div>
+                    </div>
+                    {/* Logout */}
+                    <button onClick={() => { logout(); navigate('/'); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
+                        <LogOut size={13} />
+                        <span className="hidden sm:inline">Logout</span>
+                    </button>
+                    {/* Hamburger */}
+                    <button onClick={() => setMobileOpen(p => !p)}
+                        className="md:hidden flex flex-col justify-center items-center"
+                        style={{ width: 36, height: 36, gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, cursor: 'pointer' }}>
+                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: mobileOpen ? 'translateY(6.5px) rotate(45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', opacity: mobileOpen ? 0 : 1, transition: 'all 0.25s', display: 'block' }} />
+                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: mobileOpen ? 'translateY(-6.5px) rotate(-45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile drawer */}
+            {mobileOpen && (
+                <div className="md:hidden" style={{ background: 'rgba(10,10,16,0.99)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '10px 14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 6px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '0.95rem', boxShadow: '0 0 14px rgba(99,102,241,0.4)' }}>
+                            {user?.full_name?.charAt(0) || 'S'}
+                        </div>
+                        <div>
+                            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{user?.full_name}</p>
+                            {myClass && <p style={{ fontWeight: 700, fontSize: '0.65rem', background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>{myClass}</p>}
+                        </div>
+                    </div>
+                    {sections.map(s => (
+                        <a key={s.id} href={`#${s.id}`} onClick={() => setMobileOpen(false)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '11px 12px', borderRadius: 12, marginBottom: 3,
+                                fontSize: '0.875rem', fontWeight: activeSection === s.id ? 700 : 400,
+                                color: activeSection === s.id ? '#e0e7ff' : 'rgba(255,255,255,0.5)',
+                                background: activeSection === s.id ? 'linear-gradient(135deg,rgba(99,102,241,0.18),rgba(168,85,247,0.12))' : 'transparent',
+                                border: activeSection === s.id ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
+                                textDecoration: 'none', transition: 'all 0.18s',
+                            }}>
+                            {s.icon}{s.label}
+                            {s.count > 0 && (
+                                <span style={{ marginLeft: 'auto', fontSize: 9, background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontWeight: 800, padding: '2px 7px', borderRadius: 99, boxShadow: '0 0 8px rgba(99,102,241,0.4)' }}>{s.count}</span>
+                            )}
+                        </a>
+                    ))}
+                </div>
+            )}
+        </nav>
+    );
+};
+
 /* ═══════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════ */
@@ -262,22 +433,35 @@ const Dashboard = () => {
                     </div>
                 ) : currentQuiz.questions.map((q, idx) => (
                     <div key={q.id} className="bg-white/8 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-colors">
-                        <div className="flex items-start gap-3 mb-4">
-                            <span className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-sm">{idx + 1}</span>
-                            <p className="text-white font-semibold leading-relaxed pt-1">{q.text}</p>
-                        </div>
-                        <div className="space-y-2 ml-11">
-                            {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                const txt = q[`option_${opt.toLowerCase()}`];
-                                if (!txt) return null;
-                                const sel = answers[q.id] === opt;
-                                return (
-                                    <button key={opt} onClick={() => setAnswers(p => ({ ...p, [q.id]: opt }))}
-                                        className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${sel ? 'border-blue-400 bg-blue-500/25 text-white' : 'border-white/10 bg-white/5 text-white/60 hover:border-blue-400/40 hover:text-white hover:bg-white/10'}`}>
-                                        <span className={`font-black mr-2 ${sel ? 'text-blue-300' : 'text-white/30'}`}>{opt}.</span>{txt}
-                                    </button>
-                                );
-                            })}
+                        <div className="flex flex-col md:flex-row gap-6">
+                            <div className="flex-1">
+                                <div className="flex items-start gap-3 mb-4">
+                                    <span className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-sm">{idx + 1}</span>
+                                    <p className="text-white font-semibold leading-relaxed pt-1">{q.text}</p>
+                                </div>
+                                <div className="space-y-2 ml-11">
+                                    {['A', 'B', 'C', 'D', 'E'].map(opt => {
+                                        const txt = q[`option_${opt.toLowerCase()}`];
+                                        if (!txt) return null;
+                                        const sel = answers[q.id] === opt;
+                                        return (
+                                            <button key={opt} onClick={() => setAnswers(p => ({ ...p, [q.id]: opt }))}
+                                                className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${sel ? 'border-blue-400 bg-blue-500/25 text-white' : 'border-white/10 bg-white/5 text-white/60 hover:border-blue-400/40 hover:text-white hover:bg-white/10'}`}>
+                                                <span className={`font-black mr-2 ${sel ? 'text-blue-300' : 'text-white/30'}`}>{opt}.</span>{txt}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            {q.image_url && (
+                                <div className="w-full md:w-1/3 flex items-center justify-center bg-black/20 rounded-xl p-4 border border-white/5 shrink-0 self-center md:self-start">
+                                    <img
+                                        src={`${API_URL}${q.image_url}`}
+                                        alt={`Question ${idx + 1}`}
+                                        className="max-h-64 object-contain rounded-lg"
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -298,88 +482,32 @@ const Dashboard = () => {
     /* ════════════════════ PORTAL ════════════════════ */
     const sections = [
         { id: 'home', label: 'Overview', icon: <Play size={16} /> },
-        { id: 'announcements', label: 'Notices', icon: <Bell size={16} />, count: announcements.length },
-        { id: 'quizzes', label: 'Live Quizzes', icon: <Award size={16} />, count: quizzes.length },
-        { id: 'recordings', label: 'Class Replays', icon: <Video size={16} />, count: recordings.length },
-        { id: 'papers', label: 'Study Resources', icon: <FileText size={16} />, count: papers.length },
-        { id: 'marks', label: 'Marks & Results', icon: <FileText size={16} />, count: marks.length },
+        { id: 'announcements', label: 'Announcements', icon: <Bell size={16} />, count: announcements.length },
+        { id: 'quizzes', label: 'Quizzes', icon: <Award size={16} />, count: quizzes.length },
+        { id: 'recordings', label: 'Recordings', icon: <Video size={16} />, count: recordings.length },
+        { id: 'papers', label: 'Resources', icon: <FileText size={16} />, count: papers.length },
+        { id: 'marks', label: 'Marks', icon: <FileText size={16} />, count: marks.length },
     ];
 
     return (
         <div className="min-h-screen bg-[#f8f9ff]">
 
-            {/* ════ NAVBAR ════ */}
-            <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/85 backdrop-blur-2xl shadow-xl shadow-black/5 border-b border-gray-200/50' : 'bg-transparent'}`}>
-                <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
-                    <a href="#home" className="flex items-center gap-2.5 shrink-0">
-                        <div className="h-9 w-9 rounded-xl overflow-hidden shadow-lg ring-2 ring-blue-500/20">
-                            <img src={logo} alt="IP" className="h-full w-full object-contain" />
-                        </div>
-                        <div className="hidden sm:block leading-tight">
-                            <p className={`font-black text-sm tracking-tight ${scrolled ? 'text-gray-900' : 'text-white'}`}>Intelligent Physics</p>
-                            <p className={`text-[10px] font-bold ${scrolled ? 'text-blue-600' : 'text-white/50'}`}>LEARNING HUB</p>
-                        </div>
-                    </a>
-
-                    {/* Desktop nav */}
-                    <div className="hidden md:flex items-center rounded-2xl gap-0.5 p-1 bg-black/5 backdrop-blur-sm">
-                        {sections.map(l => (
-                            <a key={l.id} href={`#${l.id}`}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${activeSection === l.id ? (scrolled ? 'bg-white shadow-sm text-blue-600' : 'bg-white/20 text-white') : (scrolled ? 'text-gray-600 hover:text-gray-900 hover:bg-white/70' : 'text-white/70 hover:text-white hover:bg-white/10')}`}>
-                                {l.icon}{l.label}
-                                {l.id === 'quizzes' && visibleQ.length > 0 && <span className="ml-0.5 text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{visibleQ.length}</span>}
-                                {l.id === 'announcements' && announcements.some(a => isNew(a.created_at)) && <span className="w-2 h-2 bg-red-500 rounded-full" />}
-                                {l.count > 0 && l.id !== 'quizzes' && l.id !== 'announcements' && <span className="ml-0.5 text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{l.count}</span>}
-                            </a>
-                        ))}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <div className={`hidden sm:flex items-center gap-2 rounded-xl px-3 py-1.5 ${scrolled ? 'bg-gray-100' : 'bg-white/10 backdrop-blur-sm'}`}>
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-black shadow-md">
-                                {user?.full_name?.charAt(0) || 'S'}
-                            </div>
-                            <div className="hidden lg:block leading-tight">
-                                <p className={`text-xs font-bold ${scrolled ? 'text-gray-900' : 'text-white'}`}>{user?.full_name?.split(' ')[0]}</p>
-                                {myClass && <p className="text-[10px] text-blue-500 font-bold">{myClass}</p>}
-                            </div>
-                        </div>
-                        <button onClick={() => setShowQRModal(true)}
-                            className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-blue-600 hover:bg-blue-50' : 'text-blue-400 hover:text-white hover:bg-white/10'}`}>
-                            <QrCode size={15} /><span className="hidden sm:block">My QR</span>
-                        </button>
-                        <button onClick={() => { logout(); navigate('/'); }}
-                            className={`flex items-center gap-1 text-sm font-semibold px-3 py-2 rounded-xl transition-all ${scrolled ? 'text-gray-500 hover:text-red-600 hover:bg-red-50' : 'text-white/70 hover:text-white hover:bg-white/10'}`}>
-                            <LogOut size={15} /><span className="hidden sm:block">Logout</span>
-                        </button>
-                        <button onClick={() => setMobileOpen(p => !p)}
-                            className={`md:hidden p-2 rounded-xl ${scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'}`}>
-                            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-                        </button>
-                    </div>
-                </div>
-
-                {mobileOpen && (
-                    <div className="md:hidden bg-slate-900/97 backdrop-blur-2xl border-t border-white/10 px-4 pb-6 pt-2">
-                        <div className="flex items-center gap-3 py-3 mb-2 border-b border-white/10">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black">
-                                {user?.full_name?.charAt(0) || 'S'}
-                            </div>
-                            <div><p className="text-white font-bold">{user?.full_name}</p>{myClass && <p className="text-blue-400 text-xs font-semibold">{myClass}</p>}</div>
-                        </div>
-                        <nav className="flex flex-col gap-2">
-                            {sections.map(s => (
-                                <a key={s.id} href={`#${s.id}`} onClick={() => setMobileOpen(false)}
-                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition mb-1 ${activeSection === s.id ? 'bg-blue-600/30 text-blue-300' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-                                    {s.icon}{s.label}
-                                    {s.count > 0 && <span className="ml-auto text-[10px] bg-blue-500 text-white font-black px-1.5 py-0.5 rounded-full">{s.count}</span>}
-                                    <ArrowRight size={14} className="ml-auto opacity-40" />
-                                </a>
-                            ))}
-                        </nav>
-                    </div>
-                )}
-            </nav>
+            {/* ════ LIQUID NAVBAR ════ */}
+            <LiquidNav
+                sections={sections}
+                activeSection={activeSection}
+                visibleQ={visibleQ}
+                announcements={announcements}
+                isNew={isNew}
+                logo={logo}
+                user={user}
+                myClass={myClass}
+                mobileOpen={mobileOpen}
+                setMobileOpen={setMobileOpen}
+                scrolled={scrolled}
+                logout={logout}
+                navigate={navigate}
+            />
 
             {/* ════ HERO ════ */}
             <section id="home">
@@ -423,9 +551,37 @@ const Dashboard = () => {
             </section>
 
             {/* ════ ANNOUNCEMENTS ════ */}
-            {announcements.length > 0 && (
-                <section id="announcements" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-                    <Reveal><SectionHeader icon={<Megaphone size={18} />} label="Latest News" title="Announcements" gradient="from-orange-500 to-rose-500" /></Reveal>
+            <section id="announcements" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
+                <Reveal>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                                <Megaphone size={16} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">Latest News</p>
+                                <h2 className="text-xl font-black text-gray-900 leading-tight">Announcements</h2>
+                            </div>
+                        </div>
+                        {announcements.length > 0 && (
+                            <span className="text-xs bg-orange-50 border border-orange-100 text-orange-600 font-black px-3 py-1.5 rounded-full">
+                                {announcements.length} notice{announcements.length !== 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+                </Reveal>
+
+                {announcements.length === 0 ? (
+                    <Reveal delay={100}>
+                        <div className="flex flex-col items-center justify-center py-16 rounded-3xl border-2 border-dashed border-orange-100 bg-orange-50/40">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-rose-100 flex items-center justify-center mb-4">
+                                <Bell size={24} className="text-orange-400" />
+                            </div>
+                            <p className="font-black text-gray-700 text-lg mb-1">No announcements yet</p>
+                            <p className="text-sm text-gray-400">You'll see class notices and updates here</p>
+                        </div>
+                    </Reveal>
+                ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {announcements.map((a, i) => (
                             <Reveal key={a.id} delay={i * 80}>
@@ -449,8 +605,8 @@ const Dashboard = () => {
                             </Reveal>
                         ))}
                     </div>
-                </section>
-            )}
+                )}
+            </section>
 
             {/* ════ INTELLIGENT PHYSICS — THINK POSITIVE BANNER ════ */}
             <section className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
@@ -731,7 +887,7 @@ const Dashboard = () => {
                             {user?.full_name} • {user?.class_name || 'No Batch'}
                         </div>
                         <div className="mt-6">
-                            <button 
+                            <button
                                 onClick={downloadQR}
                                 className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition w-full justify-center"
                             >
@@ -852,12 +1008,12 @@ const HeroSlider = ({ slides }) => {
         >
             {/* ── Main Image Layer (Responsive Auto-Height) ── */}
             <div className="relative w-full">
-                <img 
-                    src={imgSrc(s.image_url)} 
-                    alt="Slider Banner" 
+                <img
+                    src={imgSrc(s.image_url)}
+                    alt="Slider Banner"
                     className="w-full h-auto object-cover sm:object-fill min-h-[300px]"
                 />
-                
+
                 {/* ── Bottom Gradient Blend ── */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#04091c] via-[#04091c]/20 to-transparent pointer-events-none" />
             </div>

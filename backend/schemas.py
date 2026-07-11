@@ -50,6 +50,7 @@ class QuestionBase(BaseModel):
     option_d: str
     option_e: Optional[str] = None
     correct_option: str # 'A', 'B', 'C', 'D', 'E'
+    image_url: Optional[str] = None
 
 class QuestionCreate(QuestionBase):
     pass

@@ -6,3 +6,4 @@ passlib[pbkdf2]
 python-dotenv
 email-validator
 python-multipart
+pypdf

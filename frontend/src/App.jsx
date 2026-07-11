@@ -4,7 +4,7 @@ import HomePage from './pages/HomePage';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SetPassword from './pages/SetPassword';
-import LearningHub from './pages/LearningHub';
+import KnowledgeHub from './pages/KnowledgeHub';
 
 // Admin Imports
 import { AuthProvider } from './context/AuthContext';
@@ -32,7 +32,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/set-password" element={<SetPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/knowledge-hub" element={<LearningHub />} />
+        <Route path="/knowledge-hub" element={<KnowledgeHub />} />
 
         {/* Protected Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
