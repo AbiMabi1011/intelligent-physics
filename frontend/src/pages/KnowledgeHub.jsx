@@ -609,7 +609,7 @@ export default function KnowledgeHub() {
                         <div className="cta-banner" style={{ padding: '16px', border: '1px solid #e5e5e5', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '8px', background: '#000' }}>
                                 <iframe
-                                    src="https://www.youtube.com/embed/BIiL9o2-kjE?autoplay=1&controls=1&rel=0"
+                                    src="https://www.youtube.com/embed/BIiL9o2-kjE?autoplay=1&mute=1&controls=1&rel=0"
                                     title="Introduction Video"
                                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
                                     allow="autoplay; encrypted-media; picture-in-picture"
