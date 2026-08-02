@@ -305,7 +305,7 @@ const AnnouncementsPage = () => {
                                 <div className="flex items-center gap-8 w-full">
                                     <div className="h-20 w-32 rounded-2xl bg-black/40 overflow-hidden border border-white/5 flex-shrink-0">
                                         {ann.image_url ? (
-                                            <img src={ann.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <img src={ann.image_url.startsWith('/') ? `${API_URL}${ann.image_url}` : ann.image_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-slate-800">
                                                 <ImageIcon size={32} />

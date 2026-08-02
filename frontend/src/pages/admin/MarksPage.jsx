@@ -40,7 +40,9 @@ const MarksPage = () => {
         try {
             const res = await fetch(`${API_URL}/marks/${id}`, { method: 'DELETE' });
             if (res.ok) fetchData();
-        } catch (e) { }
+        } catch (err) {
+            console.error("Failed to delete marks:", err);
+        }
     }
 
     const handleSave = async (e) => {

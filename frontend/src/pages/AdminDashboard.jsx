@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
@@ -15,7 +16,12 @@ import {
     Trophy,
     Target,
     Loader2,
-    CheckCircle
+    CheckCircle,
+    Cpu,
+    HardDrive,
+    Plus,
+    Megaphone,
+    ArrowRight
 } from 'lucide-react';
 import {
     BarChart,
@@ -34,6 +40,7 @@ import { useAuth } from '../context/AuthContext';
 
 const AdminDashboard = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         students: 0,
         quizzes: 0,
@@ -43,6 +50,18 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [recentActivity, setRecentActivity] = useState([]);
     const [chartData, setChartData] = useState([]);
+
+    const [cpuLoad, setCpuLoad] = useState(34);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCpuLoad(prev => {
+                const diff = Math.floor(Math.random() * 9) - 4;
+                const nextVal = prev + diff;
+                return Math.max(15, Math.min(58, nextVal));
+            });
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         fetchStats();
@@ -200,6 +219,112 @@ const AdminDashboard = () => {
                             )) : (
                                 <p className="text-[10px] text-slate-500 italic">No recent activity found.</p>
                             )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Advanced Management & Telemetry Hub */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8 animate-in fade-in slide-in-from-bottom duration-700">
+                {/* Quick Actions Panel */}
+                <div className="lg:col-span-6 admin-card p-10 bg-gradient-to-br from-[#15171C] to-[#0D0E12] border-[#23262D] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#656CFF]/5 blur-[100px] rounded-full group-hover:bg-[#656CFF]/10 transition-all duration-700" />
+                    <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight flex items-center gap-3 relative z-10">
+                        <Zap size={22} className="text-[#656CFF]" /> Administrative Quick Actions
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 relative z-10">
+                        <button 
+                            onClick={() => navigate('/admin/quizzes')}
+                            className="p-6 rounded-2xl border border-[#23262D] bg-[#15171C] hover:border-[#656CFF]/40 text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-32 group/btn cursor-pointer"
+                        >
+                            <div className="h-10 w-10 rounded-xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] group-hover/btn:scale-110 transition-transform">
+                                <BookOpen size={18} />
+                            </div>
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-white">Create New Quiz</span>
+                                <ArrowRight size={14} className="text-slate-600 group-hover/btn:translate-x-1 transition-transform" />
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => navigate('/admin/papers')}
+                            className="p-6 rounded-2xl border border-[#23262D] bg-[#15171C] hover:border-[#10B981]/40 text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-32 group/btn cursor-pointer"
+                        >
+                            <div className="h-10 w-10 rounded-xl bg-[#10B981]/10 flex items-center justify-center text-[#10B981] group-hover/btn:scale-110 transition-transform">
+                                <FileText size={18} />
+                            </div>
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-white">Upload Study Doc</span>
+                                <ArrowRight size={14} className="text-slate-600 group-hover/btn:translate-x-1 transition-transform" />
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => navigate('/admin/students')}
+                            className="p-6 rounded-2xl border border-[#23262D] bg-[#15171C] hover:border-[#A855F7]/40 text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-32 group/btn cursor-pointer"
+                        >
+                            <div className="h-10 w-10 rounded-xl bg-[#A855F7]/10 flex items-center justify-center text-[#A855F7] group-hover/btn:scale-110 transition-transform">
+                                <Users size={18} />
+                            </div>
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-white">Add Student Profile</span>
+                                <ArrowRight size={14} className="text-slate-600 group-hover/btn:translate-x-1 transition-transform" />
+                            </div>
+                        </button>
+                        <button 
+                            onClick={() => navigate('/admin/announcements')}
+                            className="p-6 rounded-2xl border border-[#23262D] bg-[#15171C] hover:border-[#FEBC2E]/40 text-left transition-all hover:scale-[1.02] flex flex-col justify-between h-32 group/btn cursor-pointer"
+                        >
+                            <div className="h-10 w-10 rounded-xl bg-[#FEBC2E]/10 flex items-center justify-center text-[#FEBC2E] group-hover/btn:scale-110 transition-transform">
+                                <Megaphone size={18} />
+                            </div>
+                            <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-white">Post Announcement</span>
+                                <ArrowRight size={14} className="text-slate-600 group-hover/btn:translate-x-1 transition-transform" />
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                {/* System Telemetry Panel */}
+                <div className="lg:col-span-6 admin-card p-10 bg-gradient-to-br from-[#15171C] to-[#0D0E12] border-[#23262D] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#10B981]/5 blur-[100px] rounded-full group-hover:bg-[#10B981]/10 transition-all duration-700" />
+                    <h3 className="text-xl font-black text-white mb-6 uppercase tracking-tight flex items-center justify-between relative z-10">
+                        <span className="flex items-center gap-3">
+                            <Cpu size={22} className="text-[#10B981]" /> System Telemetry
+                        </span>
+                        <span className="h-2 w-2 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981] animate-ping" />
+                    </h3>
+                    <div className="space-y-6 relative z-10">
+                        {/* CPU usage */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <span>Mock CPU utilization</span>
+                                <span className="text-white">{cpuLoad}%</span>
+                            </div>
+                            <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-[#10B981] to-emerald-400 rounded-full transition-all duration-500" style={{ width: `${cpuLoad}%` }} />
+                            </div>
+                        </div>
+
+                        {/* Memory usage */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <span>Memory Consumption</span>
+                                <span className="text-white">1.34 GB / 4.00 GB</span>
+                            </div>
+                            <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-[#656CFF] to-blue-400 rounded-full" style={{ width: '33.5%' }} />
+                            </div>
+                        </div>
+
+                        {/* Storage usage */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                <span>Storage Consumption (Uploads)</span>
+                                <span className="text-white">3.12 GB / 10.00 GB</span>
+                            </div>
+                            <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-white/5">
+                                <div className="h-full bg-gradient-to-r from-[#A855F7] to-pink-500 rounded-full" style={{ width: '31.2%' }} />
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { Menu, Bell, LogOut, Search, Settings, Mail, Grid, Zap, Activity, ShieldCheck, ChevronDown, User, Sun, Moon } from 'lucide-react';
+import { Menu, Bell, LogOut, Search, Settings, Mail, Grid, Zap, Activity, ShieldCheck, ChevronDown, User, Sun, Moon, Sliders, Palette } from 'lucide-react';
 
-const Topbar = ({ onToggleSidebar, displayName, onLogout, theme, onToggleTheme }) => {
+const Topbar = ({ onToggleSidebar, displayName, onLogout, theme, onSelectTheme, onToggleCustomizer }) => {
     const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+    const [showThemeDropdown, setShowThemeDropdown] = useState(false);
+
+    const themes = [
+        { id: 'dark', name: 'Modern Dark', color: '#656CFF' },
+        { id: 'light', name: 'Clean Light', color: '#3B82F6' },
+        { id: 'cyberpunk', name: 'Cyberpunk', color: '#FF007F' },
+        { id: 'emerald', name: 'Emerald', color: '#10B981' },
+        { id: 'crimson', name: 'Crimson', color: '#EF4444' }
+    ];
 
     return (
         <header className="h-24 bg-[#0D0E12]/90 backdrop-blur-3xl border-b border-[#23262D] sticky top-0 z-40 px-8 lg:px-12">
@@ -58,17 +67,46 @@ const Topbar = ({ onToggleSidebar, displayName, onLogout, theme, onToggleTheme }
                         </button>
                     </div>
 
-                    {/* Theme Toggle */}
-                    <button 
-                        onClick={onToggleTheme}
-                        className="h-11 w-11 flex items-center justify-center rounded-xl text-slate-500 hover:bg-white/5 hover:text-[#656CFF] transition-all shadow-inner"
-                        title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-                    >
-                        {theme === 'dark' ? (
-                            <Sun size={20} className="transition-transform duration-500 hover:rotate-45" />
-                        ) : (
-                            <Moon size={20} className="transition-transform duration-500 hover:-rotate-12" />
+                    {/* Theme Selector Dropdown */}
+                    <div className="relative">
+                        <button 
+                            onClick={() => setShowThemeDropdown(!showThemeDropdown)}
+                            className="h-11 w-11 flex items-center justify-center rounded-xl text-slate-500 hover:bg-white/5 hover:text-[#656CFF] transition-all shadow-inner relative"
+                            title="Theme Presets"
+                        >
+                            <Palette size={20} className="transition-transform duration-500 hover:scale-110" />
+                        </button>
+                        {showThemeDropdown && (
+                            <div className="absolute right-0 mt-3 w-48 bg-[#15171C] border border-[#23262D] rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest px-3 py-2">Select Theme</p>
+                                {themes.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => {
+                                            onSelectTheme(t.id);
+                                            setShowThemeDropdown(false);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all ${
+                                            theme === t.id 
+                                                ? 'bg-[#656CFF]/10 text-white border border-[#656CFF]/25' 
+                                                : 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent'
+                                        }`}
+                                    >
+                                        <span className="h-3.5 w-3.5 rounded-full border border-white/10" style={{ backgroundColor: t.color }} />
+                                        {t.name}
+                                    </button>
+                                ))}
+                            </div>
                         )}
+                    </div>
+
+                    {/* Layout settings Toggle */}
+                    <button 
+                        onClick={onToggleCustomizer}
+                        className="h-11 w-11 flex items-center justify-center rounded-xl text-slate-500 hover:bg-white/5 hover:text-[#656CFF] transition-all shadow-inner"
+                        title="Layout Settings"
+                    >
+                        <Sliders size={20} className="transition-transform duration-500 hover:rotate-90" />
                     </button>
 
                     {/* User Profile */}

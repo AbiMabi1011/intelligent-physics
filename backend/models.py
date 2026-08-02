@@ -14,6 +14,8 @@ class User(Base):
     full_name = Column(String, nullable=True)
     class_name = Column(String, nullable=True)
     approval_status = Column(String, default="approved") # 'pending', 'approved', 'rejected'
+    permissions = Column(String, nullable=True) # Comma-separated list for sub-admins
+    whatsapp_number = Column(String, nullable=True)
 
     items = relationship("Item", back_populates="owner")
     quiz_results = relationship("QuizResult", back_populates="student")
@@ -232,3 +234,9 @@ class HomeFaq(Base):
     question = Column(String)
     answer = Column(String)
     order_index = Column(Integer, default=0)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String, nullable=True)

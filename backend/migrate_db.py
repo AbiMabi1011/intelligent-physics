@@ -22,6 +22,13 @@ def migrate():
     else:
         print("Role column already exists.")
 
+    if "whatsapp_number" not in columns:
+        print("Adding whatsapp_number column...")
+        cursor.execute("ALTER TABLE users ADD COLUMN whatsapp_number TEXT")
+        print("whatsapp_number column added.")
+    else:
+        print("whatsapp_number column already exists.")
+
     # Ensure admin role for 'raakul'
     cursor.execute("UPDATE users SET role = 'admin' WHERE email = 'raakul'")
     if cursor.rowcount > 0:

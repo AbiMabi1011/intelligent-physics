@@ -1,20 +1,30 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     BookOpen, CheckCircle, Award, Clock, LogOut, Play, Video,
     FileText, Megaphone, ChevronLeft, ChevronRight, ExternalLink,
     Menu, X, GraduationCap, Zap, Star, ArrowRight, Flame, ArrowUp,
-    Home, Filter, TrendingUp, QrCode, Bell, Download
+    Home, Filter, TrendingUp, QrCode, Bell, Download, Sun, Moon, Settings
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
 import Footer from '../components/Footer';
+import AdvancedQuizPortal from '../components/AdvancedQuizPortal';
 
 const batchMatch = (t, c) => !t || t.split(',').some(b => b.trim() === (c || '').trim());
 const imgSrc = u => u?.startsWith('/') ? `${API_URL}${u}` : u || '';
 const isNew = d => d && (Date.now() - new Date(d).getTime()) < 7 * 86400000;
+
+const isEnded = q => {
+    if (!q.scheduled_time) return false;
+    const st = new Date(q.scheduled_time).getTime();
+    const dur = q.expiry_mode === 'end_time' ? (q.duration_minutes || 30) * 60000
+        : q.expiry_mode === 'one_day' ? 86400000
+            : q.expiry_mode === 'custom_days' ? (q.expiry_days || 1) * 86400000 : null;
+    return dur && Date.now() > st + dur;
+};
 
 /* ── Animated counter hook ── */
 const useCounter = (target, visible) => {
@@ -55,19 +65,28 @@ const Reveal = ({ children, delay = 0, className = '' }) => {
 const StatCard = ({ label, value, icon, gradient, visible }) => {
     const count = useCounter(value, visible);
     return (
-        <div className={`bg-gradient-to-br ${gradient} rounded-3xl p-5 text-white text-center shadow-xl flex-1 min-w-[90px]`}>
-            <div className="flex justify-center mb-2 opacity-80">{icon}</div>
-            <div className="text-3xl font-black">{count}</div>
-            <div className="text-xs font-semibold opacity-70 mt-0.5">{label}</div>
+        <div className="relative overflow-hidden rounded-none p-6 bg-[#f9f6ee] border border-[#d5d0c2] group hover:bg-[#ede9da] hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between h-40 w-44">
+            <div className="flex items-center justify-between relative z-10">
+                <div className="p-3 bg-[#0a0a0a] text-[#f4f0e6] transition-transform duration-300 group-hover:scale-105">
+                    {icon}
+                </div>
+                <span className="text-[9px] font-mono tracking-widest uppercase text-[#6b6558] border border-[#d5d0c2] px-2 py-0.5">PORTAL</span>
+            </div>
+            
+            <div className="mt-4 relative z-10">
+                <span className="text-3xl md:text-4xl font-bold tracking-tight text-[#0a0a0a]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{count}</span>
+                <p className="text-[9px] font-bold tracking-widest uppercase text-[#6b6558] mt-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{label}</p>
+            </div>
         </div>
     );
 };
-
-/* ─── Liquid Navbar Component ─── */
-const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, logo, user, myClass, mobileOpen, setMobileOpen, scrolled, logout, navigate }) => {
+const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, logo, user, myClass, mobileOpen, setMobileOpen, scrolled, logout, navigate, theme, toggleTheme, setShowQRModal, setShowSettingsModal }) => {
     const navRef = useRef(null);
     const linkRefs = useRef({});
     const [pill, setPill] = React.useState({ left: 0, width: 0, opacity: 0 });
+    
+    const menuRef = useRef(null);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     React.useEffect(() => {
         const update = () => {
@@ -83,21 +102,33 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
         return () => window.removeEventListener('resize', update);
     }, [activeSection]);
 
+    React.useEffect(() => {
+        const handleOutsideClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
     return (
         <nav style={{
             position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-            background: scrolled ? 'rgba(8,8,12,0.97)' : 'linear-gradient(180deg,rgba(8,8,12,0.88) 0%,rgba(8,8,12,0.0) 100%)',
+            background: scrolled 
+                ? (theme === 'dark' ? 'rgba(8,8,12,0.97)' : 'rgba(255,255,255,0.96)') 
+                : (theme === 'dark' ? 'linear-gradient(180deg,rgba(8,8,12,0.88) 0%,rgba(8,8,12,0.0) 100%)' : 'linear-gradient(180deg,rgba(255,255,255,0.9) 0%,rgba(255,255,255,0.0) 100%)'),
             backdropFilter: scrolled ? 'blur(24px)' : 'none',
             WebkitBackdropFilter: scrolled ? 'blur(24px)' : 'none',
-            borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : 'none',
+            borderBottom: scrolled ? (theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)') : 'none',
             transition: 'background 0.4s, border-color 0.4s',
             display: 'flex', flexDirection: 'column',
         }}>
             {/* Aurora glow strip */}
             {scrolled && (
                 <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 0 }}>
-                    <div style={{ position: 'absolute', top: '-50%', left: '20%', width: '40%', height: '200%', background: 'radial-gradient(ellipse,rgba(99,102,241,0.07) 0%,transparent 70%)', filter: 'blur(20px)' }} />
-                    <div style={{ position: 'absolute', top: '-50%', right: '15%', width: '30%', height: '200%', background: 'radial-gradient(ellipse,rgba(168,85,247,0.05) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                    <div style={{ position: 'absolute', top: '-50%', left: '20%', width: '40%', height: '200%', background: theme === 'dark' ? 'radial-gradient(ellipse,rgba(99,102,241,0.07) 0%,transparent 70%)' : 'radial-gradient(ellipse,rgba(99,102,241,0.04) 0%,transparent 70%)', filter: 'blur(20px)' }} />
+                    <div style={{ position: 'absolute', top: '-50%', right: '15%', width: '30%', height: '200%', background: theme === 'dark' ? 'radial-gradient(ellipse,rgba(168,85,247,0.05) 0%,transparent 70%)' : 'radial-gradient(ellipse,rgba(168,85,247,0.03) 0%,transparent 70%)', filter: 'blur(20px)' }} />
                 </div>
             )}
 
@@ -106,14 +137,14 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
                 {/* Logo */}
                 <a href="#home" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
                     <div style={{ position: 'relative' }}>
-                        <div style={{ position: 'absolute', inset: -2, borderRadius: 11, background: 'linear-gradient(135deg,#6366f1,#a855f7,#06b6d4)', opacity: 0.7, filter: 'blur(4px)' }} />
-                        <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 9, overflow: 'hidden', background: '#0a0a0e' }}>
+                        <div style={{ position: 'absolute', inset: -2, borderRadius: 0, background: '#b91c1c', opacity: 0.7, filter: 'blur(3px)' }} />
+                        <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 0, overflow: 'hidden', background: '#0a0a0a' }}>
                             <img src={logo} alt="IP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                     </div>
-                    <div style={{ lineHeight: 1.2 }}>
-                        <p style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>Intelligent Physics</p>
-                        <p style={{ fontSize: '0.58rem', fontWeight: 700, background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Learning Hub</p>
+                    <div style={{ lineHeight: 1.1 }}>
+                        <p style={{ fontWeight: 400, fontFamily: "'Bebas Neue', cursive", fontSize: '1.4rem', color: theme === 'dark' ? '#fff' : '#0a0a0a', letterSpacing: '1.5px', margin: 0, transition: 'color 0.3s', textTransform: 'uppercase' }}>Intelligent Physics</p>
+                        <p style={{ fontSize: '0.62rem', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#b91c1c', margin: 0, letterSpacing: '1.5px', textTransform: 'uppercase' }}>Learning Hub</p>
                     </div>
                 </a>
 
@@ -122,20 +153,19 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
                     style={{
                         position: 'absolute', left: '50%', transform: 'translateX(-50%)',
                         alignItems: 'center', gap: 2,
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        borderRadius: 14, padding: '4px',
-                        backdropFilter: 'blur(12px)',
+                        background: '#0a0a0a',
+                        border: '1px solid #222222',
+                        borderRadius: 0, padding: '4px',
                     }}>
                     {/* Sliding liquid pill */}
                     <div style={{
                         position: 'absolute', top: 4, bottom: 4,
                         left: pill.left + 4, width: pill.width, opacity: pill.opacity,
-                        background: 'linear-gradient(135deg,rgba(99,102,241,0.38),rgba(168,85,247,0.28))',
-                        borderRadius: 10,
-                        border: '1px solid rgba(139,92,246,0.35)',
-                        boxShadow: '0 0 18px rgba(99,102,241,0.28), inset 0 1px 0 rgba(255,255,255,0.09)',
-                        transition: 'left 0.45s cubic-bezier(0.34,1.56,0.64,1), width 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s',
+                        background: '#b91c1c',
+                        borderRadius: 0,
+                        border: 'none',
+                        boxShadow: 'none',
+                        transition: 'left 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s',
                         pointerEvents: 'none', zIndex: 0,
                     }} />
                     {sections.map(l => (
@@ -144,70 +174,106 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
                             style={{
                                 position: 'relative', zIndex: 1,
                                 display: 'flex', alignItems: 'center', gap: 5,
-                                padding: '6px 13px', borderRadius: 10,
-                                fontSize: '0.8rem',
+                                padding: '6px 13px', borderRadius: 0,
+                                fontSize: '0.72rem',
+                                fontFamily: "'JetBrains Mono', monospace",
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
                                 fontWeight: activeSection === l.id ? 700 : 400,
-                                color: activeSection === l.id ? '#e0e7ff' : 'rgba(255,255,255,0.45)',
+                                color: activeSection === l.id 
+                                    ? '#f4f0e6' 
+                                    : 'rgba(255, 255, 255, 0.5)',
                                 textDecoration: 'none', whiteSpace: 'nowrap',
                                 transition: 'color 0.22s',
                             }}
-                            onMouseEnter={e => { if (activeSection !== l.id) e.currentTarget.style.color = 'rgba(255,255,255,0.85)'; }}
-                            onMouseLeave={e => { if (activeSection !== l.id) e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}>
+                            onMouseEnter={e => { if (activeSection !== l.id) e.currentTarget.style.color = '#ffffff'; }}
+                            onMouseLeave={e => { if (activeSection !== l.id) e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)'; }}>
                             <span style={{ opacity: activeSection === l.id ? 1 : 0.6 }}>{l.icon}</span>
                             {l.label}
                             {l.id === 'quizzes' && visibleQ.length > 0 && (
-                                <span style={{ fontSize: 9, background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff', fontWeight: 800, padding: '1px 6px', borderRadius: 99, boxShadow: '0 0 8px rgba(99,102,241,0.5)' }}>{visibleQ.length}</span>
+                                <span style={{ fontSize: 9, background: '#b91c1c', color: '#fff', fontWeight: 800, padding: '1px 6px', borderRadius: 0 }}>{visibleQ.length}</span>
                             )}
                             {l.id === 'announcements' && announcements.some(a => isNew(a.created_at)) && (
-                                <span style={{ width: 5, height: 5, background: '#ef4444', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 6px #ef4444' }} />
+                                <span style={{ width: 5, height: 5, background: '#b91c1c', borderRadius: '50%', display: 'inline-block', boxShadow: '0 0 6px #b91c1c' }} />
                             )}
                             {l.count > 0 && l.id !== 'quizzes' && l.id !== 'announcements' && (
-                                <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)', fontWeight: 700, padding: '1px 5px', borderRadius: 99 }}>{l.count}</span>
+                                <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)', fontWeight: 700, padding: '1px 5px', borderRadius: 0 }}>{l.count}</span>
                             )}
                         </a>
                     ))}
                 </div>
 
-                {/* Right */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    {/* Avatar chip */}
-                    <div className="hidden sm:flex" style={{ alignItems: 'center', gap: 8, padding: '4px 12px 4px 4px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800, flexShrink: 0, boxShadow: '0 0 10px rgba(99,102,241,0.4)' }}>
-                            {user?.full_name?.charAt(0) || 'S'}
-                        </div>
-                        <div style={{ lineHeight: 1.2 }}>
-                            <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', margin: 0 }}>{user?.full_name?.split(' ')[0]}</p>
-                            {myClass && <p style={{ fontSize: '0.58rem', fontWeight: 700, background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>{myClass}</p>}
-                        </div>
-                    </div>
-                    {/* Logout */}
-                    <button onClick={() => { logout(); navigate('/'); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'rgba(255,255,255,0.45)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#fca5a5'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}>
-                        <LogOut size={13} />
-                        <span className="hidden sm:inline">Logout</span>
+                {/* Right profile dropdown */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, position: 'relative' }} ref={menuRef}>
+                    {/* User profile avatar trigger button */}
+                    <button 
+                        onClick={() => setMenuOpen(p => !p)}
+                        className="relative flex items-center justify-center w-9 h-9 rounded-none bg-[#b91c1c] text-[#f4f0e6] font-bold text-sm cursor-pointer hover:scale-105 transition-transform select-none border border-[#d5d0c2]"
+                    >
+                        {user?.full_name?.charAt(0) || 'S'}
                     </button>
+
+                    {/* Unified profile dropdown menu */}
+                    {menuOpen && (
+                        <div className="absolute right-0 top-11 w-64 rounded-none border border-[#d5d0c2] bg-[#f9f6ee] text-[#0a0a0a] p-4 flex flex-col gap-3.5 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 shadow-lg shadow-black/5">
+                            {/* User details info panel */}
+                            <div className="flex items-center gap-3 pb-3 border-b border-[#d5d0c2]">
+                                <div className="w-10 h-10 rounded-none bg-[#0a0a0a] flex items-center justify-center text-[#f4f0e6] font-bold text-sm">
+                                    {user?.full_name?.charAt(0) || 'S'}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="font-bold text-sm truncate leading-tight">{user?.full_name}</p>
+                                    <p className="text-[10px] truncate mt-0.5 text-[#6b6558]">{user?.email}</p>
+                                    {myClass && <span className="inline-block mt-1.5 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-none bg-[#b91c1c] text-[#f4f0e6]">Batch {myClass}</span>}
+                                </div>
+                            </div>
+
+                            {/* Dropdown Items list */}
+                            <div className="flex flex-col gap-1.5">
+                                {/* Account Settings Option */}
+                                <button 
+                                    onClick={() => { setShowSettingsModal(true); setMenuOpen(false); }}
+                                    className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-none text-xs font-bold transition-colors cursor-pointer hover:bg-[#ede9da] text-[#0a0a0a]"
+                                >
+                                    <Settings size={14} className="text-[#b91c1c]" />
+                                    <span style={{ fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.5px' }}>Settings</span>
+                                </button>
+
+                                {/* Divider line */}
+                                <div className="h-[1px] w-full my-1 bg-[#d5d0c2]" />
+
+                                {/* Logout button option */}
+                                <button 
+                                    onClick={() => { logout(); navigate('/'); }}
+                                    className="flex items-center gap-2.5 w-full text-left px-3 py-2 rounded-none text-xs font-bold transition-colors cursor-pointer text-[#b91c1c] hover:bg-red-50"
+                                >
+                                    <LogOut size={14} />
+                                    <span style={{ fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', letterSpacing: '0.5px' }}>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Hamburger */}
                     <button onClick={() => setMobileOpen(p => !p)}
                         className="md:hidden flex flex-col justify-center items-center"
-                        style={{ width: 36, height: 36, gap: 5, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, cursor: 'pointer' }}>
-                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: mobileOpen ? 'translateY(6.5px) rotate(45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
-                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', opacity: mobileOpen ? 0 : 1, transition: 'all 0.25s', display: 'block' }} />
-                        <span style={{ width: 16, height: 1.5, borderRadius: 2, background: '#fff', transform: mobileOpen ? 'translateY(-6.5px) rotate(-45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                        style={{ width: 36, height: 36, gap: 5, background: '#0a0a0a', border: '1px solid #222222', borderRadius: 0, cursor: 'pointer' }}>
+                        <span style={{ width: 16, height: 1.5, background: '#fff', transform: mobileOpen ? 'translateY(6.5px) rotate(45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
+                        <span style={{ width: 16, height: 1.5, background: '#fff', opacity: mobileOpen ? 0 : 1, transition: 'all 0.25s', display: 'block' }} />
+                        <span style={{ width: 16, height: 1.5, background: '#fff', transform: mobileOpen ? 'translateY(-6.5px) rotate(-45deg)' : 'none', transition: 'all 0.25s', display: 'block' }} />
                     </button>
                 </div>
             </div>
 
             {/* Mobile drawer */}
             {mobileOpen && (
-                <div className="md:hidden" style={{ background: 'rgba(10,10,16,0.99)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '10px 14px 18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 6px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 8 }}>
+                <div className="md:hidden" style={{ background: (theme === 'dark' ? 'rgba(10,10,16,0.99)' : 'rgba(255,255,255,0.99)'), backdropFilter: 'blur(24px)', borderTop: (theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)'), padding: '10px 14px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 6px 14px', borderBottom: (theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)'), marginBottom: 8 }}>
                         <div style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '0.95rem', boxShadow: '0 0 14px rgba(99,102,241,0.4)' }}>
                             {user?.full_name?.charAt(0) || 'S'}
                         </div>
                         <div>
-                            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{user?.full_name}</p>
+                            <p style={{ color: (theme === 'dark' ? '#fff' : '#0f172a'), fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{user?.full_name}</p>
                             {myClass && <p style={{ fontWeight: 700, fontSize: '0.65rem', background: 'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>{myClass}</p>}
                         </div>
                     </div>
@@ -217,9 +283,15 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
                                 display: 'flex', alignItems: 'center', gap: 10,
                                 padding: '11px 12px', borderRadius: 12, marginBottom: 3,
                                 fontSize: '0.875rem', fontWeight: activeSection === s.id ? 700 : 400,
-                                color: activeSection === s.id ? '#e0e7ff' : 'rgba(255,255,255,0.5)',
-                                background: activeSection === s.id ? 'linear-gradient(135deg,rgba(99,102,241,0.18),rgba(168,85,247,0.12))' : 'transparent',
-                                border: activeSection === s.id ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent',
+                                color: activeSection === s.id 
+                                    ? (theme === 'dark' ? '#e0e7ff' : '#4f46e5') 
+                                    : (theme === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.6)'),
+                                background: activeSection === s.id 
+                                    ? (theme === 'dark' ? 'linear-gradient(135deg,rgba(99,102,241,0.18),rgba(168,85,247,0.12))' : 'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(168,85,247,0.04))') 
+                                    : 'transparent',
+                                border: activeSection === s.id 
+                                    ? (theme === 'dark' ? '1px solid rgba(139,92,246,0.2)' : '1px solid rgba(139,92,246,0.1)') 
+                                    : '1px solid transparent',
                                 textDecoration: 'none', transition: 'all 0.18s',
                             }}>
                             {s.icon}{s.label}
@@ -239,7 +311,8 @@ const LiquidNav = ({ sections, activeSection, visibleQ, announcements, isNew, lo
 ═══════════════════════════════════ */
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, login, logout } = useAuth();
+    const [searchParams] = useSearchParams();
+    const { user, login, logout, updateUser } = useAuth();
     const myClass = user?.class_name || '';
 
     // resolvedClass: always use the fresh class_name from the server.
@@ -247,7 +320,7 @@ const Dashboard = () => {
     const [resolvedClass, setResolvedClass] = useState(myClass);
 
     useEffect(() => {
-        if (!user) navigate('/login');
+        if (!user) navigate('/login' + window.location.search);
         else if (user.role === 'admin') navigate('/admin/dashboard');
     }, [user, navigate]);
 
@@ -273,15 +346,53 @@ const Dashboard = () => {
     const [sliders, setSliders] = useState([]);
     const [quizzes, setQuizzes] = useState([]);
     const [taken, setTaken] = useState([]);
+    const [studentScores, setStudentScores] = useState({});
     const [recordings, setRecordings] = useState([]);
     const [papers, setPapers] = useState([]);
     const [marks, setMarks] = useState([]);
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentQuiz, setCurrentQuiz] = useState(null);
-    const [answers, setAnswers] = useState({});
+    const [currentQuiz, setCurrentQuizRaw] = useState(null);
+    const [answers, setAnswersRaw] = useState({});
     const [quizResult, setQuizResult] = useState(null);
     const [timeLeft, setTimeLeft] = useState(null);
+
+    // ── Quiz session persistence (fixed key, email stored inside JSON) ──
+    const QUIZ_SESSION_KEY = 'ip_quiz_session';
+
+    const getStoredSession = () => {
+        try { const r = localStorage.getItem(QUIZ_SESSION_KEY); return r ? JSON.parse(r) : null; }
+        catch (_) { return null; }
+    };
+
+    const setCurrentQuiz = (quiz) => {
+        setCurrentQuizRaw(quiz);
+        if (!quiz) localStorage.removeItem(QUIZ_SESSION_KEY);
+    };
+
+    const setAnswers = (updater) => {
+        setAnswersRaw(prev => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            try {
+                const session = getStoredSession();
+                if (session) localStorage.setItem(QUIZ_SESSION_KEY, JSON.stringify({ ...session, answers: next }));
+            } catch (_) {}
+            return next;
+        });
+    };
+
+    // On mount: restore session if browser was refreshed mid-quiz
+    useEffect(() => {
+        const session = getStoredSession();
+        if (!session?.quiz || !session?.startedAt || !session?.durationSeconds) return;
+        const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
+        const remaining = session.durationSeconds - elapsed;
+        if (remaining <= 0) { localStorage.removeItem(QUIZ_SESSION_KEY); return; }
+        setCurrentQuizRaw(session.quiz);
+        setAnswersRaw(session.answers || {});
+        setTimeLeft(remaining);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -289,6 +400,121 @@ const Dashboard = () => {
     const [paperFilter, setPaperFilter] = useState('All');
     const [showTop, setShowTop] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [settingsTab, setSettingsTab] = useState('profile');
+    const [profileName, setProfileName] = useState(user?.full_name || '');
+    const [profileWhatsApp, setProfileWhatsApp] = useState(user?.whatsapp_number || '');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [settingsError, setSettingsError] = useState('');
+    const [settingsSuccess, setSettingsSuccess] = useState('');
+    const [settingsSaving, setSettingsSaving] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+    const showNotification = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => {
+            setToast(prev => ({ ...prev, show: false }));
+        }, 1000);
+    };
+
+    useEffect(() => {
+        if (showSettingsModal && user) {
+            setProfileName(user.full_name || '');
+            setProfileWhatsApp(user.whatsapp_number || '');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setSettingsError('');
+            setSettingsSuccess('');
+        }
+    }, [showSettingsModal, user]);
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        console.log("handleSaveProfile called. Current user state:", user);
+        console.log("Attempting to update profile for user ID:", user?.user_id || user?.id);
+        setSettingsError('');
+        setSettingsSuccess('');
+        setSettingsSaving(true);
+        try {
+            const userId = user?.user_id || user?.id;
+            if (!userId) {
+                throw new Error("User ID is missing from session");
+            }
+            const res = await fetch(`${API_URL}/users/profile/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: profileName,
+                    whatsapp_number: profileWhatsApp
+                })
+            });
+            const data = await res.json();
+            console.log("Profile update response data:", data);
+            if (!res.ok) {
+                throw new Error(data.detail || 'Failed to update profile');
+            }
+            updateUser({
+                full_name: data.full_name,
+                whatsapp_number: data.whatsapp_number
+            });
+            setSettingsSuccess('Profile updated successfully!');
+            showNotification('Profile updated successfully!');
+            setTimeout(() => {
+                setShowSettingsModal(false);
+            }, 1000);
+        } catch (err) {
+            console.error("Profile update error:", err);
+            setSettingsError(err.message);
+        } finally {
+            setSettingsSaving(false);
+        }
+    };
+
+    const handleUpdatePassword = async (e) => {
+        e.preventDefault();
+        setSettingsError('');
+        setSettingsSuccess('');
+        if (newPassword !== confirmPassword) {
+            setSettingsError('New passwords do not match');
+            return;
+        }
+        if (newPassword.length < 5) {
+            setSettingsError('Password must be at least 5 characters long');
+            return;
+        }
+        setSettingsSaving(true);
+        try {
+            const res = await fetch(`${API_URL}/users/change-password/${user.user_id || user.id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || 'Failed to change password');
+            }
+            setSettingsSuccess('Password updated successfully!');
+            showNotification('Password updated successfully!');
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setTimeout(() => {
+                setShowSettingsModal(false);
+            }, 1000);
+        } catch (err) {
+            setSettingsError(err.message);
+        } finally {
+            setSettingsSaving(false);
+        }
+    };
+    const theme = 'light';
+    const toggleTheme = () => {};
 
     const statsRef = useRef(null);
     const statsVis = useVisible(statsRef);
@@ -319,7 +545,7 @@ const Dashboard = () => {
         const onScroll = () => {
             setScrolled(window.scrollY > 50);
             setShowTop(window.scrollY > 400);
-            const sections = ['home', 'announcements', 'quizzes', 'recordings', 'papers', 'marks'];
+            const sections = ['home', 'announcements', 'quizzes', 'recordings', 'papers'];
             for (const id of [...sections].reverse()) {
                 const el = document.getElementById(id);
                 if (el && window.scrollY >= el.offsetTop - 120) { setActiveSection(id); break; }
@@ -335,18 +561,21 @@ const Dashboard = () => {
             fetch(`${API_URL}/sliders`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/quizzes`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/quizzes/student/${user.email}/taken`).then(r => r.ok ? r.json() : []),
+            fetch(`${API_URL}/quizzes/student/${user.email}/scores`).then(r => r.ok ? r.json() : {}),
             fetch(`${API_URL}/recordings`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/papers`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/marks`).then(r => r.ok ? r.json() : []),
             fetch(`${API_URL}/announcements`).then(r => r.ok ? r.json() : []),
-        ]).then(([sl, qz, tk, rc, pp, mk, an]) => {
+        ]).then(([sl, qz, tk, sc, rc, pp, mk, an]) => {
             setSliders(sl.filter(s => s.is_active));
             setQuizzes(qz);
             setTaken(tk);
+            setStudentScores(sc);
             // Use resolvedClass (fresh from server) for all batch filtering
             setRecordings(rc.filter(r => batchMatch(r.class_name, resolvedClass) && (r.visibility === 'both' || r.visibility === 'portal')));
             setPapers(pp.filter(p => batchMatch(p.class_name, resolvedClass) && (p.visibility === 'both' || p.visibility === 'portal')));
-            setMarks(mk.filter(m => batchMatch(m.class_name, resolvedClass)));
+            // Only show the logged-in student's marks in their portal
+            setMarks(mk.filter(m => (m.user_id === user.id || m.user_id === user.user_id) && batchMatch(m.class_name, resolvedClass)));
             setAnnouncements(an.filter(a => batchMatch(a.class_name, resolvedClass) && (a.visibility === 'both' || a.visibility === 'portal')));
         }).catch(console.error).finally(() => setLoading(false));
     }, [user, resolvedClass]);
@@ -358,13 +587,26 @@ const Dashboard = () => {
     });
     const doneCount = visibleQ.filter(q => taken.includes(q.id)).length;
 
-    const isEnded = q => {
-        if (!q.scheduled_time) return false;
-        const st = new Date(q.scheduled_time).getTime();
-        const dur = q.expiry_mode === 'end_time' ? (q.duration_minutes || 30) * 60000
-            : q.expiry_mode === 'one_day' ? 86400000
-                : q.expiry_mode === 'custom_days' ? (q.expiry_days || 1) * 86400000 : null;
-        return dur && Date.now() > st + dur;
+    const handleSubmit = async (force = false) => {
+        if (!currentQuiz || quizResult) return;
+        if (!force) { const a = Object.keys(answers).length, t = currentQuiz.questions.length; if (a < t && !window.confirm(`Answered ${a}/${t}. Submit?`)) return; }
+        // Clear session on submit
+        localStorage.removeItem(QUIZ_SESSION_KEY);
+        const res = await fetch(`${API_URL}/quizzes/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quiz_id: currentQuiz.id, student_email: user?.email, answers }) });
+        if (res.ok) {
+            const data = await res.json();
+            setQuizResult(data);
+            setTaken(p => p.includes(currentQuiz.id) ? p : [...p, currentQuiz.id]);
+            setStudentScores(p => ({
+                ...p,
+                [currentQuiz.id]: {
+                    score: data.score,
+                    total: data.total,
+                    rank: data.rank,
+                    total_participants: data.total_participants
+                }
+            }));
+        }
     };
 
     /* quiz timer */
@@ -377,120 +619,86 @@ const Dashboard = () => {
 
     const startQuiz = async id => {
         const res = await fetch(`${API_URL}/quizzes/${id}`);
-        if (res.ok) { const d = await res.json(); setCurrentQuiz(d); setAnswers({}); setQuizResult(null); setTimeLeft((d.duration_minutes || 30) * 60); }
+        if (res.ok) {
+            const d = await res.json();
+            const durationSeconds = (d.duration_minutes || 30) * 60;
+            const startedAt = Date.now();
+            // Persist session so a refresh restores the exam
+            localStorage.setItem(QUIZ_SESSION_KEY, JSON.stringify({
+                quiz: d,
+                answers: {},
+                startedAt,
+                durationSeconds,
+            }));
+            setCurrentQuizRaw(d);
+            setAnswersRaw({});
+            setQuizResult(null);
+            setTimeLeft(durationSeconds);
+        }
     };
-    const handleSubmit = async (force = false) => {
-        if (!currentQuiz || quizResult) return;
-        if (!force) { const a = Object.keys(answers).length, t = currentQuiz.questions.length; if (a < t && !window.confirm(`Answered ${a}/${t}. Submit?`)) return; }
-        const res = await fetch(`${API_URL}/quizzes/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quiz_id: currentQuiz.id, student_email: user?.email, answers }) });
-        if (res.ok) setQuizResult(await res.json());
-    };
+
+    useEffect(() => {
+        if (loading) return;
+        const qid = searchParams.get('quiz_id');
+        if (!qid) return;
+        const quizId = parseInt(qid, 10);
+        if (isNaN(quizId)) return;
+
+        // If there's already a valid in-progress session for this quiz, don't restart it
+        const session = getStoredSession();
+        if (session?.quiz?.id === quizId) {
+            // Session is already restored from localStorage on mount — don't reset timer
+            return;
+        }
+
+        const quizExists = quizzes.find(q => q.id === quizId);
+        if (quizExists) {
+            if (taken.includes(quizId)) {
+                alert("You have already completed this quiz.");
+            } else {
+                startQuiz(quizId);
+            }
+        } else {
+            alert("This quiz is not available for your class or batch.");
+        }
+    }, [loading, searchParams, quizzes, taken]);
 
     const paperTypes = ['All', ...new Set(papers.map(p => p.paper_type).filter(Boolean))];
     const filteredPapers = paperFilter === 'All' ? papers : papers.filter(p => p.paper_type === paperFilter);
 
-    /* ── QUIZ SCREEN ── */
+    /* ── QUIZ SCREEN (Advanced Portal) ── */
     if (currentQuiz) return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 flex flex-col">
-            <header className="sticky top-0 z-50 bg-white/5 backdrop-blur-2xl border-b border-white/10 px-4 py-3">
-                <div className="max-w-3xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <img src={logo} alt="IP" className="h-8 w-8 rounded-xl object-contain" />
-                        <div>
-                            <p className="text-white font-bold text-sm line-clamp-1">{currentQuiz.title}</p>
-                            <p className="text-white/40 text-xs">{Object.keys(answers).length}/{currentQuiz.questions.length} answered</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <span className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-full ${timeLeft <= 60 ? 'bg-red-500/30 text-red-300 animate-pulse' : 'bg-white/10 text-white'}`}>
-                            <Clock size={13} />{timeLeft != null ? `${Math.floor(timeLeft / 60)}:${('0' + timeLeft % 60).slice(-2)}` : '∞'}
-                        </span>
-                        {!quizResult && <button onClick={() => window.confirm('Exit quiz? Progress will be lost.') && setCurrentQuiz(null)} className="text-white/50 hover:text-red-400 text-sm transition">Exit</button>}
-                    </div>
-                </div>
-                {/* Progress bar */}
-                <div className="max-w-3xl mx-auto mt-2 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-400 to-purple-500 rounded-full transition-all duration-500"
-                        style={{ width: `${(Object.keys(answers).length / currentQuiz.questions.length) * 100}%` }} />
-                </div>
-            </header>
-
-            <main className="flex-1 max-w-3xl mx-auto w-full p-4 md:p-6 space-y-4 pb-32">
-                {quizResult ? (
-                    <div className="mt-8 bg-white/10 backdrop-blur-2xl rounded-3xl p-10 text-center border border-white/20">
-                        <div className="inline-flex p-5 rounded-full bg-yellow-400/20 text-yellow-300 mb-5 ring-4 ring-yellow-400/10">
-                            <Award size={56} />
-                        </div>
-                        <p className="text-white/60 font-semibold uppercase tracking-widest text-xs mb-2">Quiz Completed!</p>
-                        <div className="text-8xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
-                            {quizResult.percentage?.toFixed(0)}%
-                        </div>
-                        <p className="text-white/70 mb-8">Score: <span className="text-white font-bold">{quizResult.score}</span> / <span className="text-white font-bold">{quizResult.total}</span></p>
-                        <button onClick={() => { setCurrentQuiz(null); setQuizResult(null); }}
-                            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-2xl hover:scale-105 transition-transform">
-                            Back to Dashboard
-                        </button>
-                    </div>
-                ) : currentQuiz.questions.map((q, idx) => (
-                    <div key={q.id} className="bg-white/8 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-colors">
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="flex-1">
-                                <div className="flex items-start gap-3 mb-4">
-                                    <span className="shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-sm">{idx + 1}</span>
-                                    <p className="text-white font-semibold leading-relaxed pt-1">{q.text}</p>
-                                </div>
-                                <div className="space-y-2 ml-11">
-                                    {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                        const txt = q[`option_${opt.toLowerCase()}`];
-                                        if (!txt) return null;
-                                        const sel = answers[q.id] === opt;
-                                        return (
-                                            <button key={opt} onClick={() => setAnswers(p => ({ ...p, [q.id]: opt }))}
-                                                className={`w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${sel ? 'border-blue-400 bg-blue-500/25 text-white' : 'border-white/10 bg-white/5 text-white/60 hover:border-blue-400/40 hover:text-white hover:bg-white/10'}`}>
-                                                <span className={`font-black mr-2 ${sel ? 'text-blue-300' : 'text-white/30'}`}>{opt}.</span>{txt}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            {q.image_url && (
-                                <div className="w-full md:w-1/3 flex items-center justify-center bg-black/20 rounded-xl p-4 border border-white/5 shrink-0 self-center md:self-start">
-                                    <img
-                                        src={`${API_URL}${q.image_url}`}
-                                        alt={`Question ${idx + 1}`}
-                                        className="max-h-64 object-contain rounded-lg"
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </main>
-            {!quizResult && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/80 backdrop-blur-xl border-t border-white/10">
-                    <div className="max-w-3xl mx-auto">
-                        <button onClick={() => handleSubmit()}
-                            className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-black text-lg shadow-2xl hover:scale-[1.01] transition-transform">
-                            Submit Quiz · {Object.keys(answers).length}/{currentQuiz.questions.length} answered
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
+        <AdvancedQuizPortal
+            currentQuiz={currentQuiz}
+            answers={answers}
+            setAnswers={setAnswers}
+            timeLeft={timeLeft}
+            quizResult={quizResult}
+            handleSubmit={handleSubmit}
+            setCurrentQuiz={setCurrentQuiz}
+            setQuizResult={setQuizResult}
+            API_URL={API_URL}
+            logo={logo}
+            studentEmail={user?.email || ''}
+            studentName={user?.full_name || ''}
+        />
     );
+
+    const completedQuizzes = visibleQ.filter(q => taken.includes(q.id));
 
     /* ════════════════════ PORTAL ════════════════════ */
     const sections = [
         { id: 'home', label: 'Overview', icon: <Play size={16} /> },
         { id: 'announcements', label: 'Announcements', icon: <Bell size={16} />, count: announcements.length },
-        { id: 'quizzes', label: 'Quizzes', icon: <Award size={16} />, count: quizzes.length },
+        { id: 'quizzes', label: 'Spark Exam', icon: <Zap size={16} />, count: visibleQ.length },
         { id: 'recordings', label: 'Recordings', icon: <Video size={16} />, count: recordings.length },
         { id: 'papers', label: 'Resources', icon: <FileText size={16} />, count: papers.length },
-        { id: 'marks', label: 'Marks', icon: <FileText size={16} />, count: marks.length },
     ];
 
     return (
-        <div className="min-h-screen bg-[#f8f9ff]">
+        <div className="min-h-screen relative overflow-x-hidden pb-10 transition-all duration-500 bg-[var(--paper)] text-[var(--ink)]">
+            {/* Fine sand-grid layout */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(213,208,194,0.22)_1px,transparent_1px),linear-gradient(90deg,rgba(213,208,194,0.22)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-[0.8] z-0" />
 
             {/* ════ LIQUID NAVBAR ════ */}
             <LiquidNav
@@ -507,64 +715,65 @@ const Dashboard = () => {
                 scrolled={scrolled}
                 logout={logout}
                 navigate={navigate}
+                theme={theme}
+                toggleTheme={toggleTheme}
+                setShowQRModal={setShowQRModal}
+                setShowSettingsModal={setShowSettingsModal}
             />
 
-            {/* ════ HERO ════ */}
-            <section id="home">
-                <HeroSlider slides={sliders} />
-            </section>
-
-            {/* ════ STATS CARD (overlaps hero) ════ */}
-            <section className="max-w-7xl mx-auto px-4 md:px-8 -mt-14 relative z-10 mb-12" ref={statsRef}>
+            {/* ════ STATS CARD ════ */}
+            <section id="home" className="max-w-7xl mx-auto px-4 md:px-8 pt-28 relative z-10 mb-12" ref={statsRef}>
                 <Reveal>
-                    <div className="bg-white/80 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-black/10 p-6 md:p-8 border border-white/60">
-                        <div className="flex flex-col lg:flex-row lg:items-center gap-6">
-                            <div className="flex-1">
-                                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100/80 text-blue-700 text-xs font-black px-3 py-1.5 rounded-full mb-3">
-                                    <Star size={11} className="fill-yellow-400 text-yellow-400" />
-                                    {myClass ? `Batch ${myClass}` : 'Learning Hub'}
-                                </div>
-                                <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">
-                                    Welcome back, <span className="gradient-text">{user?.full_name?.split(' ')[0] || 'Student'}</span> 👋
-                                </h1>
-                                <p className="text-gray-400 mt-1.5 text-sm font-medium">Intelligent Physics Academy — your all-in-one learning portal</p>
-                                {visibleQ.length > 0 && (
-                                    <div className="mt-4 max-w-xs">
-                                        <div className="flex justify-between text-xs font-bold text-gray-500 mb-1">
-                                            <span>Quiz Completion</span><span>{doneCount}/{visibleQ.length}</span>
-                                        </div>
-                                        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-1000"
-                                                style={{ width: `${visibleQ.length > 0 ? (doneCount / visibleQ.length) * 100 : 0}%` }} />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-3">
-                                <StatCard label="Quizzes" value={visibleQ.length} icon={<BookOpen size={20} />} gradient="from-blue-500 to-indigo-600" visible={statsVis} />
-                                <StatCard label="Videos" value={recordings.length} icon={<Video size={20} />} gradient="from-violet-500 to-purple-600" visible={statsVis} />
-                                <StatCard label="Papers" value={papers.length} icon={<FileText size={20} />} gradient="from-emerald-500 to-teal-600" visible={statsVis} />
-                            </div>
-                        </div>
+                    <div className="rounded-none p-8 md:p-10 bg-[#f9f6ee] border border-[#d5d0c2] shadow-none">
+                         <div className="flex flex-col lg:flex-row lg:items-center gap-8">
+                             <div className="flex-1">
+                                 <div className="inline-flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest px-3 py-1 bg-[#b91c1c] text-[#f4f0e6] rounded-none">
+                                     <Star size={10} className="fill-[#f4f0e6]" />
+                                     {myClass ? `Batch ${myClass}` : 'Learning Hub'}
+                                 </div>
+                                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-normal leading-none text-[#0a0a0a] mt-3.5 mb-2 uppercase tracking-wider" style={{ fontFamily: "'Bebas Neue', cursive" }}>
+                                     Welcome Back, <span className="text-[#b91c1c]">{user?.full_name?.split(' ')[0] || 'Student'}</span> 👋
+                                 </h1>
+                                 <p className="text-xs font-mono uppercase tracking-wider text-[#6b6558] font-bold">Intelligent Physics Academy — your all-in-one learning portal</p>
+                                 {visibleQ.length > 0 && (
+                                     <div className="mt-5 max-w-xs">
+                                         <div className="flex justify-between text-[9px] font-bold font-mono tracking-widest uppercase mb-1.5 text-[#6b6558]">
+                                             <span>Quiz Completion</span><span>{doneCount}/{visibleQ.length}</span>
+                                         </div>
+                                         <div className="h-2 rounded-none bg-[#ede9da] border border-[#d5d0c2] overflow-hidden">
+                                             <div className="h-full bg-[#b91c1c] rounded-none transition-all duration-1000"
+                                                  style={{ width: `${visibleQ.length > 0 ? (doneCount / visibleQ.length) * 100 : 0}%` }} />
+                                         </div>
+                                     </div>
+                                 )}
+                             </div>
+                             <div className="flex gap-4 flex-wrap sm:flex-nowrap">
+                                 <StatCard label="Quizzes" value={visibleQ.length} icon={<BookOpen size={20} />} gradient="from-[#656CFF] to-indigo-600" visible={statsVis} />
+                                 <StatCard label="Videos" value={recordings.length} icon={<Video size={20} />} gradient="from-[#656CFF] to-indigo-600" visible={statsVis} />
+                                 <StatCard label="Papers" value={papers.length} icon={<FileText size={20} />} gradient="from-[#656CFF] to-indigo-600" visible={statsVis} />
+                             </div>
+                         </div>
                     </div>
                 </Reveal>
             </section>
 
+
+
             {/* ════ ANNOUNCEMENTS ════ */}
             <section id="announcements" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
                 <Reveal>
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-6 border-b border-[#d5d0c2] pb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                            <div className="w-8 h-8 rounded-none bg-[#0a0a0a] text-[#f4f0e6] flex items-center justify-center">
                                 <Megaphone size={16} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-orange-500 uppercase tracking-widest">Latest News</p>
-                                <h2 className="text-xl font-black text-gray-900 leading-tight">Announcements</h2>
+                                <p className="text-[9px] font-mono font-bold text-[#b91c1c] uppercase tracking-widest">Latest News</p>
+                                <h2 className="text-3xl font-normal uppercase tracking-wider" style={{ fontFamily: "'Bebas Neue', cursive" }}>Announcements</h2>
                             </div>
                         </div>
                         {announcements.length > 0 && (
-                            <span className="text-xs bg-orange-50 border border-orange-100 text-orange-600 font-black px-3 py-1.5 rounded-full">
+                            <span className="text-[9px] font-mono font-bold bg-[#0a0a0a] text-[#f4f0e6] px-3 py-1">
                                 {announcements.length} notice{announcements.length !== 1 ? 's' : ''}
                             </span>
                         )}
@@ -573,33 +782,29 @@ const Dashboard = () => {
 
                 {announcements.length === 0 ? (
                     <Reveal delay={100}>
-                        <div className="flex flex-col items-center justify-center py-16 rounded-3xl border-2 border-dashed border-orange-100 bg-orange-50/40">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-100 to-rose-100 flex items-center justify-center mb-4">
-                                <Bell size={24} className="text-orange-400" />
+                        <div className="flex flex-col items-center justify-center py-16 rounded-none border border-[#d5d0c2] bg-[#f9f6ee]">
+                            <div className="w-14 h-14 rounded-none flex items-center justify-center mb-4 text-[#0a0a0a] bg-[#f4f0e6] border border-[#d5d0c2]">
+                                <Bell size={24} />
                             </div>
-                            <p className="font-black text-gray-700 text-lg mb-1">No announcements yet</p>
-                            <p className="text-sm text-gray-400">You'll see class notices and updates here</p>
+                            <p className="font-bold text-lg mb-1 text-[#0a0a0a] uppercase" style={{ fontFamily: "'Archivo', sans-serif" }}>No announcements yet</p>
+                            <p className="text-xs text-center max-w-xs text-[#6b6558] font-semibold leading-relaxed">We will notify you here when new announcements are published by your teacher.</p>
                         </div>
                     </Reveal>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {announcements.map((a, i) => (
-                            <Reveal key={a.id} delay={i * 80}>
-                                <div className="card-lift bg-white rounded-3xl border border-orange-100/80 shadow-sm overflow-hidden flex group cursor-default h-full">
-                                    {a.image_url ? (
-                                        <div className="w-32 shrink-0 overflow-hidden">
-                                            <img src={imgSrc(a.image_url)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            <Reveal key={a.id} delay={i * 60}>
+                                <div className="rounded-none border border-[#d5d0c2] p-6 relative overflow-hidden flex transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
+                                    <div className="shrink-0 w-11 h-11 rounded-none border border-[#d5d0c2] bg-[#f4f0e6] text-[#0a0a0a] flex items-center justify-center">
+                                        <Megaphone size={20} />
+                                    </div>
+                                    <div className="ml-5 flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                            {isNew(a.created_at) && <span className="text-[9px] bg-[#b91c1c] text-[#f4f0e6] font-mono px-2 py-0.5 rounded-none font-bold">NEW NOTICE</span>}
+                                            <span className="text-[9px] font-mono text-[#6b6558] ml-auto">{a.created_at?.slice(0, 10)}</span>
                                         </div>
-                                    ) : (
-                                        <div className="w-1.5 bg-gradient-to-b from-orange-400 to-rose-500 shrink-0" />
-                                    )}
-                                    <div className="p-5 flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            {isNew(a.created_at) && <span className="text-[10px] bg-red-500 text-white font-black px-2 py-0.5 rounded-full animate-pulse">NEW</span>}
-                                            <span className="text-xs text-gray-400 ml-auto">{a.created_at?.slice(0, 10)}</span>
-                                        </div>
-                                        <h3 className="font-black text-gray-900 leading-snug line-clamp-2 mb-1.5">{a.title}</h3>
-                                        <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed">{a.content}</p>
+                                        <h3 className="font-bold text-[#0a0a0a] leading-snug line-clamp-2 mb-1.5 transition-colors duration-300 group-hover:text-[#b91c1c]" style={{ fontFamily: "'Archivo', sans-serif" }}>{a.title}</h3>
+                                        <p className="text-xs text-[#6b6558] line-clamp-3 leading-relaxed font-semibold">{a.content}</p>
                                     </div>
                                 </div>
                             </Reveal>
@@ -611,52 +816,45 @@ const Dashboard = () => {
             {/* ════ INTELLIGENT PHYSICS — THINK POSITIVE BANNER ════ */}
             <section className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
                 <Reveal>
-                    <div className="relative rounded-3xl overflow-hidden shadow-2xl" style={{
-                        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 100%)'
-                    }}>
-                        {/* Animated glow orbs */}
-                        <div className="absolute top-0 left-0 w-80 h-80 bg-indigo-600/25 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 float" />
-                        <div className="absolute bottom-0 right-0 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 float" style={{ animationDelay: '2s' }} />
-                        <div className="absolute top-1/2 left-1/2 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                    <div className="relative rounded-none overflow-hidden transition-all duration-300 border border-[#d5d0c2] bg-[#f9f6ee]">
+                        {/* Subtle sand grid dots */}
+                        <div className="absolute inset-0 opacity-[0.08]"
+                            style={{ backgroundImage: 'radial-gradient(#0a0a0a 1px, transparent 0)', backgroundSize: '24px 24px' }} />
 
-                        {/* Subtle grid */}
-                        <div className="absolute inset-0 opacity-[0.025]"
-                            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '32px 32px' }} />
-
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 p-7 md:p-10">
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 p-8 md:p-12">
 
                             {/* Left — Logo card */}
                             <div className="shrink-0 flex flex-col items-center text-center">
                                 <div className="relative mb-3">
-                                    <div className="absolute inset-0 bg-indigo-400/30 rounded-3xl blur-xl scale-110" />
+                                    <div className="absolute inset-0 bg-[#b91c1c]/10 rounded-none scale-105" />
                                     <img src={logo} alt="Intelligent Physics"
-                                        className="relative h-20 w-20 md:h-24 md:w-24 rounded-3xl object-contain shadow-2xl ring-2 ring-white/20" />
+                                        className="relative h-20 w-20 md:h-24 md:w-24 rounded-none object-contain shadow-none ring-1 ring-[#d5d0c2]" />
                                 </div>
-                                <p className="text-white font-black text-base md:text-lg tracking-tight">Intelligent Physics</p>
+                                <p className="font-bold text-base md:text-lg tracking-tight text-[#0a0a0a] uppercase" style={{ fontFamily: "'Archivo', sans-serif" }}>Intelligent Physics</p>
                                 <div className="flex gap-0.5 mt-1">
-                                    {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />)}
+                                    {[...Array(5)].map((_, i) => <Star key={i} size={11} className="fill-yellow-400 text-yellow-400" />)}
                                 </div>
-                                <span className="mt-2 text-indigo-300 text-[11px] font-bold tracking-widest uppercase">A/L Physics Academy</span>
+                                <span className="mt-2 text-[9px] font-mono font-bold tracking-widest uppercase text-[#b91c1c]">A/L Physics Academy</span>
                             </div>
 
                             {/* Divider */}
-                            <div className="hidden md:block w-px self-stretch bg-white/10 mx-2" />
-                            <div className="block md:hidden h-px w-full bg-white/10" />
+                            <div className="hidden md:block w-px self-stretch mx-2 bg-[#d5d0c2]" />
+                            <div className="block md:hidden h-px w-full bg-[#d5d0c2]" />
 
                             {/* Right — Think Positive quotes */}
                             <div className="flex-1 text-center md:text-left">
-                                <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] font-black px-3 py-1.5 rounded-full mb-4 tracking-widest uppercase">
-                                    <Zap size={11} className="fill-indigo-300" /> Think Positive
+                                <div className="inline-flex items-center gap-2 border border-[#d5d0c2] text-[9px] font-mono font-bold px-3 py-1 rounded-none mb-4 tracking-widest uppercase bg-[#f4f0e6] text-[#b91c1c]">
+                                    <Zap size={11} className="fill-[#b91c1c]" /> Think Positive
                                 </div>
 
-                                <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-snug mb-3">
+                                <h2 className="text-3xl sm:text-4xl md:text-5xl font-normal leading-none mb-3 text-[#0a0a0a] uppercase tracking-wider" style={{ fontFamily: "'Bebas Neue', cursive" }}>
                                     Every expert was once a{' '}
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                                    <span className="text-[#b91c1c]">
                                         beginner.
                                     </span>
                                 </h2>
-                                <p className="text-white/50 text-sm leading-relaxed mb-5 max-w-md mx-auto md:mx-0">
-                                    Believe in your potential. Each question you practice, each recording you watch, and each paper you solve brings you one step closer to your dream score. <span className="text-indigo-300 font-bold">You've got this! 🚀</span>
+                                <p className="text-xs leading-relaxed mb-6 max-w-lg mx-auto md:mx-0 text-[#6b6558] font-medium">
+                                    Believe in your potential. Each question you practice, each recording you watch, and each paper you solve brings you one step closer to your dream score. <span className="text-[#b91c1c] font-bold">You've got this! 🚀</span>
                                 </p>
 
                                 {/* Motivational stat pills */}
@@ -667,52 +865,172 @@ const Dashboard = () => {
                                         { icon: <Zap size={12} />, text: 'Stay Focused' },
                                         { icon: <Flame size={12} />, text: 'Never Give Up' },
                                     ].map(({ icon, text }) => (
-                                        <span key={text} className="flex items-center gap-1.5 bg-white/8 border border-white/10 text-white/70 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/15 hover:text-white transition-colors">
+                                        <span key={text} className="flex items-center gap-1.5 border border-[#d5d0c2] text-[10px] font-mono font-bold px-3 py-1.5 rounded-none bg-[#f4f0e6] text-[#6b6558] hover:border-[#0a0a0a] hover:text-[#0a0a0a] transition-colors">
                                             {icon}{text}
                                         </span>
                                     ))}
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </Reveal>
             </section>
 
 
+            {/* ════ MY RESULTS & RANKINGS ════ */}
+            <section id="results" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
+                <Reveal>
+                    <div className="flex items-center justify-between mb-6 border-b border-[#d5d0c2] pb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-none bg-[#0a0a0a] text-[#f4f0e6] flex items-center justify-center">
+                                <Award size={16} />
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-mono font-bold text-[#b91c1c] uppercase tracking-widest">My Achievements</p>
+                                <h2 className="text-3xl font-normal uppercase tracking-wider" style={{ fontFamily: "'Bebas Neue', cursive" }}>My Results & Rankings</h2>
+                            </div>
+                        </div>
+                        {(completedQuizzes.length > 0 || marks.length > 0) && (
+                            <span className="text-[9px] font-mono font-bold bg-[#0a0a0a] text-[#f4f0e6] px-3 py-1">
+                                {completedQuizzes.length + marks.length} Result{(completedQuizzes.length + marks.length) !== 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+                </Reveal>
+
+                {completedQuizzes.length === 0 && marks.length === 0 ? (
+                    <Reveal delay={100}>
+                        <div className="flex flex-col items-center justify-center py-16 rounded-none border border-[#d5d0c2] bg-[#f9f6ee]">
+                            <div className="w-14 h-14 rounded-none flex items-center justify-center mb-4 text-[#0a0a0a] bg-[#f4f0e6] border border-[#d5d0c2]">
+                                <Award size={24} />
+                            </div>
+                            <p className="font-bold text-lg mb-1 text-[#0a0a0a] uppercase" style={{ fontFamily: "'Archivo', sans-serif" }}>No results yet</p>
+                            <p className="text-xs text-center max-w-xs text-[#6b6558] font-semibold leading-relaxed">Your exam marks and quiz ranks will appear here after you complete tests.</p>
+                        </div>
+                    </Reveal>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Online Quiz Results */}
+                        {completedQuizzes.map((q, i) => {
+                            const scoreInfo = studentScores[q.id];
+                            return (
+                                <Reveal key={`quiz-res-${q.id}`} delay={i * 50}>
+                                    <div className="rounded-none border-2 border-[#0a0a0a] p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:-translate-y-0.5">
+                                        {/* Left Info */}
+                                        <div className="flex items-start gap-4">
+                                            <div className="shrink-0 w-12 h-12 rounded-none border border-[#0a0a0a] bg-[#0a0a0a] text-white flex items-center justify-center shadow-md">
+                                                <Zap size={22} />
+                                            </div>
+                                            <div>
+                                                <span className="text-[8px] font-mono font-bold bg-[#b91c1c] text-white px-2 py-0.5 rounded-none uppercase">Online Quiz</span>
+                                                <h3 className="font-bold text-lg text-[#0a0a0a] mt-2 mb-1 leading-tight" style={{ fontFamily: "'Archivo', sans-serif" }}>{q.title}</h3>
+                                                <p className="text-[10px] font-mono text-[#6b6558]">Completed successfully</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Right Performance Stats (BIG bold text) */}
+                                        <div className="flex gap-6 mt-4 md:mt-0 w-full md:w-auto border-t md:border-t-0 border-[#d5d0c2] pt-4 md:pt-0">
+                                            <div className="flex-1 md:flex-initial text-center md:text-right">
+                                                <p className="text-[8px] font-mono font-bold text-[#6b6558] uppercase">Marks</p>
+                                                <p className="text-3xl font-black text-[#0a0a0a] tracking-tight mt-1" style={{ fontFamily: "'Archivo', sans-serif" }}>
+                                                    <span className="text-[#b91c1c]">{scoreInfo?.score ?? 0}</span>
+                                                    <span className="text-sm text-[#6b6558] font-bold">/{scoreInfo?.total ?? 0}</span>
+                                                </p>
+                                            </div>
+                                            {scoreInfo?.rank !== undefined && scoreInfo?.rank !== null && (
+                                                <div className="flex-1 md:flex-initial text-center md:text-right border-l border-[#d5d0c2] pl-6">
+                                                    <p className="text-[8px] font-mono font-bold text-[#6b6558] uppercase">Rank</p>
+                                                    <p className="text-3xl font-black text-[#0a0a0a] tracking-tight mt-1" style={{ fontFamily: "'Archivo', sans-serif" }}>
+                                                        <span className="text-[#656CFF]">{scoreInfo?.rank}</span>
+                                                        <span className="text-sm text-[#6b6558] font-bold">/{scoreInfo?.total_participants ?? 0}</span>
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Reveal>
+                            );
+                        })}
+
+                        {/* Manual Exam Results */}
+                        {marks.map((m, i) => (
+                            <Reveal key={`mark-res-${m.id}`} delay={(completedQuizzes.length + i) * 50}>
+                                <div className="rounded-none border-2 border-[#0a0a0a] p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:-translate-y-0.5">
+                                    {/* Left Info */}
+                                    <div className="flex items-start gap-4">
+                                        <div className="shrink-0 w-12 h-12 rounded-none border border-[#0a0a0a] bg-[#656CFF] text-white flex items-center justify-center shadow-md">
+                                            <Award size={22} />
+                                        </div>
+                                        <div>
+                                            <span className="text-[8px] font-mono font-bold bg-[#656CFF] text-white px-2 py-0.5 rounded-none uppercase">{m.term || 'Exam'}</span>
+                                            <h3 className="font-bold text-lg text-[#0a0a0a] mt-2 mb-1 leading-tight" style={{ fontFamily: "'Archivo', sans-serif" }}>{m.title || 'Official Evaluation'}</h3>
+                                            <p className="text-[10px] font-mono text-[#6b6558]">{m.subject || 'Physics'}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Performance Stats (BIG bold text) */}
+                                    <div className="flex gap-6 mt-4 md:mt-0 w-full md:w-auto border-t md:border-t-0 border-[#d5d0c2] pt-4 md:pt-0 items-center justify-end">
+                                        <div className="text-center md:text-right">
+                                            <p className="text-[8px] font-mono font-bold text-[#6b6558] uppercase">Score</p>
+                                            <p className="text-3xl font-black text-[#0a0a0a] tracking-tight mt-1" style={{ fontFamily: "'Archivo', sans-serif" }}>
+                                                <span className="text-[#b91c1c]">{m.score}</span>
+                                                <span className="text-sm text-[#6b6558] font-bold">/{m.max_score || 100}</span>
+                                            </p>
+                                        </div>
+                                        {m.file_url && (
+                                            <a href={imgSrc(m.file_url)} target="_blank" rel="noreferrer" className="ml-4 h-9 w-9 rounded-none bg-[#0a0a0a] text-white flex items-center justify-center hover:bg-[#b91c1c] transition-colors" title="Download paper attachment">
+                                                <FileText size={16} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </Reveal>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+
             {/* ════ QUIZZES ════ */}
             <section id="quizzes" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-                <Reveal><SectionHeader icon={<Zap size={18} />} label="Test Yourself" title="Quizzes & Tests" gradient="from-blue-500 to-indigo-500" count={visibleQ.length} badge={`${doneCount}/${visibleQ.length} done`} /></Reveal>
-                {loading ? <SkeletonGrid /> : visibleQ.length === 0 ? (
-                    <EmptyBox icon={<BookOpen size={40} />} title="No quizzes yet" desc="Quizzes for your batch will appear here" color="blue" />
+                <Reveal><SectionHeader icon={<Zap size={18} />} label="Test Yourself" title="Quizzes & Tests" gradient="from-[#656CFF] to-indigo-650" count={visibleQ.length} badge={`${doneCount}/${visibleQ.length} done`} theme={theme} /></Reveal>
+                {loading ? <SkeletonGrid theme={theme} /> : visibleQ.length === 0 ? (
+                    <EmptyBox icon={<BookOpen size={40} />} title="No quizzes yet" desc="Quizzes for your batch will appear here" color="blue" theme={theme} />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {visibleQ.map((q, i) => {
                             const done = taken.includes(q.id), ended = isEnded(q);
                             return (
                                 <Reveal key={q.id} delay={i * 60}>
-                                    <div className={`card-lift bg-white rounded-3xl border shadow-sm overflow-hidden group h-full flex flex-col ${done ? 'border-green-200' : ended ? 'border-red-200' : 'border-indigo-100'}`}>
-                                        <div className={`h-1.5 ${done ? 'bg-gradient-to-r from-green-400 to-emerald-500' : ended ? 'bg-gradient-to-r from-red-400 to-rose-500' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`} />
+                                    <div className="rounded-none border border-[#d5d0c2] overflow-hidden group h-full flex flex-col transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
                                         <div className="p-6 flex flex-col flex-1">
                                             <div className="flex items-start justify-between mb-4">
-                                                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm ${done ? 'bg-green-50' : 'ended' ? 'bg-red-50' : 'bg-blue-50'}`}>
-                                                    {done ? <CheckCircle size={22} className="text-green-600" /> : ended ? <Clock size={22} className="text-red-500" /> : <BookOpen size={22} className="text-blue-600" />}
+                                                <div className="w-11 h-11 rounded-none border border-[#d5d0c2] bg-[#f4f0e6] flex items-center justify-center text-[#0a0a0a]">
+                                                    {done ? <CheckCircle size={20} className="text-[#b91c1c]" /> : ended ? <Clock size={20} /> : <BookOpen size={20} />}
                                                 </div>
-                                                {ended && <span className="text-[10px] bg-red-100 text-red-600 font-black px-2 py-1 rounded-full">ENDED</span>}
-                                                {done && !ended && <span className="text-[10px] bg-green-100 text-green-600 font-black px-2 py-1 rounded-full">DONE ✓</span>}
-                                                {isNew(q.created_at) && !done && !ended && <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-1 rounded-full">NEW</span>}
+                                                {ended && <span className="text-[9px] text-[#6b6558] border border-[#d5d0c2] font-mono px-2 py-0.5 rounded-none font-bold">Expired</span>}
+                                                {done && !ended && <span className="text-[9px] bg-[#0a0a0a] text-[#f4f0e6] font-mono px-2 py-0.5 rounded-none font-bold">Completed</span>}
+                                                {isNew(q.created_at) && !done && !ended && <span className="text-[9px] bg-[#b91c1c] text-white font-mono px-2 py-0.5 rounded-none font-bold animate-pulse">NEW</span>}
                                             </div>
-                                            <h3 className="font-black text-gray-900 mb-2 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">{q.title}</h3>
-                                            <p className="text-sm text-gray-400 line-clamp-2 flex-1 mb-5 leading-relaxed">{q.description || 'No description provided.'}</p>
+                                            <h3 className="font-bold text-[#0a0a0a] text-lg mb-2 leading-snug line-clamp-2 transition-colors duration-300 group-hover:text-[#b91c1c]" style={{ fontFamily: "'Archivo', sans-serif" }}>{q.title}</h3>
+                                            <p className="text-xs text-[#6b6558] line-clamp-2 flex-1 mb-5 leading-relaxed font-medium">{q.description || 'No description provided.'}</p>
                                             <div className="flex items-center justify-between mt-auto">
-                                                <span className="flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-                                                    <Clock size={11} />{q.duration_minutes || 30} min
+                                                <span className="flex items-center gap-1.5 text-[9px] font-mono uppercase px-2.5 py-1 rounded-none border border-[#d5d0c2] text-[#6b6558] bg-[#f4f0e6]">
+                                                    <Clock size={11} className="text-[#b91c1c]" />{q.duration_minutes || 30} MINS
                                                 </span>
-                                                {done ? (<span className="text-sm font-bold text-green-600">Completed ✓</span>
-                                                ) : ended ? (<span className="text-sm font-bold text-red-400">Expired</span>
+                                                {done ? (
+                                                    <div className="flex flex-col items-end gap-0.5 font-mono text-[9px] uppercase text-[#6b6558] font-bold">
+                                                        <span>Score: <span className="text-[#b91c1c] font-black">{studentScores[q.id]?.score ?? 0}</span>/{studentScores[q.id]?.total ?? 0}</span>
+                                                        {studentScores[q.id]?.rank !== undefined && studentScores[q.id]?.rank !== null && (
+                                                            <span>Rank: <span className="text-[#b91c1c] font-black">{studentScores[q.id]?.rank}</span>/{studentScores[q.id]?.total_participants ?? 0}</span>
+                                                        )}
+                                                    </div>
+                                                ) : ended ? (<span className="text-xs font-mono font-bold uppercase text-[#6b6558]">EXPIRED</span>
                                                 ) : (
                                                     <button onClick={() => startQuiz(q.id)}
-                                                        className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-bold px-5 py-2.5 rounded-2xl shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5 active:translate-y-0 transition-all">
-                                                        <Play size={13} className="ml-0.5" />Start
+                                                        className="flex items-center gap-1.5 bg-[#0a0a0a] text-[#f4f0e6] text-[10px] font-mono uppercase px-4.5 py-2.5 rounded-none hover:bg-[#b91c1c] hover:-translate-y-0.5 active:scale-95 transition-all cursor-pointer">
+                                                        <Play size={11} className="ml-0.5" />Start Quiz
                                                     </button>
                                                 )}
                                             </div>
@@ -727,30 +1045,30 @@ const Dashboard = () => {
 
             {/* ════ RECORDINGS ════ */}
             <section id="recordings" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-                <Reveal><SectionHeader icon={<Video size={18} />} label="Watch & Learn" title="Class Recordings" gradient="from-violet-500 to-purple-600" count={recordings.length} /></Reveal>
-                {loading ? <SkeletonGrid /> : recordings.length === 0 ? (
-                    <EmptyBox icon={<Video size={40} />} title="No recordings yet" desc="Class recordings will appear here when uploaded" color="purple" />
+                <Reveal><SectionHeader icon={<Video size={18} />} label="Watch & Learn" title="Class Recordings" gradient="from-red-500 to-rose-600" count={recordings.length} theme={theme} /></Reveal>
+                {loading ? <SkeletonGrid theme={theme} /> : recordings.length === 0 ? (
+                    <EmptyBox icon={<Video size={40} />} title="No recordings yet" desc="Class recordings will appear here when uploaded" color="red" theme={theme} />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {recordings.map((rec, i) => (
                             <Reveal key={rec.id} delay={i * 60}>
-                                <div className="card-lift bg-white rounded-3xl border border-purple-100 shadow-sm overflow-hidden flex flex-col group">
-                                    <div className="relative overflow-hidden h-44 bg-gradient-to-br from-violet-600 via-purple-700 to-indigo-800">
-                                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px,rgba(255,255,255,0.8) 1px,transparent 0)', backgroundSize: '22px 22px' }} />
+                                <div className="rounded-none border border-[#d5d0c2] overflow-hidden flex flex-col group transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
+                                    <div className="relative overflow-hidden h-44 bg-[#0a0a0a] border-b border-[#d5d0c2]">
+                                        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px,rgba(255,255,255,0.8) 1px,transparent 0)', backgroundSize: '22px 22px' }} />
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300 shadow-2xl">
-                                                <Play size={28} className="text-white ml-1 drop-shadow" />
+                                            <div className="w-14 h-14 bg-[#b91c1c] rounded-none flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                                <Play size={24} className="text-white ml-0.5" />
                                             </div>
                                         </div>
-                                        {rec.class_name && <span className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-1 rounded-full">{rec.class_name}</span>}
-                                        {isNew(rec.created_at) && <span className="absolute top-3 left-3 bg-green-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full">NEW</span>}
+                                        {rec.class_name && <span className="absolute top-3 right-3 bg-[#0a0a0a]/65 text-[#f4f0e6] text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-none">{rec.class_name}</span>}
+                                        {isNew(rec.created_at) && <span className="absolute top-3 left-3 bg-[#b91c1c] text-white text-[8px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-none font-bold animate-pulse">NEW</span>}
                                     </div>
                                     <div className="p-5 flex flex-col flex-1">
-                                        <h3 className="font-bold text-gray-900 line-clamp-2 mb-1.5 group-hover:text-purple-700 transition-colors">{rec.title}</h3>
-                                        {rec.description && <p className="text-sm text-gray-400 line-clamp-2 mb-4">{rec.description}</p>}
+                                        <h3 className="font-bold text-[#0a0a0a] text-base line-clamp-2 mb-1.5 group-hover:text-[#b91c1c] transition-colors duration-300" style={{ fontFamily: "'Archivo', sans-serif" }}>{rec.title}</h3>
+                                        {rec.description && <p className="text-xs text-[#6b6558] line-clamp-2 mb-4 leading-relaxed font-medium">{rec.description}</p>}
                                         <a href={rec.video_url} target="_blank" rel="noreferrer"
-                                            className="mt-auto flex items-center justify-center gap-2 w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold py-3 rounded-2xl hover:from-violet-700 hover:to-purple-700 hover:shadow-lg hover:shadow-purple-200 transition-all">
-                                            <Play size={14} /> Watch Recording
+                                            className="mt-auto flex items-center justify-center gap-1.5 w-full bg-[#0a0a0a] text-[#f4f0e6] text-[10px] font-mono uppercase py-3 rounded-none hover:bg-[#b91c1c] hover:-translate-y-0.5 transition-all cursor-pointer">
+                                            <Play size={11} /> Watch Recording
                                         </a>
                                     </div>
                                 </div>
@@ -762,14 +1080,14 @@ const Dashboard = () => {
 
             {/* ════ PAPERS ════ */}
             <section id="papers" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-                <Reveal><SectionHeader icon={<FileText size={18} />} label="Study Resources" title="Exam Papers" gradient="from-emerald-500 to-teal-600" count={papers.length} /></Reveal>
+                <Reveal><SectionHeader icon={<FileText size={18} />} label="Study Resources" title="Exam Papers" gradient="from-[#656CFF] to-indigo-650" count={papers.length} /></Reveal>
 
                 {paperTypes.length > 2 && (
                     <Reveal delay={100}>
-                        <div className="flex gap-2 mb-6 flex-wrap">
+                        <div className="flex gap-2.5 mb-6 flex-wrap">
                             {paperTypes.map(t => (
                                 <button key={t} onClick={() => setPaperFilter(t)}
-                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${paperFilter === t ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-200' : 'bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:text-emerald-700'}`}>
+                                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${paperFilter === t ? 'bg-gradient-to-r from-[#656CFF] to-indigo-650 text-white shadow-lg shadow-[#656CFF]/10' : 'bg-white text-slate-500 border border-slate-200 hover:border-[#656CFF]/30 hover:text-[#656CFF] hover:bg-slate-50 shadow-sm'}`}>
                                     <Filter size={12} />{t}
                                 </button>
                             ))}
@@ -777,36 +1095,31 @@ const Dashboard = () => {
                     </Reveal>
                 )}
 
-                {loading ? <SkeletonGrid /> : filteredPapers.length === 0 ? (
-                    <EmptyBox icon={<FileText size={40} />} title="No papers yet" desc="Exam papers will appear here when uploaded" color="emerald" />
+                {loading ? <SkeletonGrid theme={theme} /> : filteredPapers.length === 0 ? (
+                    <EmptyBox icon={<FileText size={40} />} title="No papers yet" desc="Exam papers will appear here when uploaded" color="blue" theme={theme} />
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {filteredPapers.map((p, i) => {
-                            const m = {
-                                'Past Paper': { g: 'from-orange-400 to-amber-500', bg: 'bg-orange-50', tx: 'text-orange-600' },
-                                'FWC Paper': { g: 'from-violet-500 to-purple-600', bg: 'bg-violet-50', tx: 'text-violet-600' },
-                                'Model Paper': { g: 'from-blue-500 to-indigo-600', bg: 'bg-blue-50', tx: 'text-blue-600' },
-                            }[p.paper_type] || { g: 'from-gray-400 to-gray-500', bg: 'bg-gray-50', tx: 'text-gray-500' };
                             return (
                                 <Reveal key={p.id} delay={i * 50}>
-                                    <div className="card-lift bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col group">
-                                        <div className={`bg-gradient-to-br ${m.g} p-7 flex items-center justify-center relative overflow-hidden`}>
-                                            <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px,white 1px,transparent 0)', backgroundSize: '18px 18px' }} />
-                                            <div className="relative w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                                <FileText size={30} className="text-white drop-shadow" />
+                                    <div className="rounded-none border border-[#d5d0c2] overflow-hidden flex flex-col group transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
+                                        <div className="bg-[#ede9da] p-7 flex items-center justify-center relative overflow-hidden border-b border-[#d5d0c2]">
+                                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px,#0a0a0a 1px,transparent 0)', backgroundSize: '18px 18px' }} />
+                                            <div className="relative w-14 h-14 bg-[#0a0a0a] text-[#f4f0e6] flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                                                <FileText size={26} className="drop-shadow" />
                                             </div>
                                         </div>
                                         <div className="p-5 flex flex-col flex-1">
-                                            <span className={`self-start text-[10px] font-black uppercase tracking-widest ${m.bg} ${m.tx} px-2.5 py-1 rounded-lg mb-2`}>{p.paper_type}</span>
-                                            <h3 className="font-bold text-gray-900 line-clamp-2 text-sm leading-snug flex-1 mb-4">{p.title}</h3>
+                                            <span className="self-start text-[8px] font-mono font-bold uppercase tracking-wider bg-[#0a0a0a] text-[#f4f0e6] px-2 py-0.5 rounded-none mb-3.5">{p.paper_type}</span>
+                                            <h3 className="font-bold line-clamp-2 text-sm leading-snug flex-1 mb-4 text-[#0a0a0a]" style={{ fontFamily: "'Archivo', sans-serif" }}>{p.title}</h3>
                                             <div className="flex flex-col gap-2 mt-auto">
                                                 <a href={imgSrc(p.file_url)} target="_blank" rel="noreferrer"
-                                                    className={`flex items-center justify-center gap-1.5 w-full bg-gradient-to-r ${m.g} text-white text-sm font-bold py-2.5 rounded-2xl hover:opacity-90 hover:shadow-lg transition-all`}>
+                                                    className="flex items-center justify-center gap-1.5 w-full bg-[#0a0a0a] text-[#f4f0e6] text-[10px] font-mono uppercase py-2.5 rounded-none hover:bg-[#b91c1c] hover:-translate-y-0.5 transition-all cursor-pointer">
                                                     <FileText size={12} />View Paper
                                                 </a>
                                                 {p.scheme_url && (
                                                     <a href={imgSrc(p.scheme_url)} target="_blank" rel="noreferrer"
-                                                        className="flex items-center justify-center gap-1.5 w-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-sm font-bold py-2.5 rounded-2xl transition-colors">
+                                                        className="flex items-center justify-center gap-1.5 w-full text-[10px] font-mono uppercase py-2.5 rounded-none transition-all border border-[#0a0a0a] text-[#0a0a0a] hover:bg-[#0a0a0a] hover:text-[#f4f0e6] hover:-translate-y-0.5 cursor-pointer">
                                                         <CheckCircle size={12} />Marking Scheme
                                                     </a>
                                                 )}
@@ -820,47 +1133,19 @@ const Dashboard = () => {
                 )}
             </section>
 
-            {/* ════ MARKS & RESULTS ════ */}
-            <section id="marks" className="max-w-7xl mx-auto px-4 md:px-8 mb-16">
-                <Reveal><SectionHeader icon={<FileText size={18} />} label="Student Performance" title="Marks & Results" gradient="from-blue-500 to-indigo-600" count={marks.length} /></Reveal>
-                {loading ? <SkeletonGrid /> : marks.length === 0 ? (
-                    <EmptyBox icon={<FileText size={40} />} title="No results published yet" desc="PDF results for your batch will appear here when uploaded." color="blue" />
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {marks.map((m, i) => (
-                            <Reveal key={m.id} delay={i * 50}>
-                                <div className="card-lift bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col group p-6 relative">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none" />
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-5 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">
-                                        <FileText size={24} />
-                                    </div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-2">{m.title}</h3>
-                                    <div className="flex flex-col gap-1 text-sm text-gray-500 mb-6">
-                                        <span className="font-medium text-blue-600">{m.term}</span>
-                                        <span>{m.subject} • {m.class_name}</span>
-                                    </div>
-                                    <a href={imgSrc(m.file_url)} target="_blank" rel="noreferrer"
-                                        className="mt-auto flex items-center justify-center gap-2 w-full bg-slate-900 text-white font-bold py-3 rounded-2xl hover:bg-blue-600 transition-colors">
-                                        View Result PDF
-                                    </a>
-                                </div>
-                            </Reveal>
-                        ))}
-                    </div>
-                )}
-            </section>
+
 
             {/* ════ FOOTER ════ */}
             <Footer />
 
             {/* ════ MOBILE BOTTOM NAV ════ */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-gray-200/80 shadow-2xl">
+            <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl border-t shadow-2xl transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0d0e12]/90 border-white/5' : 'bg-white/90 border-gray-200/80'}`}>
                 <div className="flex">
                     {sections.map(l => (
                         <a key={l.id} href={`#${l.id}`}
                             className={`flex-1 flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition-colors gap-1
-                                ${activeSection === l.id ? 'text-blue-600' : 'text-gray-400'}`}>
-                            <span className={`p-1.5 rounded-xl transition-all ${activeSection === l.id ? 'bg-blue-100 text-blue-600' : ''}`}>{React.cloneElement(l.icon, { size: 18 })}</span>
+                                ${activeSection === l.id ? 'text-blue-500' : theme === 'dark' ? 'text-slate-400' : 'text-gray-500'}`}>
+                            <span className={`p-1.5 rounded-xl transition-all ${activeSection === l.id ? (theme === 'dark' ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600') : ''}`}>{React.cloneElement(l.icon, { size: 18 })}</span>
                             {l.label}
                         </a>
                     ))}
@@ -869,31 +1154,138 @@ const Dashboard = () => {
 
             {/* ════ BACK TO TOP ════ */}
             <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className={`fixed bottom-20 md:bottom-8 right-4 md:right-8 z-40 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl shadow-xl shadow-blue-300/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                className={`fixed bottom-20 md:bottom-8 right-4 md:right-8 z-40 w-12 h-12 bg-gradient-to-br from-blue-500 to-red-600 text-white rounded-2xl shadow-xl shadow-blue-300/50 flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                 <ArrowUp size={20} />
             </button>
 
-            {/* ════ MY QR MODAL ════ */}
-            {showQRModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl relative">
-                        <button onClick={() => setShowQRModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
-                        <h3 className="font-black text-2xl text-gray-900 mb-2">My QR ID</h3>
-                        <p className="text-gray-500 text-sm mb-6">Scan this code to login or mark your attendance.</p>
-                        <div className="bg-white p-4 inline-block rounded-2xl border-4 border-indigo-50 shadow-sm mb-4">
-                            <QRCodeSVG id="qr-code-svg" value={JSON.stringify({ user_id: user?.user_id || user?.id })} size={200} />
-                        </div>
-                        <div className="bg-blue-50 text-blue-800 text-xs font-bold rounded-xl px-4 py-2 mt-2">
-                            {user?.full_name} • {user?.class_name || 'No Batch'}
-                        </div>
-                        <div className="mt-6">
-                            <button
-                                onClick={downloadQR}
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition w-full justify-center"
+
+
+            {/* ════ ACCOUNT SETTINGS MODAL ════ */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+                    <div className={`border rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl relative transition-all duration-300 ${theme === 'dark' ? 'bg-[#101217] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-xl'}`}>
+                        <button onClick={() => setShowSettingsModal(false)} className={`absolute top-5 right-5 transition-colors cursor-pointer ${theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-950'}`}><X size={20} /></button>
+                        
+                        <h3 className={`font-black text-2xl tracking-tight uppercase italic mb-2 transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Account <span className="text-[#656CFF]">Settings</span></h3>
+                        <p className={`text-[10px] uppercase tracking-wider font-bold mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Manage your account details and security</p>
+
+                        {/* Tabs */}
+                        <div className="flex gap-2 p-1 rounded-xl bg-slate-500/10 mb-6">
+                            <button 
+                                onClick={() => { setSettingsTab('profile'); setSettingsError(''); setSettingsSuccess(''); }}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${settingsTab === 'profile' ? 'bg-[#656CFF] text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
                             >
-                                <Download size={16} /> Download QR ID
+                                Profile Details
+                            </button>
+                            <button 
+                                onClick={() => { setSettingsTab('security'); setSettingsError(''); setSettingsSuccess(''); }}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${settingsTab === 'security' ? 'bg-[#656CFF] text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}
+                            >
+                                Password / Security
                             </button>
                         </div>
+
+                        {/* Notifications */}
+                        {settingsError && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                {settingsError}
+                            </div>
+                        )}
+                        {settingsSuccess && (
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-xl px-4 py-3 mb-4 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                {settingsSuccess}
+                            </div>
+                        )}
+
+                        {/* Tab Content */}
+                        {settingsTab === 'profile' ? (
+                            <form onSubmit={handleSaveProfile} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Full Name</label>
+                                    <input 
+                                        type="text" 
+                                        required 
+                                        value={profileName} 
+                                        onChange={e => setProfileName(e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#656CFF] transition-all ${theme === 'dark' ? 'bg-[#1a1c23] border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>WhatsApp Number</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. +94771234567" 
+                                        value={profileWhatsApp} 
+                                        onChange={e => setProfileWhatsApp(e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#656CFF] transition-all ${theme === 'dark' ? 'bg-[#1a1c23] border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                                    />
+                                </div>
+
+                                <button 
+                                    type="submit" 
+                                    disabled={settingsSaving}
+                                    className="w-full bg-[#656CFF] hover:bg-[#545bd9] disabled:bg-[#656CFF]/50 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition cursor-pointer shadow-lg shadow-[#656CFF]/20 mt-6"
+                                >
+                                    {settingsSaving ? 'Saving Changes...' : 'Save Profile Changes'}
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleUpdatePassword} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Current Password</label>
+                                    <input 
+                                        type="password" 
+                                        required 
+                                        value={currentPassword} 
+                                        onChange={e => setCurrentPassword(e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#656CFF] transition-all ${theme === 'dark' ? 'bg-[#1a1c23] border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>New Password</label>
+                                    <input 
+                                        type="password" 
+                                        required 
+                                        value={newPassword} 
+                                        onChange={e => setNewPassword(e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#656CFF] transition-all ${theme === 'dark' ? 'bg-[#1a1c23] border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                                    />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Confirm New Password</label>
+                                    <input 
+                                        type="password" 
+                                        required 
+                                        value={confirmPassword} 
+                                        onChange={e => setConfirmPassword(e.target.value)}
+                                        className={`w-full px-4 py-3 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-[#656CFF] transition-all ${theme === 'dark' ? 'bg-[#1a1c23] border-white/5 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                                    />
+                                </div>
+
+                                <button 
+                                    type="submit" 
+                                    disabled={settingsSaving}
+                                    className="w-full bg-[#656CFF] hover:bg-[#545bd9] disabled:bg-[#656CFF]/50 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition cursor-pointer shadow-lg shadow-[#656CFF]/20 mt-6"
+                                >
+                                    {settingsSaving ? 'Updating...' : 'Update Password'}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[999] animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className={`px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border font-bold text-sm bg-emerald-500/90 border-emerald-500/20 text-white`}>
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                        {toast.message}
                     </div>
                 </div>
             )}
@@ -904,47 +1296,168 @@ const Dashboard = () => {
 /* ════════════════════ SUBCOMPONENTS ════════════════════ */
 
 const SectionHeader = ({ icon, label, title, gradient, count, badge }) => (
-    <div className="mb-7">
+    <div className="mb-8 border-b border-[#d5d0c2] pb-4">
         <div className="flex items-center justify-between">
             <div>
                 <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} text-white shadow-md`}>{icon}</div>
-                    <span className={`text-xs font-black uppercase tracking-[0.15em] bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}>{label}</span>
-                    {count !== undefined && <span className="text-xs bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">{count}</span>}
+                    <div className="w-8 h-8 rounded-none flex items-center justify-center bg-[#0a0a0a] text-[#f4f0e6]">{icon}</div>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-[0.15em] text-[#b91c1c]">{label}</span>
+                    {count !== undefined && <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-none bg-[#0a0a0a] text-[#f4f0e6]">{count}</span>}
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900">{title}</h2>
+                <h2 className="text-3xl md:text-4xl font-normal text-[#0a0a0a] uppercase tracking-wider" style={{ fontFamily: "'Bebas Neue', cursive" }}>{title}</h2>
             </div>
-            {badge && <span className="hidden sm:flex items-center gap-1.5 text-sm font-bold text-gray-500 bg-gray-100 px-4 py-2 rounded-xl"><TrendingUp size={14} />{badge}</span>}
+            {badge && <span className="hidden sm:flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-wider px-3.5 py-1.5 rounded-none text-[#6b6558] bg-[#f9f6ee] border border-[#d5d0c2]">{badge}</span>}
         </div>
-        <div className={`mt-3 h-1 w-14 rounded-full bg-gradient-to-r ${gradient}`} />
     </div>
 );
 
 const EmptyBox = ({ icon, title, desc, color }) => {
-    const c = { blue: 'text-blue-300 bg-blue-50/50', purple: 'text-purple-300 bg-purple-50/50', emerald: 'text-emerald-300 bg-emerald-50/50' };
+    const c = { 
+        blue: 'text-[#b91c1c] bg-[#b91c1c]/5 border border-[#b91c1c]/15', 
+        purple: 'text-[#b91c1c] bg-[#b91c1c]/5 border border-[#b91c1c]/15', 
+        emerald: 'text-[#b91c1c] bg-[#b91c1c]/5 border border-[#b91c1c]/15',
+        red: 'text-[#b91c1c] bg-[#b91c1c]/5 border border-[#b91c1c]/15'
+    };
     return (
-        <div className="py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 text-center">
-            <div className={`inline-flex p-5 rounded-3xl mb-4 ${c[color]}`}>{icon}</div>
-            <p className="text-gray-700 font-bold text-lg">{title}</p>
-            <p className="text-gray-400 text-sm mt-1">{desc}</p>
+        <div className="py-14 px-8 rounded-none border border-[#d5d0c2] bg-[#f9f6ee] text-center max-w-md mx-auto transition-all duration-300 hover:bg-[#ede9da] animate-in fade-in duration-500">
+            <div className={`inline-flex p-4 rounded-none mb-4 transition-transform duration-300 hover:scale-105 ${c[color]}`}>{icon}</div>
+            <p className="font-bold text-lg text-[#0a0a0a] tracking-tight uppercase" style={{ fontFamily: "'Archivo', sans-serif" }}>{title}</p>
+            <p className="text-xs mt-2 text-[#6b6558] leading-relaxed max-w-xs mx-auto font-medium">{desc}</p>
         </div>
     );
 };
 
-const SkeletonGrid = () => (
+const SkeletonGrid = ({ theme }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
-                <div className="h-40 bg-gray-100/80 shimmer" />
+            <div key={i} className={`rounded-3xl overflow-hidden border shadow-2xl transition-all duration-300 ${theme === 'dark' ? 'bg-[#0d0e12]/60 border-white/5' : 'bg-white border-slate-200'}`}>
+                <div className={`h-40 shimmer ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'}`} />
                 <div className="p-5 space-y-3">
-                    <div className="h-4 bg-gray-100 rounded-full shimmer w-3/4" />
-                    <div className="h-3 bg-gray-100 rounded-full shimmer w-1/2" />
-                    <div className="h-10 bg-gray-100 rounded-2xl shimmer mt-4 w-full" />
+                    <div className={`h-4 rounded-full shimmer w-3/4 ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'}`} />
+                    <div className={`h-3 rounded-full shimmer w-1/2 ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'}`} />
+                    <div className={`h-10 rounded-2xl shimmer mt-4 w-full ${theme === 'dark' ? 'bg-white/5' : 'bg-slate-100'}`} />
                 </div>
             </div>
         ))}
     </div>
 );
+
+/* ─── Interactive Physics Formula Card ─── */
+function InteractiveFormulaCard() {
+    const canvasRef = useRef(null);
+    const [freq, setFreq] = useState(2.5);
+    const [amp, setAmp] = useState(30);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let frameId;
+        let width = canvas.width = canvas.offsetWidth;
+        let height = canvas.height = canvas.offsetHeight;
+
+        const handleResize = () => {
+            if (!canvas) return;
+            width = canvas.width = canvas.offsetWidth;
+            height = canvas.height = canvas.offsetHeight;
+        };
+        window.addEventListener('resize', handleResize);
+
+        let time = 0;
+        const draw = () => {
+            ctx.fillStyle = 'rgba(10, 11, 15, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Center line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            ctx.lineTo(width, height / 2);
+            ctx.stroke();
+
+            // Wave
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(6, 182, 212, 1)';
+            ctx.lineWidth = 2;
+            for (let x = 0; x < width; x++) {
+                const y = height / 2 + Math.sin(x * 0.015 * freq + time * 0.08) * amp * Math.cos(x * 0.003);
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Wave peaks (glowing dots)
+            ctx.fillStyle = '#656CFF';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#656CFF';
+            for (let x = 30; x < width; x += 60) {
+                const y = height / 2 + Math.sin(x * 0.015 * freq + time * 0.08) * amp * Math.cos(x * 0.003);
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+
+            time += 0.5;
+            frameId = requestAnimationFrame(draw);
+        };
+        draw();
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            cancelAnimationFrame(frameId);
+        };
+    }, [freq, amp]);
+
+    const velocity = (freq * (120 / amp)).toFixed(1);
+
+    return (
+        <div className="flex flex-col h-full justify-between">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+                <div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400">LAB INTERACTIVE</span>
+                    <h3 className="text-base font-black tracking-tight text-white uppercase italic mt-1">Wave Theory Simulator</h3>
+                </div>
+                <div className="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 text-[10px] font-bold">
+                    v = f × λ
+                </div>
+            </div>
+
+            <div className="relative h-28 bg-slate-950/80 rounded-2xl overflow-hidden border border-white/5 mb-4">
+                <canvas ref={canvasRef} className="w-full h-full block" />
+                <div className="absolute top-2 right-3 bg-black/60 border border-white/5 px-2.5 py-1 rounded-lg text-[9px] font-black tracking-widest text-slate-400 uppercase">
+                    v = {velocity} m/s
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <div className="space-y-1">
+                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        <span>Frequency (f)</span>
+                        <span className="text-white font-bold">{freq.toFixed(1)} Hz</span>
+                    </div>
+                    <input 
+                        type="range" min="0.5" max="5.0" step="0.1"
+                        value={freq} onChange={e => setFreq(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#656CFF]"
+                    />
+                </div>
+
+                <div className="space-y-1">
+                    <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-500">
+                        <span>Amplitude (A)</span>
+                        <span className="text-white font-bold">{amp.toFixed(0)} mm</span>
+                    </div>
+                    <input 
+                        type="range" min="10" max="50" step="1"
+                        value={amp} onChange={e => setAmp(parseInt(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
 
 /* ════ HERO SLIDER ════ */
 const HeroSlider = ({ slides }) => {
@@ -976,14 +1489,14 @@ const HeroSlider = ({ slides }) => {
             <div className="absolute inset-0 opacity-[0.035]"
                 style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
             <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-blue-500/20 rounded-full blur-3xl float" />
-            <div className="absolute bottom-1/4 right-1/4 w-48 md:w-72 h-48 md:h-72 bg-purple-500/20 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
+            <div className="absolute bottom-1/4 right-1/4 w-48 md:w-72 h-48 md:h-72 bg-red-500/20 rounded-full blur-3xl float" style={{ animationDelay: '2s' }} />
             <div className="relative z-10 text-center px-5 max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 glass text-white/80 text-xs font-bold px-4 py-2 rounded-full mb-6">
                     <Star size={12} className="fill-yellow-400 text-yellow-400" />A/L Physics Academy - Sri Lanka
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.08] mb-5">
                     Master Physics.<br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-red-400 to-pink-400">
                         Score Straight A's.
                     </span>
                 </h1>

@@ -551,7 +551,6 @@ function AdsManager() {
 
 // ─── Teacher Profile Manager ───
 function TeacherProfileManager() {
-    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [form, setForm] = useState(EMPTY_TEACHER_FORM);
@@ -567,7 +566,6 @@ function TeacherProfileManager() {
             const res = await fetch(`${API_URL}/teacher-profile`);
             if (res.ok) {
                 const data = await res.json();
-                setProfile(data);
                 setForm(data);
                 setImagePreview(data.image_url);
             }
@@ -737,7 +735,7 @@ function SyllabusManager() {
         try {
             const parsed = JSON.parse(u.subtopics_json);
             if (Array.isArray(parsed)) subtopicsInput = parsed.join(', ');
-        } catch (e) { subtopicsInput = u.subtopics_json || ''; }
+        } catch { subtopicsInput = u.subtopics_json || ''; }
         setForm({ ...EMPTY_SYLLABUS_FORM, ...u, subtopics_input: subtopicsInput });
         setEditId(u.id);
         setShowModal(true);
@@ -810,7 +808,7 @@ function SyllabusManager() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {units.sort((a,b) => a.order_index - b.order_index).map((u) => {
                         let parsedSubs = [];
-                        try { parsedSubs = JSON.parse(u.subtopics_json); } catch (e) {}
+                        try { parsedSubs = JSON.parse(u.subtopics_json); } catch { parsedSubs = []; }
                         return (
                             <div key={u.id} className="admin-card group p-6 flex flex-col justify-between hover:border-[#656CFF]/40 transition-all bg-[#15171C]">
                                 <div>
@@ -1151,7 +1149,7 @@ function BatchesListManager() {
         try {
             const parsed = JSON.parse(b.features_json);
             if (Array.isArray(parsed)) featsInput = parsed.join(', ');
-        } catch (e) { featsInput = b.features_json || ''; }
+        } catch { featsInput = b.features_json || ''; }
         setForm({ ...EMPTY_BATCH_FORM, ...b, features_input: featsInput });
         setEditId(b.id);
         setShowModal(true);
@@ -1226,7 +1224,7 @@ function BatchesListManager() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {batches.sort((a,b) => a.order_index - b.order_index).map((b) => {
                         let parsedFeats = [];
-                        try { parsedFeats = JSON.parse(b.features_json); } catch (e) {}
+                        try { parsedFeats = JSON.parse(b.features_json); } catch { parsedFeats = []; }
                         return (
                             <div key={b.id} className="admin-card group p-6 flex flex-col justify-between hover:border-[#656CFF]/40 transition-all bg-[#15171C]">
                                 <div>

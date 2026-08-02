@@ -51,6 +51,15 @@ const ResultsPage = () => {
         ? (results.reduce((acc, r) => acc + (r.score / r.total_questions), 0) / results.length * 100).toFixed(1)
         : 0;
 
+    const getRank = (r) => {
+        const sameQuizResults = results.filter(item => item.quiz_id === r.quiz_id || item.quiz?.id === r.quiz?.id);
+        const higherScoresCount = sameQuizResults.filter(item => item.score > r.score).length;
+        return {
+            rank: higherScoresCount + 1,
+            total: sameQuizResults.length
+        };
+    };
+
     return (
         <div className="space-y-10 animate-in fade-in duration-700 pb-10">
             {/* Header */}
@@ -125,6 +134,7 @@ const ResultsPage = () => {
                             <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Student</th>
                             <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Quiz Title</th>
                             <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Score</th>
+                            <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Rank</th>
                             <th className="px-8 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Date Submitted</th>
                             <th className="px-6 py-6 text-center text-[10px] font-black uppercase tracking-[0.2em] text-[#656CFF]">Actions</th>
                         </tr>
@@ -170,6 +180,16 @@ const ResultsPage = () => {
                                         </div>
                                         <span className="text-sm font-black text-white italic">{r.score}/{r.total_questions}</span>
                                     </div>
+                                </td>
+                                <td className="px-8 py-6">
+                                    {(() => {
+                                        const { rank, total } = getRank(r);
+                                        return (
+                                            <span className="text-xs font-black text-white italic">
+                                                Rank: <span className="text-[#10B981] font-black">{rank}</span>/{total}
+                                            </span>
+                                        );
+                                    })()}
                                 </td>
                                 <td className="px-8 py-6">
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(r.timestamp).toLocaleString()}</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import logo from '../assets/logo.jpeg';
@@ -12,15 +12,9 @@ const SetPassword = () => {
     // Form States
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
+    const [error, setError] = useState(!email ? 'Invalid activation link (No email provided).' : '');
     const [success, setSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    useEffect(() => {
-        if (!email) {
-            setError('Invalid activation link (No email provided).');
-        }
-    }, [email]);
 
     const handleActivate = async (e) => {
         e.preventDefault();

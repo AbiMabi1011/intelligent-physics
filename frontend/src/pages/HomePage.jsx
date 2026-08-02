@@ -438,7 +438,7 @@ export default function HomePage() {
     if (unit.subtopics_json) {
       try {
         return JSON.parse(unit.subtopics_json);
-      } catch (e) {
+      } catch {
         return [];
       }
     }
@@ -446,7 +446,7 @@ export default function HomePage() {
     if (unit.features_json) {
       try {
         return JSON.parse(unit.features_json);
-      } catch (e) {
+      } catch {
         return [];
       }
     }
@@ -1257,11 +1257,290 @@ export default function HomePage() {
   );
 }
 
+
+/* ─── Trending Physics Simulator Hero Visual ─── */
+function TrendingHeroVisual({ navigate }) {
+  const canvasRef = useRef(null);
+  const [mode, setMode] = useState('gravity'); // 'gravity' | 'waves'
+  const [gravityStr, setGravityStr] = useState(1.5);
+  const [waveFreq, setWaveFreq] = useState(2.0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let frameId;
+    let width = canvas.width = canvas.offsetWidth;
+    let height = canvas.height = canvas.offsetHeight;
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = canvas.offsetWidth;
+      height = canvas.height = canvas.offsetHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Simulation states
+    let mouse = { x: width / 2, y: height / 2, active: false };
+    let particles = [];
+    let time = 0;
+
+    // Initialize particles for Gravity mode
+    const initParticles = () => {
+      particles = [];
+      const colors = ['#656CFF', '#06B6D4', '#A855F7', '#EC4899'];
+      for (let i = 0; i < 20; i++) {
+        const radius = Math.random() * 120 + 40;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.sqrt(1.5 / radius) * (0.6 + Math.random() * 0.4);
+        particles.push({
+          x: width / 2 + Math.cos(angle) * radius,
+          y: height / 2 + Math.sin(angle) * radius,
+          vx: -Math.sin(angle) * speed,
+          vy: Math.cos(angle) * speed,
+          history: [],
+          size: Math.random() * 2 + 1,
+          color: colors[i % colors.length]
+        });
+      }
+    };
+    initParticles();
+
+    // Mouse movement
+    const onMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+      mouse.active = true;
+    };
+
+    const onMouseLeave = () => {
+      mouse.active = false;
+    };
+
+    const onClick = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const angle = Math.atan2(clickY - height / 2, clickX - width / 2);
+      const dist = Math.sqrt((clickX - width / 2)**2 + (clickY - height / 2)**2);
+      const speed = Math.sqrt(1.5 / (dist || 10)) * 1.5;
+      particles.push({
+        x: clickX,
+        y: clickY,
+        vx: -Math.sin(angle) * speed,
+        vy: Math.cos(angle) * speed,
+        history: [],
+        size: Math.random() * 2.5 + 1.5,
+        color: '#E11D48'
+      });
+      if (particles.length > 35) particles.shift();
+    };
+
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', onMouseLeave);
+    canvas.addEventListener('click', onClick);
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(10, 11, 15, 0.2)';
+      ctx.fillRect(0, 0, width, height);
+
+      // Grid overlay
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.01)';
+      ctx.lineWidth = 0.5;
+      const gridSize = 20;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+
+      if (mode === 'gravity') {
+        const center = mouse.active ? mouse : { x: width / 2, y: height / 2 };
+
+        // Draw gravity well
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#656CFF';
+        ctx.fillStyle = 'rgba(101, 108, 255, 0.2)';
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        particles.forEach(p => {
+          const dx = center.x - p.x;
+          const dy = center.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const force = (gravityStr / (dist * dist)) * 8;
+          
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+
+          // Drag / Friction
+          p.vx *= 0.99;
+          p.vy *= 0.99;
+
+          p.x += p.vx;
+          p.y += p.vy;
+
+          p.history.push({ x: p.x, y: p.y });
+          if (p.history.length > 25) p.history.shift();
+
+          // Draw trails
+          ctx.beginPath();
+          ctx.strokeStyle = p.color;
+          ctx.lineWidth = 1;
+          for (let i = 1; i < p.history.length; i++) {
+            ctx.globalAlpha = i / p.history.length;
+            ctx.moveTo(p.history[i-1].x, p.history[i-1].y);
+            ctx.lineTo(p.history[i].x, p.history[i].y);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1.0;
+
+          // Draw orbiter
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        // Wave harmonics mode
+        ctx.lineWidth = 1.5;
+        const waves = 3;
+        for (let w = 0; w < waves; w++) {
+          ctx.beginPath();
+          ctx.strokeStyle = w === 0 ? '#656CFF' : w === 1 ? '#06B6D4' : '#A855F7';
+          ctx.globalAlpha = 0.5 - w * 0.15;
+          const amplitude = 40 - w * 10;
+          for (let x = 0; x < width; x++) {
+            // Mouse interactive amplitude shift
+            const mDist = mouse.active ? Math.abs(mouse.x - x) : width;
+            const damp = mouse.active ? Math.max(0.1, 1 - mDist / 200) * 1.5 : 1;
+            const y = height / 2 + Math.sin(x * 0.015 * waveFreq + time * (0.04 + w * 0.01)) * amplitude * damp * Math.cos(x * 0.002);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+        time += 1.2;
+      }
+
+      frameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (canvas) {
+        canvas.removeEventListener('mousemove', onMouseMove);
+        canvas.removeEventListener('mouseleave', onMouseLeave);
+        canvas.removeEventListener('click', onClick);
+      }
+      cancelAnimationFrame(frameId);
+    };
+  }, [mode, gravityStr, waveFreq]);
+
+  return (
+    <div className="w-full aspect-[246/300] max-w-[460px] rounded-[2.5rem] relative overflow-hidden shadow-2xl border border-slate-800 bg-[#07080b]/90 flex flex-col justify-between p-6 sm:p-8 text-white group transition-all duration-500 hover:border-[#656CFF]/30 hover:shadow-indigo-500/10 backdrop-blur-xl animate-in fade-in duration-700">
+      
+      {/* Simulation Header */}
+      <div className="relative z-10 flex items-center justify-between border-b border-slate-800/80 pb-4">
+        <div>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#656CFF] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            TELEMETRY: ACTIVE
+          </span>
+          <h3 className="text-sm font-black tracking-widest uppercase mt-1 text-slate-300">PHYSICS SANDBOX</h3>
+        </div>
+        <div className="flex bg-[#0c0d12] p-1 rounded-xl border border-slate-800">
+          <button 
+            onClick={() => setMode('gravity')}
+            className={`px-3 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${mode === 'gravity' ? 'bg-[#656CFF] text-white shadow-md' : 'text-slate-505 hover:text-slate-300'}`}
+          >
+            Orbits
+          </button>
+          <button 
+            onClick={() => setMode('waves')}
+            className={`px-3 py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${mode === 'waves' ? 'bg-[#656CFF] text-white shadow-md' : 'text-slate-505 hover:text-slate-300'}`}
+          >
+            Waves
+          </button>
+        </div>
+      </div>
+
+      {/* Simulator Viewport */}
+      <div className="relative flex-1 my-4 bg-slate-950/80 rounded-2xl overflow-hidden border border-slate-900 min-h-[220px]">
+        <canvas ref={canvasRef} className="w-full h-full block cursor-pointer" />
+        {mode === 'gravity' && (
+          <div className="absolute bottom-3 left-3 bg-black/60 border border-slate-800/80 backdrop-blur-md px-3 py-2 rounded-xl text-[8px] font-black tracking-widest text-slate-500 uppercase pointer-events-none">
+            🖱️ MOVE CURSOR &amp; CLICK TO LAUNCH ORBS
+          </div>
+        )}
+      </div>
+
+      {/* Telemetry Control Dashboard */}
+      <div className="relative z-10 space-y-4 pt-4 border-t border-slate-800/80">
+        {mode === 'gravity' ? (
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-500">
+              <span>Attraction strength</span>
+              <span className="text-white font-bold">{(gravityStr * 6.54).toFixed(2)} GM</span>
+            </div>
+            <input 
+              type="range" min="0.2" max="4.0" step="0.1"
+              value={gravityStr} onChange={e => setGravityStr(parseFloat(e.target.value))}
+              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#656CFF]"
+            />
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-500">
+              <span>Wave packet freq</span>
+              <span className="text-white font-bold">{(waveFreq * 12.5).toFixed(1)} GHz</span>
+            </div>
+            <input 
+              type="range" min="0.5" max="5.0" step="0.1"
+              value={waveFreq} onChange={e => setWaveFreq(parseFloat(e.target.value))}
+              className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#656CFF]"
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-3 bg-[#0a0b0e] p-3 rounded-xl border border-slate-900 text-center">
+          <div>
+            <p className="text-[7.5px] font-black text-slate-600 uppercase tracking-widest">Sim Speed</p>
+            <p className="text-xs font-black text-slate-200 mt-1 uppercase italic">{mode === 'gravity' ? '1.02x G' : '1.40 Mach'}</p>
+          </div>
+          <div>
+            <p className="text-[7.5px] font-black text-slate-600 uppercase tracking-widest">Precision</p>
+            <p className="text-xs font-black text-emerald-400 mt-1 uppercase italic">High (64b)</p>
+          </div>
+          <div>
+            <p className="text-[7.5px] font-black text-slate-600 uppercase tracking-widest">Engine</p>
+            <p className="text-xs font-black text-[#656CFF] mt-1 uppercase italic">Web Canvas</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 /* ─── Slider Component ─── */
 function HeroCardSlider({ slides, navigate }) {
   const [idx, setIdx] = useState(0);
   const [fading, setFading] = useState(false);
   const timer = useRef(null);
+
+  const goLink = link => {
+    if (!link) return;
+    if (link.startsWith('/')) navigate(link);
+    else window.open(link, '_blank');
+  };
 
   const go = useCallback(n => {
     setFading(true);

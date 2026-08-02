@@ -17,7 +17,8 @@ import {
     ArrowRight,
     Loader2,
     UploadCloud,
-    FileText
+    FileText,
+    Share2
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
@@ -73,12 +74,12 @@ function latexToUnicode(latex) {
     // Replace ^{...} with Unicode superscripts (multi-char, e.g. ^{-2})
     t = t.replace(/\^\{([^}]*)\}/g, (_, content) => toSuperscript(content));
     // Replace ^x (single character: digit or sign or letter n/N)
-    t = t.replace(/\^([0-9\-\+nN])/g, (_, c) => toSuperscript(c));
+    t = t.replace(/\^([0-9\-+nN])/g, (_, c) => toSuperscript(c));
 
     // Replace _{...} with Unicode subscripts (multi-char)
-    t = t.replace(/\_\{([^}]*)\}/g, (_, content) => toSubscript(content));
+    t = t.replace(/_\{([^}]*)\}/g, (_, content) => toSubscript(content));
     // Replace _x (single character subscript)
-    t = t.replace(/\_([0-9nNiIeE])/g, (_, c) => toSubscript(c));
+    t = t.replace(/_([0-9nNiIeE])/g, (_, c) => toSubscript(c));
 
     // Replace Greek letters
     Object.entries(GREEK_MAP).forEach(([name, char]) => {
@@ -207,7 +208,7 @@ function autoFixPhysicsNotation(text) {
     }
 
     // Check for LaTeX markers
-    const hasLatex = /\$|\\text\{|\\mathrm\{|\^\{|\_\{|\\[a-zA-Z]|\\\(|\\\[/.test(text);
+    const hasLatex = /\$|\\text\{|\\mathrm\{|\^\{|_\{\\|\\[a-zA-Z]|\\\(|\\\[/.test(text);
 
     if (hasLatex) {
         // First convert all inline $...$ and \(...\) segments
@@ -241,32 +242,7 @@ function setNativeValue(el, newVal) {
 }
 
 /* Hook: attach smart paste to an input/textarea ref */
-function useSmartPaste(ref, onFixed) {
-    useEffect(() => {
-        const el = ref?.current;
-        if (!el) return;
-        const handler = (e) => {
-            const raw = (e.clipboardData || window.clipboardData).getData('text');
-            const fixed = autoFixPhysicsNotation(raw);
-            if (fixed !== raw) {
-                e.preventDefault();
-                const start = el.selectionStart ?? 0;
-                const end = el.selectionEnd ?? 0;
-                const before = el.value.substring(0, start);
-                const after = el.value.substring(end);
-                setNativeValue(el, before + fixed + after);
-                // Count fixes
-                const count = [...fixed].filter((c, i) => c !== raw[i]).length;
-                if (onFixed) onFixed(count);
-                requestAnimationFrame(() => {
-                    el.setSelectionRange(start + fixed.length, start + fixed.length);
-                });
-            }
-        };
-        el.addEventListener('paste', handler);
-        return () => el.removeEventListener('paste', handler);
-    }, [ref, onFixed]);
-}
+
 
 /* Small toast notification */
 function FixToast({ msg, onDone }) {
@@ -605,7 +581,8 @@ function QuizPreviewModal({ quiz, questions, onClose }) {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {['a','b','c','d','e'].map(opt => {
                                             const val = q[`option_${opt}`];
-                                            if (!val) return null;
+                                            const imgUrl = q[`option_${opt}_image_url`];
+                                            if (!val && !imgUrl) return null;
                                             const letter = opt.toUpperCase();
                                             const isCorrect = q.correct_option === letter;
                                             const isSel    = selected[idx] === letter;
@@ -625,7 +602,16 @@ function QuizPreviewModal({ quiz, questions, onClose }) {
                                                     <span className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black flex-shrink-0 ${
                                                         isSel ? (isCorrect ? 'bg-[#10B981] text-white' : 'bg-red-500 text-white') : 'bg-white/5 text-slate-500'
                                                     }`}>{letter}</span>
-                                                    <span className="text-xs font-bold">{val}</span>
+                                                    <div className="flex flex-col gap-2">
+                                                        {val && <span className="text-xs font-bold">{val}</span>}
+                                                        {imgUrl && (
+                                                            <img
+                                                                src={`${API_URL}${imgUrl}`}
+                                                                alt={`Option ${letter}`}
+                                                                className="max-h-24 object-contain rounded-lg border border-[#23262D] bg-black/40 p-1"
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </button>
                                             );
                                         })}
@@ -712,7 +698,12 @@ const QuizzesPage = () => {
                     option_d: q.option_d || '',
                     option_e: q.option_e || '',
                     correct_option: q.correct_option || '',
-                    image_url: q.image_url || ''
+                    image_url: q.image_url || '',
+                    option_a_image_url: q.option_a_image_url || '',
+                    option_b_image_url: q.option_b_image_url || '',
+                    option_c_image_url: q.option_c_image_url || '',
+                    option_d_image_url: q.option_d_image_url || '',
+                    option_e_image_url: q.option_e_image_url || ''
                 }));
                 setQuestions(formatted);
                 setFixToast(`Generated ${formatted.length} questions successfully! ✨`);
@@ -759,7 +750,7 @@ const QuizzesPage = () => {
 
     // Form Handlers
     const addQuestion = () => {
-        setQuestions([...questions, { text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: '', image_url: '' }]);
+        setQuestions([...questions, { text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: '', image_url: '', option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '', option_e_image_url: '' }]);
     };
 
     const removeQuestion = (index) => {
@@ -784,13 +775,13 @@ const QuizzesPage = () => {
         setDurationMinutes(30);
         setExpiryMode('end_time');
         setExpiryDays(1);
-        setQuestions([{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: '', image_url: '' }]);
+        setQuestions([{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: '', image_url: '', option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '', option_e_image_url: '' }]);
     };
 
     const handleEditQuiz = (quiz) => {
         setMode('create');
         setEditingQuizId(quiz.id);
-        setCurrentQuizStatus(quiz.is_published);
+        setCurrentQuizStatus(false); // Automatically show as unpublished (Draft) and ask option to publish on edit
         setQuizTitle(quiz.title || '');
         setSelectedBatches(quiz.class_name ? quiz.class_name.split(', ') : []);
         setScheduledTime(quiz.scheduled_time || '');
@@ -798,32 +789,36 @@ const QuizzesPage = () => {
         setExpiryMode(quiz.expiry_mode || 'end_time');
         setExpiryDays(quiz.expiry_days || 1);
         setQuestions(quiz.questions && quiz.questions.length > 0 
-            ? quiz.questions.map(q => ({ ...q, image_url: q.image_url || '' })) 
-            : [{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A', image_url: '' }]);
+            ? quiz.questions.map(q => ({ 
+                ...q, 
+                image_url: q.image_url || '',
+                option_a_image_url: q.option_a_image_url || '',
+                option_b_image_url: q.option_b_image_url || '',
+                option_c_image_url: q.option_c_image_url || '',
+                option_d_image_url: q.option_d_image_url || '',
+                option_e_image_url: q.option_e_image_url || ''
+            })) 
+            : [{ text: '', option_a: '', option_b: '', option_c: '', option_d: '', option_e: '', correct_option: 'A', image_url: '', option_a_image_url: '', option_b_image_url: '', option_c_image_url: '', option_d_image_url: '', option_e_image_url: '' }]);
     };
 
-    const handleViewQuiz = (quiz) => {
-        setMode('view');
-        setQuizTitle(quiz.title || '');
-        setSelectedBatches(quiz.class_name ? quiz.class_name.split(', ') : []);
-        setScheduledTime(quiz.scheduled_time || '');
-        setDurationMinutes(quiz.duration_minutes || 30);
-        setExpiryMode(quiz.expiry_mode || 'end_time');
-        setExpiryDays(quiz.expiry_days || 1);
-        setQuestions((quiz.questions || []).map(q => ({ ...q, image_url: q.image_url || '' })));
-    };
+
 
     const handleSaveQuiz = async () => {
         if (!quizTitle) return alert("Quiz Title is required");
         if (selectedBatches.length === 0) return alert("Please select at least one batch");
         if (questions.length === 0) return alert("Add at least one question");
+        for (let i = 0; i < questions.length; i++) {
+            if (!questions[i].correct_option) {
+                return alert(`Please select a correct answer for Question ${i + 1}`);
+            }
+        }
 
         setIsSubmitting(true);
         const payload = {
             title: quizTitle,
             description: "Generated Quiz",
             class_name: selectedBatches.join(', '),
-            is_published: editingQuizId ? currentQuizStatus : false,
+            is_published: currentQuizStatus,
             scheduled_time: scheduledTime || null,
             duration_minutes: durationMinutes,
             expiry_mode: expiryMode,
@@ -875,7 +870,9 @@ const QuizzesPage = () => {
         try {
             const res = await fetch(`${API_URL}/quizzes/${id}`, { method: 'DELETE' });
             if (res.ok) fetchQuizzes();
-        } catch (e) { }
+        } catch (err) {
+            console.error("Failed to delete quiz:", err);
+        }
     };
 
     if (mode === 'create') {
@@ -960,7 +957,6 @@ const QuizzesPage = () => {
                                     ))}
                                 </div>
                             </div>
-
                             <div>
                                 <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Quiz Availability</label>
                                 <select
@@ -973,6 +969,24 @@ const QuizzesPage = () => {
                                     <option value="custom_days">Custom Days</option>
                                     <option value="never">No Expiry</option>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Publish Status</label>
+                                <div className="flex items-center gap-3 p-3.5 bg-[#0D0E12] border border-[#23262D] rounded-2xl h-[50px]">
+                                    <label className="relative inline-flex items-center cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={currentQuizStatus}
+                                            onChange={(e) => setCurrentQuizStatus(e.target.checked)}
+                                        />
+                                        <div className="w-10 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-350 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#10B981]"></div>
+                                        <span className="ms-3 text-xs font-black uppercase tracking-wider text-slate-400 peer-checked:text-white">
+                                            {currentQuizStatus ? "Published" : "Draft (Hidden)"}
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1133,28 +1147,81 @@ const QuizzesPage = () => {
                                         {['a', 'b', 'c', 'd', 'e'].map(opt => (
                                             <div key={opt} className="space-y-2">
                                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">{`Option ${opt.toUpperCase()}`}</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full bg-[#0D0E12] border border-[#23262D] rounded-xl py-3 px-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none transition-all"
-                                                    value={q[`option_${opt}`]}
-                                                    onChange={(e) => updateQuestion(idx, `option_${opt}`, e.target.value)}
-                                                    onPaste={(e) => {
-                                                        const raw = (e.clipboardData || window.clipboardData).getData('text');
-                                                        const fixed = autoFixPhysicsNotation(raw);
-                                                        if (fixed !== raw) {
-                                                            e.preventDefault();
-                                                            const el = e.target;
-                                                            const start = el.selectionStart ?? el.value.length;
-                                                            const end = el.selectionEnd ?? el.value.length;
-                                                            const newVal = el.value.substring(0, start) + fixed + el.value.substring(end);
-                                                            updateQuestion(idx, `option_${opt}`, newVal);
-                                                            setFixToast('Notation auto-fixed from paste ✅');
-                                                            requestAnimationFrame(() => {
-                                                                el.setSelectionRange(start + fixed.length, start + fixed.length);
-                                                            });
-                                                        }
-                                                    }}
-                                                />
+                                                <div className="flex gap-2 items-center">
+                                                    <input
+                                                        type="text"
+                                                        className="flex-1 bg-[#0D0E12] border border-[#23262D] rounded-xl py-3 px-4 text-xs font-bold text-white focus:border-[#656CFF]/50 outline-none transition-all"
+                                                        placeholder="Option text (optional)"
+                                                        value={q[`option_${opt}`]}
+                                                        onChange={(e) => updateQuestion(idx, `option_${opt}`, e.target.value)}
+                                                        onPaste={(e) => {
+                                                            const raw = (e.clipboardData || window.clipboardData).getData('text');
+                                                            const fixed = autoFixPhysicsNotation(raw);
+                                                            if (fixed !== raw) {
+                                                                e.preventDefault();
+                                                                const el = e.target;
+                                                                const start = el.selectionStart ?? el.value.length;
+                                                                const end = el.selectionEnd ?? el.value.length;
+                                                                const newVal = el.value.substring(0, start) + fixed + el.value.substring(end);
+                                                                updateQuestion(idx, `option_${opt}`, newVal);
+                                                                setFixToast('Notation auto-fixed from paste ✅');
+                                                                requestAnimationFrame(() => {
+                                                                    el.setSelectionRange(start + fixed.length, start + fixed.length);
+                                                                });
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="shrink-0 w-16 h-10 border border-dashed border-[#23262D] rounded-xl bg-[#0D0E12]/50 hover:bg-[#0D0E12] transition-colors relative flex items-center justify-center overflow-hidden">
+                                                        {q[`option_${opt}_image_url`] ? (
+                                                            <div className="relative w-full h-full flex items-center justify-center p-1">
+                                                                <img
+                                                                    src={`${API_URL}${q[`option_${opt}_image_url`]}`}
+                                                                    alt=""
+                                                                    className="w-full h-full object-contain rounded"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateQuestion(idx, `option_${opt}_image_url`, '')}
+                                                                    className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-full shadow-lg hover:scale-110 transition-transform"
+                                                                    title="Remove Option Image"
+                                                                >
+                                                                    <X size={8} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full text-center">
+                                                                <Plus size={14} className="text-slate-500" />
+                                                                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Img</span>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    className="hidden"
+                                                                    onChange={async (e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (!file) return;
+                                                                        const formData = new FormData();
+                                                                        formData.append('file', file);
+                                                                        try {
+                                                                            const res = await fetch(`${API_URL}/upload`, {
+                                                                                method: 'POST',
+                                                                                body: formData
+                                                                            });
+                                                                            if (res.ok) {
+                                                                                const data = await res.json();
+                                                                                updateQuestion(idx, `option_${opt}_image_url`, data.url);
+                                                                            } else {
+                                                                                alert('Image upload failed');
+                                                                            }
+                                                                        } catch (err) {
+                                                                            console.error(err);
+                                                                            alert('Image upload error');
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </label>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -1178,22 +1245,7 @@ const QuizzesPage = () => {
                                                         {opt}
                                                     </button>
                                                 ))}
-                                                <button
-                                                    type="button"
-                                                    title="Leave answer blank (no correct option set)"
-                                                    onClick={() => updateQuestion(idx, 'correct_option', '')}
-                                                    className={`flex-1 py-2 rounded-lg text-xs font-black transition-all ${
-                                                        q.correct_option === ''
-                                                            ? 'bg-amber-500/20 text-amber-400 shadow-lg ring-1 ring-amber-500/40'
-                                                            : 'text-slate-600 hover:text-amber-400 hover:bg-amber-400/10'
-                                                    }`}
-                                                >
-                                                    —
-                                                </button>
                                             </div>
-                                            {q.correct_option === '' && (
-                                                <p className="text-[9px] text-amber-400/60 font-bold mt-2 ml-1">No correct answer set — question will be ungraded</p>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1307,6 +1359,17 @@ const QuizzesPage = () => {
                                          <CheckCircle size={16} /> Publish Now
                                      </button>
                                  )}
+                                 <button
+                                     onClick={() => {
+                                         const link = `${window.location.origin}/dashboard?quiz_id=${q.id}`;
+                                         navigator.clipboard.writeText(link);
+                                         alert("Quiz link copied to clipboard!");
+                                     }}
+                                     className="h-12 w-12 rounded-2xl bg-[#FEBC2E]/10 text-[#FEBC2E] hover:bg-[#FEBC2E] hover:text-[#0a0a0a] transition-all flex items-center justify-center"
+                                     title="Copy direct shareable quiz link"
+                                 >
+                                     <Share2 size={20} />
+                                 </button>
                                  <button
                                      onClick={() => setPreviewQuiz(q)}
                                      className="h-12 w-12 rounded-2xl bg-[#656CFF]/10 text-[#656CFF] hover:bg-[#656CFF] hover:text-white transition-all flex items-center justify-center"

@@ -5,6 +5,7 @@ class UserBase(BaseModel):
     email: str
     full_name: Optional[str] = None
     class_name: Optional[str] = None
+    whatsapp_number: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -19,9 +20,23 @@ class UserResponse(UserBase):
     full_name: Optional[str] = None
     class_name: Optional[str] = None
     approval_status: Optional[str] = "approved"
+    permissions: Optional[str] = None
+    whatsapp_number: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+class SubAdminCreate(BaseModel):
+    email: str
+    password: str
+    full_name: Optional[str] = None
+    permissions: Optional[str] = None
+
+class SubAdminUpdate(BaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+    full_name: Optional[str] = None
+    permissions: Optional[str] = None
 
 class User(UserResponse):
     pass
@@ -51,6 +66,11 @@ class QuestionBase(BaseModel):
     option_e: Optional[str] = None
     correct_option: str # 'A', 'B', 'C', 'D', 'E'
     image_url: Optional[str] = None
+    option_a_image_url: Optional[str] = None
+    option_b_image_url: Optional[str] = None
+    option_c_image_url: Optional[str] = None
+    option_d_image_url: Optional[str] = None
+    option_e_image_url: Optional[str] = None
 
 class QuestionCreate(QuestionBase):
     pass
@@ -111,6 +131,8 @@ class QuizResultResponse(BaseModel):
     score: int
     total: int
     percentage: float
+    rank: Optional[int] = None
+    total_participants: Optional[int] = None
 
 class FullQuizResult(BaseModel):
     id: int
@@ -382,3 +404,13 @@ class HomeFaqResponse(HomeFaqBase):
     id: int
     class Config:
         from_attributes = True
+
+# --- USER PROFILE & PASSWORD SCHEMAS ---
+class UserProfileUpdate(BaseModel):
+    full_name: str
+    whatsapp_number: Optional[str] = None
+
+class UserPasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+

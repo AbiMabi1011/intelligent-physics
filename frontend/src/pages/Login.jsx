@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Eye, EyeOff, Shield, Sparkles, Mail, User, BookOpen, Activity, ChevronRight, Home, Key, Database, Monitor } from 'lucide-react'; 
+import { Loader2, ArrowLeft, Eye, EyeOff, Shield, Sparkles, Mail, User, BookOpen, Activity, ChevronRight, Home, Key, Database, Monitor } from 'lucide-react';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
@@ -210,9 +210,9 @@ const Login = () => {
                 const response = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        username: cleanInput, 
-                        password: password.trim() 
+                    body: JSON.stringify({
+                        username: cleanInput,
+                        password: password.trim()
                     })
                 });
                 const data = await response.json();
@@ -223,14 +223,14 @@ const Login = () => {
                 }
 
                 login(data);
-                
+
                 // Redirect user based on role:
                 // - Admin to /admin/dashboard
                 // - Students to /dashboard
                 if (data.role === 'admin') {
-                    navigate('/admin/dashboard', { replace: true });
+                    navigate('/admin/dashboard' + window.location.search, { replace: true });
                 } else {
-                    navigate('/dashboard', { replace: true });
+                    navigate('/dashboard' + window.location.search, { replace: true });
                 }
             }
             else if (mode === 'register') {
@@ -274,14 +274,14 @@ const Login = () => {
 
     return (
         <div className="flex min-h-screen bg-[#07080B] text-white overflow-hidden font-sans select-none relative">
-            
+
             {/* LEFT SIDE: Physics Simulation Space */}
             <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-gradient-to-br from-[#06070a] to-[#0d0e15] border-r border-white/5 flex-col justify-between p-16">
-                
+
                 {/* Glowing Core Background */}
                 <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] bg-[#656CFF]/10 blur-[160px] rounded-full" />
                 <div className="absolute bottom-[-25%] right-[-10%] w-[70%] h-[70%] bg-[#a855f7]/5 blur-[160px] rounded-full" />
-                
+
                 {/* Simulation Canvas */}
                 <PhysicsCanvas />
 
@@ -292,7 +292,7 @@ const Login = () => {
                     </div>
                     <div>
                         <h2 className="text-lg font-black tracking-widest uppercase italic">Intelligent <span className="text-[#656CFF]">Physics</span></h2>
-                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">Interactive Learning Platform</p>
+                        <p className="text-[9px] uppercase tracking-[0.3em] text-slate-500 font-bold">Interactive Learning Hub</p>
                     </div>
                 </div>
 
@@ -302,11 +302,9 @@ const Login = () => {
                         ⚡ NEXT-GEN G.C.E. A/L PREPARATION
                     </span>
                     <h1 className="text-5xl font-black tracking-tight leading-tight uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
-                        Redefine how you learn <span className="text-[#656CFF] underline decoration-wavy underline-offset-8">A/L Physics</span>. <br/>The Intelligent Physics Method.
+                        Transforming your struggle into your greatest strength. <span className="text-[#656CFF] underline decoration-wavy underline-offset-8"></span> <br />
                     </h1>
-                    <p className="text-sm text-slate-400 font-medium leading-relaxed">
-                        Experience a concept-first learning methodology built to turn complex mathematical derivations into intuitive, interactive graphical modules. Access curated G.C.E. A/L past paper vaults and real-time adaptive quizzes engineered to secure your path to elite island-wide rankings.
-                    </p>
+
                 </div>
 
                 {/* Footer status */}
@@ -314,20 +312,20 @@ const Login = () => {
                     <p>© 2026 Intelligent Physics</p>
                     <div className="flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-[#06b6d4] animate-ping" />
-                        <span>Interactive Node Connected</span>
+                        <span>Think Positive</span>
                     </div>
                 </div>
             </div>
 
             {/* RIGHT SIDE: Authentication Card Area */}
             <div className="w-full lg:w-[45%] flex items-center justify-center p-6 md:p-12 overflow-y-auto bg-[#07080B] relative custom-scrollbar z-10">
-                
+
                 {/* Background ambient light */}
                 <div className="absolute right-0 top-0 w-80 h-80 bg-[#656CFF]/10 blur-[130px] rounded-full pointer-events-none" />
                 <div className="absolute left-10 bottom-10 w-60 h-60 bg-[#a855f7]/5 blur-[120px] rounded-full pointer-events-none" />
 
                 <div className="w-full max-w-2xl animate-in fade-in slide-in-from-bottom-6 duration-700">
-                    
+
                     {/* Upper Navigation Bar */}
                     <div className="flex justify-end items-center mb-8 gap-2">
                         <button
@@ -353,10 +351,10 @@ const Login = () => {
 
                     {/* Glassmorphic Auth Card */}
                     <div className="bg-[#101217]/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-[0_30px_70px_rgba(0,0,0,0.7)] relative overflow-hidden group">
-                        
+
                         {/* Hover card border light glow */}
                         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#656CFF]/30 to-transparent group-hover:via-[#656CFF]/60 transition-all duration-700" />
-                        
+
                         {/* Header text */}
                         <div className="mb-10 text-center relative">
                             {/* Logo display on mobile */}
@@ -364,14 +362,14 @@ const Login = () => {
                                 <img src={logo} alt="IP Logo" className="h-full w-full object-contain rounded-md" />
                             </div>
                             <h2 className="text-3xl font-black text-white tracking-tight uppercase italic">
-                                {mode === 'login' ? 'Portal Login' : mode === 'register' ? 'Join Us' : 'Reset'} <span className="text-[#656CFF]">{mode === 'login' ? 'Gateway' : mode === 'register' ? 'Register' : 'Access'}</span>
+                                {mode === 'login' ? 'Learning Hub' : mode === 'register' ? 'Create Your' : 'Reset'} <span className="text-[#656CFF]">{mode === 'login' ? 'Login' : mode === 'register' ? 'Space' : 'Access'}</span>
                             </h2>
                             <p className="text-[9px] text-slate-500 mt-3 uppercase tracking-[0.35em] font-black flex items-center justify-center gap-2">
-                                <Shield size={10} className="text-[#656CFF]" /> 
-                                {mode === 'login' 
-                                    ? 'Intelligent Physics Student & Admin Gateway' 
-                                    : mode === 'register' 
-                                        ? 'Register to enroll in batches' 
+                                <Shield size={10} className="text-[#656CFF]" />
+                                {mode === 'login'
+                                    ? 'Intelligent Physics Student Gateway'
+                                    : mode === 'register'
+                                        ? 'Register to enroll in batches'
                                         : 'We will send a reset link to your email'
                                 }
                             </p>
@@ -380,7 +378,7 @@ const Login = () => {
                         {/* Custom status alerts */}
                         {error && (
                             <div className="mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-[10px] text-red-400 font-bold uppercase tracking-widest text-center animate-shake flex items-center justify-center gap-2.5">
-                                <Activity size={14} className="text-red-400 shrink-0" /> 
+                                <Activity size={14} className="text-red-400 shrink-0" />
                                 <span className="line-clamp-2">{error}</span>
                             </div>
                         )}
@@ -392,7 +390,7 @@ const Login = () => {
                         )}
 
                         <form className="space-y-6" onSubmit={handleLogin}>
-                            
+
                             {/* Full name field (register only) */}
                             {mode === 'register' && (
                                 <div className="space-y-2 group/field animate-in slide-in-from-top-4 duration-300">
@@ -501,8 +499,8 @@ const Login = () => {
                                                 <span>Password Strength:</span>
                                                 <span className={
                                                     passwordStrength === 1 ? "text-red-400" :
-                                                    passwordStrength === 2 ? "text-amber-400" :
-                                                    passwordStrength === 3 ? "text-emerald-400" : "text-slate-600"
+                                                        passwordStrength === 2 ? "text-amber-400" :
+                                                            passwordStrength === 3 ? "text-emerald-400" : "text-slate-600"
                                                 }>
                                                     {passwordStrength === 1 && "Weak"}
                                                     {passwordStrength === 2 && "Medium"}
@@ -510,9 +508,8 @@ const Login = () => {
                                                 </span>
                                             </div>
                                             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                                                <div className={`h-full transition-all duration-300 ${
-                                                    passwordStrength >= 1 ? (passwordStrength === 1 ? 'bg-red-500 w-1/3' : passwordStrength === 2 ? 'bg-amber-500 w-2/3' : 'bg-emerald-500 w-full') : 'w-0'
-                                                }`} />
+                                                <div className={`h-full transition-all duration-300 ${passwordStrength >= 1 ? (passwordStrength === 1 ? 'bg-red-500 w-1/3' : passwordStrength === 2 ? 'bg-amber-500 w-2/3' : 'bg-emerald-500 w-full') : 'w-0'
+                                                    }`} />
                                             </div>
                                             <ul className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider space-y-0.5 list-disc list-inside">
                                                 <li className={password.length >= 8 ? "text-emerald-500/80" : ""}>At least 8 characters</li>

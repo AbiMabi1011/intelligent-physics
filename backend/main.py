@@ -6,6 +6,8 @@ from passlib.context import CryptContext
 from typing import List
 import smtplib
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import shutil
 from pathlib import Path
 from email.mime.multipart import MIMEMultipart
@@ -51,8 +53,8 @@ def get_password_hash(password):
 # Email Configuration
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")  # Set in .env file
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")  # Set in .env file
+SMTP_USERNAME = os.getenv("SMTP_USERNAME") or os.getenv("EMAIL_ADDRESS") or ""
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD") or os.getenv("EMAIL_PASSWORD") or ""
 
 def send_announcement_email(to_emails: list, subject: str, body: str, image_url: str = None):
     if not SMTP_USERNAME or not SMTP_PASSWORD:
@@ -67,27 +69,139 @@ def send_announcement_email(to_emails: list, subject: str, body: str, image_url:
             msg['Subject'] = f"📢 {subject}"
             msg['From'] = SMTP_USERNAME
             msg['To'] = email
-            image_html = f'<img src="{image_url}" style="max-width:100%;border-radius:8px;margin-top:16px;" />' if image_url else ''
+            image_html = f'<div style="margin-top:20px; text-align:center;"><img src="{image_url}" style="max-width:100%; border: 2px solid #0a0a0a; box-shadow: 4px 4px 0px #0a0a0a;" /></div>' if image_url else ''
             html = f"""
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
-                <div style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);padding:20px;border-radius:12px 12px 0 0;">
-                    <h1 style="color:white;margin:0;font-size:22px;">📢 Intelligent Physics</h1>
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f4f0e6; border: 2px solid #0a0a0a; box-shadow: 8px 8px 0px #0a0a0a;">
+                <div style="background-color: #0a0a0a; padding: 25px 30px; text-align: center; border-bottom: 2px solid #0a0a0a;">
+                    <h1 style="color: #ffffff; margin: 0; font-family: 'Trebuchet MS', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 24px;">Intelligent Physics</h1>
                 </div>
-                <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:24px;border-radius:0 0 12px 12px;">
-                    <h2 style="color:#1f2937;">{subject}</h2>
-                    <p style="color:#374151;line-height:1.7;white-space:pre-wrap;">{body}</p>
+                <div style="padding: 30px; background-color: #f9f6ee;">
+                    <h2 style="color: #0a0a0a; margin-top: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; border-left: 4px solid #b91c1c; padding-left: 15px; line-height: 1.2;">{subject}</h2>
+                    <div style="color: #374151; font-size: 14px; line-height: 1.7; white-space: pre-wrap; margin-top: 20px; font-weight: 500;">{body}</div>
                     {image_html}
-                    <hr style="margin-top:24px;border:none;border-top:1px solid #e5e7eb;"/>
-                    <p style="color:#9ca3af;font-size:12px;">Intelligent Physics — Student Portal</p>
+                    
+                    <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+                        <a href="http://localhost:5173/dashboard" style="display: inline-block; background-color: #0a0a0a; color: #ffffff; padding: 12px 25px; text-decoration: none; font-size: 12px; font-weight: bold; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; border: 2px solid #0a0a0a; box-shadow: 4px 4px 0px #b91c1c; transition: all 0.2s;">
+                            Access Student Portal 📢
+                        </a>
+                    </div>
+                </div>
+                <div style="background-color: #f4f0e6; padding: 15px; text-align: center; border-top: 1px solid #d5d0c2; font-family: monospace; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">
+                    Intelligent Physics © 2026 — Student Portal
                 </div>
             </div>
             """
             msg.attach(MIMEText(html, 'html'))
             server.sendmail(SMTP_USERNAME, email, msg.as_string())
         server.quit()
-        print(f"[EMAIL] Sent announcement to {len(to_emails)} recipients.")
+        print(f"[EMAIL] Sent announcement email to {len(to_emails)} recipients.")
     except Exception as e:
         print(f"[EMAIL ERROR] {e}")
+
+def send_custom_html_email(to_emails: list, subject: str, html_body: str):
+    if not SMTP_USERNAME or not SMTP_PASSWORD:
+        print("[EMAIL] SMTP credentials not configured. Skipping email send.")
+        return
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        for email in to_emails:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = f"✨ {subject}"
+            msg['From'] = SMTP_USERNAME
+            msg['To'] = email
+            msg.attach(MIMEText(html_body, 'html'))
+            server.sendmail(SMTP_USERNAME, email, msg.as_string())
+        server.quit()
+        print(f"[EMAIL] Sent custom HTML email to {len(to_emails)} recipients.")
+    except Exception as e:
+        print(f"[EMAIL ERROR] {e}")
+
+def notify_students_of_quiz(quiz: models.Quiz, db: Session):
+    # Fetch all approved students
+    query = db.query(models.User).filter(models.User.role != "admin", models.User.approval_status == "approved")
+    
+    # Filter by class name if not All/empty
+    if quiz.class_name and quiz.class_name.lower() != "all":
+        users = query.all()
+        target_emails = []
+        quiz_batches = [b.strip().lower() for b in quiz.class_name.split(",") if b.strip()]
+        for u in users:
+            user_batches = [b.strip().lower() for b in (u.class_name or "").split(",") if b.strip()]
+            if any(qb in user_batches for qb in quiz_batches):
+                target_emails.append(u.email)
+    else:
+        target_emails = [u.email for u in query.all()]
+        
+    if not target_emails:
+        print("[QUIZ NOTIFY] No matching approved students to notify.")
+        return
+        
+    # Format Date and Time nicely
+    scheduled_dt = "Available Immediately"
+    if quiz.scheduled_time:
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(quiz.scheduled_time.replace('Z', ''))
+            scheduled_dt = dt.strftime("%A, %B %d, %Y at %I:%M %p")
+        except Exception:
+            scheduled_dt = quiz.scheduled_time
+
+    subject = f"New Exam Available: {quiz.title}"
+    
+    # Elegant, premium retro-brutalist HTML template matching app branding
+    html_content = f"""
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f4f0e6; border: 2px solid #0a0a0a; box-shadow: 8px 8px 0px #0a0a0a;">
+        <div style="background-color: #0a0a0a; padding: 30px; text-align: center; border-bottom: 2px solid #0a0a0a;">
+            <h1 style="color: #ffffff; margin: 0; font-family: 'Trebuchet MS', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 24px;">Intelligent Physics</h1>
+            <p style="color: #b91c1c; margin: 5px 0 0 0; font-family: monospace; font-size: 12px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase;">Spark Exam Notification</p>
+        </div>
+        <div style="padding: 30px; background-color: #f9f6ee;">
+            <h2 style="color: #0a0a0a; margin-top: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; border-left: 4px solid #b91c1c; padding-left: 15px; line-height: 1.2;">{quiz.title}</h2>
+            <p style="color: #6b6558; font-size: 14px; line-height: 1.6; margin-bottom: 25px;">A new exam/test has been published. Please review the schedule and duration details below:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background-color: #f4f0e6; border: 1px solid #d5d0c2;">
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558; width: 30%;">Exam Date & Time</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-size: 14px; font-weight: bold; color: #0a0a0a;">{scheduled_dt}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558;">Duration</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-size: 14px; font-weight: bold; color: #b91c1c;">{quiz.duration_minutes or 30} Minutes</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 15px; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558;">Instructions</td>
+                    <td style="padding: 12px 15px; font-size: 13px; color: #6b6558; line-height: 1.4;">Ensure you have a stable internet connection. The timer starts automatically once you click start. Only one attempt is permitted.</td>
+                </tr>
+            </table>
+
+            <div style="text-align: center; margin-top: 35px; margin-bottom: 20px;">
+                <a href="http://localhost:5173/dashboard?quiz_id={quiz.id}" style="display: inline-block; background-color: #0a0a0a; color: #ffffff; padding: 14px 30px; text-decoration: none; font-size: 13px; font-weight: bold; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; border: 2px solid #0a0a0a; box-shadow: 4px 4px 0px #b91c1c; transition: all 0.2s;">
+                    Launch Exam Now 🚀
+                </a>
+            </div>
+        </div>
+        <div style="background-color: #f4f0e6; padding: 20px; text-align: center; border-top: 1px solid #d5d0c2; font-family: monospace; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">
+            Intelligent Physics © 2026 — All Rights Reserved
+        </div>
+    </div>
+    """
+
+    import threading
+    thread = threading.Thread(
+        target=send_custom_html_email,
+        args=(target_emails, subject, html_content)
+    )
+    thread.start()
+
+def send_simple_email_async(to_email: str, subject: str, body: str):
+    import threading
+    thread = threading.Thread(
+        target=send_announcement_email,
+        args=([to_email], subject, body)
+    )
+    thread.start()
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -111,16 +225,39 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         hashed_password=hashed_password,
         full_name=user.full_name,
         class_name=user.class_name,
-        is_active=False,
+        whatsapp_number=user.whatsapp_number,
+        is_active=True,
         approval_status="pending"
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Send pending approval confirmation email to the student
+    subject = "Registration Pending Approval - Intelligent Physics"
+    body = (
+        f"Dear {new_user.full_name},\n\n"
+        f"Thank you for registering at Intelligent Physics.\n\n"
+        f"Your account registration has been received and is currently pending administrator approval.\n"
+        f"You will receive another email notification once your registration is approved.\n\n"
+        f"Best regards,\n"
+        f"Intelligent Physics Team"
+    )
+    send_simple_email_async(new_user.email, subject, body)
+    
     return new_user
 
 @app.on_event("startup")
 def startup_populate():
+    # Auto-add 'whatsapp_number' column if missing
+    try:
+        from sqlalchemy import text
+        db = next(get_db())
+        db.execute(text("ALTER TABLE users ADD COLUMN whatsapp_number TEXT"))
+        db.commit()
+    except Exception:
+        pass
+
     # Auto-add 'role' column if missing (SQLite specific helper)
     try:
         from sqlalchemy import text
@@ -129,6 +266,15 @@ def startup_populate():
         db.commit()
     except Exception:
         # Column likely already exists or other error
+        pass
+
+    # Auto-add 'permissions' column if missing
+    try:
+        from sqlalchemy import text
+        db = next(get_db())
+        db.execute(text("ALTER TABLE users ADD COLUMN permissions TEXT"))
+        db.commit()
+    except Exception:
         pass
 
     db = next(get_db())
@@ -297,7 +443,9 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         "email": db_user.email,
         "role": db_user.role,
         "full_name": db_user.full_name,
-        "class_name": db_user.class_name  # Required so frontend can filter data by batch
+        "class_name": db_user.class_name,  # Required so frontend can filter data by batch
+        "permissions": db_user.permissions,
+        "whatsapp_number": db_user.whatsapp_number
     }
 
 @app.post("/auth/qr-login")
@@ -321,8 +469,35 @@ def login_via_qr(payload: dict, db: Session = Depends(get_db)):
         "email": user.email,
         "role": user.role,
         "full_name": user.full_name,
-        "class_name": user.class_name
+        "class_name": user.class_name,
+        "permissions": user.permissions,
+        "whatsapp_number": user.whatsapp_number
     }
+
+@app.put("/users/profile/{user_id}", response_model=schemas.UserResponse)
+def update_user_profile(user_id: int, profile: schemas.UserProfileUpdate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_user.full_name = profile.full_name
+    db_user.whatsapp_number = profile.whatsapp_number
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/users/change-password/{user_id}")
+def change_user_password(user_id: int, pwd: schemas.UserPasswordChange, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not verify_password(pwd.current_password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+    
+    db_user.hashed_password = get_password_hash(pwd.new_password)
+    db.commit()
+    return {"status": "success", "message": "Password changed successfully"}
 
 @app.post("/admin/credentials")
 def update_admin_credentials(creds: schemas.AdminCredentialsUpdate, db: Session = Depends(get_db)):
@@ -348,27 +523,115 @@ def update_admin_credentials(creds: schemas.AdminCredentialsUpdate, db: Session 
     db.commit()
     return {"status": "success", "message": "Admin credentials updated successfully", "new_email": db_user.email}
 
+@app.get("/admin/sub-admins")
+def get_sub_admins(db: Session = Depends(get_db)):
+    sub_admins = db.query(models.User).filter(models.User.role == "sub_admin").all()
+    return sub_admins
+
+@app.post("/admin/sub-admins")
+def create_sub_admin(sub_admin: schemas.SubAdminCreate, db: Session = Depends(get_db)):
+    # Clean email
+    email = sub_admin.email.strip().lower()
+    
+    # Check duplicate
+    existing = db.query(models.User).filter(models.User.email == email).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+    
+    hashed_pw = get_password_hash(sub_admin.password)
+    new_sub = models.User(
+        email=email,
+        hashed_password=hashed_pw,
+        role="sub_admin",
+        full_name=sub_admin.full_name,
+        permissions=sub_admin.permissions,
+        approval_status="approved",
+        is_active=True
+    )
+    db.add(new_sub)
+    db.commit()
+    db.refresh(new_sub)
+    return new_sub
+
+@app.put("/admin/sub-admins/{id}")
+def update_sub_admin(id: int, sub_admin: schemas.SubAdminUpdate, db: Session = Depends(get_db)):
+    db_sub = db.query(models.User).filter(models.User.id == id, models.User.role == "sub_admin").first()
+    if not db_sub:
+        raise HTTPException(status_code=404, detail="Sub-admin not found")
+        
+    if sub_admin.email is not None:
+        email = sub_admin.email.strip().lower()
+        if email != db_sub.email:
+            existing = db.query(models.User).filter(models.User.email == email).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="User with this email already exists")
+            db_sub.email = email
+            
+    if sub_admin.full_name is not None:
+        db_sub.full_name = sub_admin.full_name
+        
+    if sub_admin.permissions is not None:
+        db_sub.permissions = sub_admin.permissions
+        
+    if sub_admin.password is not None and sub_admin.password != "":
+        db_sub.hashed_password = get_password_hash(sub_admin.password)
+        
+    db.commit()
+    db.refresh(db_sub)
+    return db_sub
+
+@app.delete("/admin/sub-admins/{id}")
+def delete_sub_admin(id: int, db: Session = Depends(get_db)):
+    db_sub = db.query(models.User).filter(models.User.id == id, models.User.role == "sub_admin").first()
+    if not db_sub:
+        raise HTTPException(status_code=404, detail="Sub-admin not found")
+        
+    db.delete(db_sub)
+    db.commit()
+    return {"status": "success", "message": "Sub-admin deleted successfully"}
+
+@app.put("/users/profile/{user_id}", response_model=schemas.UserResponse)
+def update_user_profile(user_id: int, profile: schemas.UserProfileUpdate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db_user.full_name = profile.full_name.strip()
+    if profile.whatsapp_number is not None:
+        db_user.whatsapp_number = profile.whatsapp_number.strip()
+        
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/users/change-password/{user_id}")
+def change_user_password(user_id: int, payload: schemas.UserPasswordChange, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if not verify_password(payload.current_password, db_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
+        
+    db_user.hashed_password = get_password_hash(payload.new_password)
+    db.commit()
+    return {"status": "success", "message": "Password changed successfully"}
+
 # --- EMAIL CONFIGURATION ---
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from dotenv import load_dotenv
-import os
 from fastapi import BackgroundTasks
 from pydantic import BaseModel
 
-load_dotenv()
-EMAIL_Address = os.getenv("EMAIL_ADDRESS")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-
 def send_invite_email(to_email: str, link: str):
-    if not EMAIL_Address or "your.email" in EMAIL_Address:
+    if not SMTP_USERNAME or "your.email" in SMTP_USERNAME:
         print("❌ Email credentials not set in .env file. Skipping email send.")
         return
 
     try:
         msg = MIMEMultipart()
-        msg['From'] = EMAIL_Address
+        msg['From'] = SMTP_USERNAME
         msg['To'] = to_email
         msg['Subject'] = "Welcome to Intelligent Physics - Set Your Password"
 
@@ -390,11 +653,11 @@ def send_invite_email(to_email: str, link: str):
         msg.attach(MIMEText(body, 'html'))
 
         # Connect to Gmail SMTP (change if using Outlook/Yahoo)
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(EMAIL_Address, EMAIL_PASSWORD)
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
         text = msg.as_string()
-        server.sendmail(EMAIL_Address, to_email, text)
+        server.sendmail(SMTP_USERNAME, to_email, text)
         server.quit()
         print(f"✅ Email sent successfully to {to_email}")
     except Exception as e:
@@ -537,16 +800,20 @@ def create_announcement(announcement: schemas.AnnouncementCreate, db: Session = 
     db.commit()
     db.refresh(new_announcement)
 
-    # Send email notifications if requested
-    if announcement.send_email:
+    # Send email notifications for all announcements
+    if True:
         try:
-            batch_names = [b.strip() for b in announcement.class_name.split(',')]
-            all_students = db.query(models.User).filter(models.User.role != 'admin').all()
-            # Filter students whose class_name matches any selected batch
-            target_emails = [
-                s.email for s in all_students
-                if s.class_name and any(b in s.class_name for b in batch_names)
-            ]
+            all_students = db.query(models.User).filter(models.User.role != 'admin', models.User.approval_status == 'approved').all()
+            if not announcement.class_name or announcement.class_name.lower() == "all":
+                target_emails = [s.email for s in all_students]
+            else:
+                batch_names = [b.strip().lower() for b in announcement.class_name.split(',')]
+                target_emails = []
+                for s in all_students:
+                    user_batches = [b.strip().lower() for b in (s.class_name or "").split(",") if b.strip()]
+                    if any(b in user_batches for b in batch_names):
+                        target_emails.append(s.email)
+
             if target_emails:
                 send_announcement_email(
                     to_emails=target_emails,
@@ -843,6 +1110,19 @@ def approve_request(user_id: int, db: Session = Depends(get_db)):
     db_user.approval_status = "approved"
     db_user.is_active = True
     db.commit()
+    
+    # Send account approval email
+    subject = "Account Approved - Intelligent Physics"
+    body = (
+        f"Dear {db_user.full_name},\n\n"
+        f"Great news! Your account registration at Intelligent Physics has been approved by the administrator.\n\n"
+        f"You can now log in to the Student Portal and start your learning journey using your email and password.\n\n"
+        f"Student Portal Login: http://localhost:5173/login\n\n"
+        f"Best regards,\n"
+        f"Intelligent Physics Team"
+    )
+    send_simple_email_async(db_user.email, subject, body)
+    
     return {"status": "success"}
 
 @app.post("/admin/requests/{user_id}/reject")
@@ -850,6 +1130,17 @@ def reject_request(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Send account rejection email before deletion
+    subject = "Registration Request Declined - Intelligent Physics"
+    body = (
+        f"Dear {db_user.full_name},\n\n"
+        f"Your account registration request at Intelligent Physics has been reviewed and declined by the administrator.\n"
+        f"If you believe this was an error, please contact your administrator.\n\n"
+        f"Best regards,\n"
+        f"Intelligent Physics Team"
+    )
+    send_simple_email_async(db_user.email, subject, body)
     
     db.delete(db_user)
     db.commit()
@@ -909,12 +1200,21 @@ def create_quiz(quiz: schemas.QuizCreate, db: Session = Depends(get_db)):
             option_d=q.option_d,
             option_e=q.option_e,
             correct_option=q.correct_option,
-            image_url=q.image_url
+            image_url=q.image_url,
+            option_a_image_url=q.option_a_image_url,
+            option_b_image_url=q.option_b_image_url,
+            option_c_image_url=q.option_c_image_url,
+            option_d_image_url=q.option_d_image_url,
+            option_e_image_url=q.option_e_image_url
         )
         db.add(new_q)
     
     db.commit()
     db.refresh(new_quiz)
+    
+    if new_quiz.is_published:
+        notify_students_of_quiz(new_quiz, db)
+        
     return new_quiz
 
 @app.put("/quizzes/{quiz_id}", response_model=schemas.QuizResponse)
@@ -923,6 +1223,8 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
     if not db_quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
         
+    was_published = db_quiz.is_published
+
     db_quiz.title = quiz.title
     db_quiz.description = quiz.description
     db_quiz.class_name = quiz.class_name
@@ -932,6 +1234,9 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
     db_quiz.expiry_mode = quiz.expiry_mode
     db_quiz.expiry_days = quiz.expiry_days
     
+    # Reset rankings: delete old quiz results
+    db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz_id).delete()
+
     # Remove old questions
     db.query(models.Question).filter(models.Question.quiz_id == quiz_id).delete()
     
@@ -946,12 +1251,21 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
             option_d=q.option_d,
             option_e=q.option_e,
             correct_option=q.correct_option,
-            image_url=q.image_url
+            image_url=q.image_url,
+            option_a_image_url=q.option_a_image_url,
+            option_b_image_url=q.option_b_image_url,
+            option_c_image_url=q.option_c_image_url,
+            option_d_image_url=q.option_d_image_url,
+            option_e_image_url=q.option_e_image_url
         )
         db.add(new_q)
         
     db.commit()
     db.refresh(db_quiz)
+
+    if db_quiz.is_published and not was_published:
+        notify_students_of_quiz(db_quiz, db)
+
     return db_quiz
 
 @app.get("/quizzes", response_model=List[schemas.QuizResponse])
@@ -971,9 +1285,14 @@ def publish_quiz(quiz_id: int, db: Session = Depends(get_db)):
     quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
+    was_published = quiz.is_published
     quiz.is_published = True
     db.commit()
     db.refresh(quiz)
+    
+    if not was_published:
+        notify_students_of_quiz(quiz, db)
+        
     return quiz
 
 @app.get("/quizzes/student/{email}/taken")
@@ -984,6 +1303,25 @@ def get_taken_quizzes(email: str, db: Session = Depends(get_db)):
     results = db.query(models.QuizResult).filter(models.QuizResult.user_id == student.id).all()
     # Return list of quiz IDs already taken
     return [r.quiz_id for r in results]
+
+@app.get("/quizzes/student/{email}/scores")
+def get_student_scores(email: str, db: Session = Depends(get_db)):
+    student = db.query(models.User).filter(models.User.email == email).first()
+    if not student:
+        return {}
+    results = db.query(models.QuizResult).filter(models.QuizResult.user_id == student.id).all()
+    out = {}
+    for r in results:
+        all_quiz_results = db.query(models.QuizResult).filter(models.QuizResult.quiz_id == r.quiz_id).all()
+        higher_scores_count = sum(1 for qr in all_quiz_results if qr.score > r.score)
+        rank = higher_scores_count + 1
+        out[r.quiz_id] = {
+            "score": r.score,
+            "total": r.total_questions,
+            "rank": rank,
+            "total_participants": len(all_quiz_results)
+        }
+    return out
 
 @app.post("/quizzes/submit", response_model=schemas.QuizResultResponse)
 def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db)):
@@ -1023,11 +1361,19 @@ def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db
     )
     db.add(result)
     db.commit()
-    
+    db.refresh(result)
+
+    # Calculate rank immediately (competition ranking)
+    all_quiz_results = db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz.id).all()
+    higher_scores_count = sum(1 for qr in all_quiz_results if qr.score > score)
+    rank = higher_scores_count + 1
+
     return {
         "score": score,
         "total": total,
-        "percentage": (score / total) * 100 if total > 0 else 0
+        "percentage": (score / total) * 100 if total > 0 else 0,
+        "rank": rank,
+        "total_participants": len(all_quiz_results)
     }
 
 # --- TEACHER PROFILE API ---
@@ -1383,3 +1729,143 @@ async def generate_quiz_from_pdf(file: UploadFile = File(...)):
         print(f"Failed to generate quiz: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to parse and generate quiz: {str(e)}")
 
+
+# General System Settings Management Endpoints
+@app.get("/settings/{key}")
+def get_setting(key: str, db: Session = Depends(get_db)):
+    setting = db.query(models.SystemSetting).filter(models.SystemSetting.key == key).first()
+    if not setting:
+        return {"key": key, "value": None}
+    return {"key": key, "value": setting.value}
+
+
+
+@app.post("/settings/{key}")
+def set_setting(key: str, payload: dict, db: Session = Depends(get_db)):
+    setting = db.query(models.SystemSetting).filter(models.SystemSetting.key == key).first()
+    if not setting:
+        setting = models.SystemSetting(key=key, value=payload.get("value"))
+        db.add(setting)
+    else:
+        setting.value = payload.get("value")
+    db.commit()
+    return {"key": key, "value": setting.value}
+
+
+# ── Quiz Violation / Proctoring Alert ──────────────────────────────────────────
+
+import threading as _threading
+from datetime import datetime as _datetime
+
+@app.post("/quizzes/violation")
+def report_quiz_violation(payload: dict, db: Session = Depends(get_db)):
+    """
+    Called by the frontend whenever a student tries to leave the exam
+    (tab switch, minimize, close, back-button etc.).
+    Fires an instant alert email to all admin accounts.
+    """
+    student_email  = payload.get("student_email", "Unknown")
+    student_name   = payload.get("student_name",  "Unknown Student")
+    quiz_title     = payload.get("quiz_title",    "Unknown Quiz")
+    violation_type = payload.get("violation_type","Unknown")
+    violation_count = payload.get("violation_count", 1)
+    timestamp_str   = payload.get("timestamp", _datetime.now().isoformat())
+
+    # Friendly label
+    labels = {
+        "tab_switch":    "🔀 Tab / Window Switch",
+        "minimize":      "🔽 Window Minimized / Hidden",
+        "beforeunload":  "🚪 Attempted to Close / Leave Page",
+        "back_button":   "⬅️ Browser Back Button Pressed",
+    }
+    label = labels.get(violation_type, violation_type)
+
+    try:
+        dt = _datetime.fromisoformat(timestamp_str.replace("Z",""))
+        friendly_time = dt.strftime("%d %b %Y, %I:%M:%S %p")
+    except Exception:
+        friendly_time = timestamp_str
+
+    # Find admin emails
+    admins = db.query(models.User).filter(models.User.role == "admin").all()
+    admin_emails = [a.email for a in admins if a.email]
+    if not admin_emails:
+        admin_emails = [SMTP_USERNAME]   # fallback: send to the SMTP account itself
+
+    subject = f"⚠️ Exam Violation Alert — {student_name}"
+
+    severity_color = "#EF4444" if violation_count >= 3 else "#F59E0B"
+    severity_label = "HIGH RISK" if violation_count >= 3 else "WARNING"
+
+    html = f"""
+    <div style="font-family:'Segoe UI',sans-serif;max-width:620px;margin:auto;background:#06070E;border:2px solid #1E2130;border-radius:16px;overflow:hidden;">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1a1b2e,#0f1020);padding:28px 32px;border-bottom:1px solid #1E2130;">
+        <table width="100%"><tr>
+          <td>
+            <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#64748B;">Intelligent Physics — Proctoring System</p>
+            <h1 style="margin:8px 0 0;font-size:22px;font-weight:900;color:#ffffff;">Exam Violation Detected</h1>
+          </td>
+          <td align="right">
+            <span style="display:inline-block;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;background:{severity_color}20;color:{severity_color};border:1px solid {severity_color}50;">{severity_label}</span>
+          </td>
+        </tr></table>
+      </div>
+
+      <!-- Body -->
+      <div style="padding:32px;background:#0D0E18;">
+
+        <!-- Student info -->
+        <div style="background:#0A0B14;border:1px solid #1E2130;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+          <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;">Student</p>
+          <p style="margin:0;font-size:20px;font-weight:900;color:#ffffff;">{student_name}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#64748B;">{student_email}</p>
+        </div>
+
+        <!-- Quiz info -->
+        <div style="background:#0A0B14;border:1px solid #1E2130;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+          <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;">Exam</p>
+          <p style="margin:0;font-size:16px;font-weight:800;color:#A5B4FC;">{quiz_title}</p>
+        </div>
+
+        <!-- Violation details -->
+        <table width="100%" style="border-collapse:collapse;margin-bottom:24px;">
+          <tr>
+            <td style="padding:14px 18px;background:#0A0B14;border:1px solid #1E2130;border-radius:10px 10px 0 0;">
+              <p style="margin:0;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;">Violation Type</p>
+              <p style="margin:4px 0 0;font-size:15px;font-weight:800;color:{severity_color};">{label}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 18px;background:#0A0B14;border:1px solid #1E2130;border-left:1px solid #1E2130;border-right:1px solid #1E2130;">
+              <p style="margin:0;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;">Total Violations (This Session)</p>
+              <p style="margin:4px 0 0;font-size:24px;font-weight:900;color:{severity_color};">{violation_count}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 18px;background:#0A0B14;border:1px solid #1E2130;border-radius:0 0 10px 10px;">
+              <p style="margin:0;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#475569;">Timestamp</p>
+              <p style="margin:4px 0 0;font-size:14px;font-weight:700;color:#94A3B8;">{friendly_time}</p>
+            </td>
+          </tr>
+        </table>
+
+        {'<div style="padding:14px 18px;background:#EF444412;border:1px solid #EF444430;border-radius:10px;margin-bottom:24px;"><p style="margin:0;font-size:13px;font-weight:700;color:#FCA5A5;">⚠️ This student has triggered multiple violations. Immediate review recommended.</p></div>' if violation_count >= 3 else ''}
+
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:16px 32px;background:#06070E;border-top:1px solid #1E2130;text-align:center;">
+        <p style="margin:0;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#334155;">Intelligent Physics — Automated Proctoring Alert · {_datetime.now().year}</p>
+      </div>
+    </div>
+    """
+
+    def _send():
+        send_custom_html_email(admin_emails, subject, html)
+
+    _threading.Thread(target=_send, daemon=True).start()
+
+    print(f"[PROCTORING] Violation '{violation_type}' by {student_name} ({student_email}) — count: {violation_count}")
+    return {"status": "ok"}

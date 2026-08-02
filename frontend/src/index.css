@@ -2,13 +2,20 @@
 /* Google Fonts is loaded via <link> in index.html for better reliability */
 
 @layer base {
+  :root {
+    --paper: #f4f0e6;
+    --cream: #f9f6ee;
+    --paper2: #ede9da;
+    --ink: #0a0a0a;
+    --accent: #b91c1c;
+    --accent2: #1a1aff;
+    --muted: #6b6558;
+    --border: #d5d0c2;
+  }
+
   html {
     scroll-behavior: smooth;
-    /* Robust fallback chain: Inter (Google) → safe system fonts → generic sans-serif.
-       System fonts listed explicitly to prevent any symbol/dingbat font from being picked. */
-    font-family: 'Inter', Arial, Helvetica, 'Helvetica Neue', 'Trebuchet MS',
-      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-      Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Archivo', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   html,
@@ -20,32 +27,32 @@
     min-height: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #ffffff;
-    color: #1a202c;
+    background-color: var(--paper);
+    color: var(--ink);
   }
 
   * {
     box-sizing: border-box;
   }
 
-  /* Custom scrollbar — webkit only (Firefox has no API) */
+  /* Scrollbar styled with paper and sand palette */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #f8fafc;
+    background: var(--paper);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
-    border: 2px solid #f8fafc;
+    background: var(--border);
+    border-radius: 0px;
+    border: 2px solid var(--paper);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: var(--muted);
   }
 }
 
@@ -423,16 +430,93 @@ body {
 /* ========================================================
    ADMIN LIGHT THEME SYSTEM
    ======================================================== */
+/* ========================================================
+   ADMIN MULTI-THEME SYSTEM
+   ======================================================== */
 .admin-theme-light {
   --admin-bg: #F8FAFC;
   --admin-card-bg: #FFFFFF;
-  --admin-card: #FFFFFF;
+  --admin-sidebar-bg: #FFFFFF;
+  --admin-card-hover-bg: #F1F5F9;
   --admin-border: #E2E8F0;
   --admin-text: #0F172A;
   --admin-text-dim: #64748B;
-  --admin-sidebar-bg: #FFFFFF;
-  --admin-accent-glow: rgba(101, 108, 255, 0.1);
+  --admin-text-dim-darker: #94A3B8;
+  --admin-primary: #3B82F6;
+  --admin-accent-glow: rgba(59, 130, 246, 0.1);
+  --admin-bg-trans-5: rgba(0, 0, 0, 0.04);
+  --admin-bg-trans-hover-5: rgba(0, 0, 0, 0.06);
+  --admin-bg-trans-hover-10: rgba(0, 0, 0, 0.08);
+  --admin-primary-10: rgba(59, 130, 246, 0.1);
+  --admin-button-text: #FFFFFF;
+  --admin-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.05);
+  --admin-shadow-hover: 0 20px 40px -15px rgba(59, 130, 246, 0.15);
+}
 
+.admin-theme-cyberpunk {
+  --admin-bg: #05050A;
+  --admin-card-bg: #0F0F1A;
+  --admin-sidebar-bg: #07070F;
+  --admin-card-hover-bg: #1A1A2E;
+  --admin-border: rgba(255, 0, 127, 0.3);
+  --admin-text: #00FFFF;
+  --admin-text-dim: #FF00FF;
+  --admin-text-dim-darker: #BD00FF;
+  --admin-primary: #FF007F;
+  --admin-accent-glow: rgba(255, 0, 127, 0.35);
+  --admin-bg-trans-5: rgba(255, 255, 255, 0.04);
+  --admin-bg-trans-hover-5: rgba(255, 255, 255, 0.06);
+  --admin-bg-trans-hover-10: rgba(255, 255, 255, 0.09);
+  --admin-primary-10: rgba(255, 0, 127, 0.15);
+  --admin-button-text: #FFFFFF;
+  --admin-shadow: 0 0 15px rgba(255, 0, 127, 0.2);
+  --admin-shadow-hover: 0 0 25px rgba(255, 0, 127, 0.4);
+}
+
+.admin-theme-emerald {
+  --admin-bg: #060D0B;
+  --admin-card-bg: #0C1A16;
+  --admin-sidebar-bg: #08120F;
+  --admin-card-hover-bg: #12241F;
+  --admin-border: #143229;
+  --admin-text: #E6F4F1;
+  --admin-text-dim: #6B9E8F;
+  --admin-text-dim-darker: #4E8777;
+  --admin-primary: #10B981;
+  --admin-accent-glow: rgba(16, 185, 129, 0.2);
+  --admin-bg-trans-5: rgba(255, 255, 255, 0.04);
+  --admin-bg-trans-hover-5: rgba(255, 255, 255, 0.06);
+  --admin-bg-trans-hover-10: rgba(255, 255, 255, 0.08);
+  --admin-primary-10: rgba(16, 185, 129, 0.12);
+  --admin-button-text: #FFFFFF;
+  --admin-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.5);
+  --admin-shadow-hover: 0 20px 40px -15px rgba(16, 185, 129, 0.25);
+}
+
+.admin-theme-crimson {
+  --admin-bg: #0A0505;
+  --admin-card-bg: #1A0F0F;
+  --admin-sidebar-bg: #120808;
+  --admin-card-hover-bg: #271414;
+  --admin-border: #321414;
+  --admin-text: #FEE2E2;
+  --admin-text-dim: #E57373;
+  --admin-text-dim-darker: #C62828;
+  --admin-primary: #EF4444;
+  --admin-accent-glow: rgba(239, 68, 68, 0.2);
+  --admin-bg-trans-5: rgba(255, 255, 255, 0.04);
+  --admin-bg-trans-hover-5: rgba(255, 255, 255, 0.06);
+  --admin-bg-trans-hover-10: rgba(255, 255, 255, 0.08);
+  --admin-primary-10: rgba(239, 68, 68, 0.12);
+  --admin-button-text: #FFFFFF;
+  --admin-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.5);
+  --admin-shadow-hover: 0 20px 40px -15px rgba(239, 68, 68, 0.25);
+}
+
+.admin-theme-light,
+.admin-theme-cyberpunk,
+.admin-theme-emerald,
+.admin-theme-crimson {
   /* Background overrides */
   &.bg-\[\#0D0E12\],
   .bg-\[\#0D0E12\] {
@@ -447,21 +531,21 @@ body {
   .bg-\[\#1C1F26\],
   .bg-\[\#1c1f26\],
   .bg-\[\#1a1c23\] {
-    background-color: #F1F5F9 !important;
+    background-color: var(--admin-card-hover-bg) !important;
   }
   
   /* Semi-transparent backgrounds */
   .bg-white\/5 {
-    background-color: rgba(0, 0, 0, 0.04) !important;
+    background-color: var(--admin-bg-trans-5) !important;
   }
   .hover\:bg-white\/5:hover {
-    background-color: rgba(0, 0, 0, 0.06) !important;
+    background-color: var(--admin-bg-trans-hover-5) !important;
   }
   .hover\:bg-white\/10:hover {
-    background-color: rgba(0, 0, 0, 0.08) !important;
+    background-color: var(--admin-bg-trans-hover-10) !important;
   }
   .bg-\[\#656CFF\]\/10 {
-    background-color: rgba(101, 108, 255, 0.1) !important;
+    background-color: var(--admin-primary-10) !important;
   }
   .bg-gradient-to-br.from-\[\#15171C\].to-\[\#0D0E12\] {
     background-image: none !important;
@@ -469,7 +553,7 @@ body {
   }
   .bg-gradient-to-br.from-\[\#1c1f26\].to-transparent {
     background-image: none !important;
-    background-color: #F1F5F9 !important;
+    background-color: var(--admin-card-hover-bg) !important;
   }
 
   /* Borders */
@@ -520,7 +604,7 @@ body {
   .bg-yellow-500 span,
   button.bg-\[\#656CFF\],
   a.bg-\[\#656CFF\] {
-    color: #FFFFFF !important;
+    color: var(--admin-button-text) !important;
   }
 
   /* Specific dim slate colors */
@@ -540,16 +624,16 @@ body {
     color: var(--admin-text-dim) !important;
   }
   .text-slate-800 {
-    color: #94A3B8 !important;
+    color: var(--admin-text-dim-darker) !important;
   }
 
   /* Form Controls */
   input, select, textarea {
-    background-color: #FFFFFF !important;
+    background-color: var(--admin-card-bg) !important;
     border-color: var(--admin-border) !important;
     color: var(--admin-text) !important;
     &::placeholder {
-      color: #94A3B8 !important;
+      color: var(--admin-text-dim) !important;
     }
   }
 
@@ -564,14 +648,14 @@ body {
 
   /* Card highlights & shadows */
   .admin-card {
-    box-shadow: 0 10px 40px -15px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: var(--admin-shadow) !important;
   }
   .admin-card:hover {
-    box-shadow: 0 20px 40px -15px rgba(101, 108, 255, 0.15) !important;
-    border-color: rgba(101, 108, 255, 0.4) !important;
+    box-shadow: var(--admin-shadow-hover) !important;
+    border-color: var(--admin-primary) !important;
   }
   
-  /* Recharts custom styling for light theme */
+  /* Recharts custom styling */
   .recharts-cartesian-grid line {
     stroke: var(--admin-border) !important;
   }
@@ -579,20 +663,20 @@ body {
     background-color: var(--admin-card-bg) !important;
     border-color: var(--admin-border) !important;
     color: var(--admin-text) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: var(--admin-shadow) !important;
   }
   
-  /* Glow backgrounds to look subtle and premium in light mode */
+  /* Glow backgrounds to look subtle and premium */
   .bg-\[\#656CFF\]\/5 {
-    background-color: rgba(101, 108, 255, 0.02) !important;
+    background-color: var(--admin-primary-10) !important;
   }
   .bg-\[\#FEBC2E\]\/5 {
     background-color: rgba(254, 188, 46, 0.02) !important;
   }
   .bg-white\/\[0\.02\] {
-    background-color: #FFFFFF !important;
+    background-color: var(--admin-card-bg) !important;
   }
   .hover\:bg-white\/\[0\.02\]:hover {
-    background-color: rgba(0, 0, 0, 0.01) !important;
+    background-color: var(--admin-bg-trans-5) !important;
   }
 }

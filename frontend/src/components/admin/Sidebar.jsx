@@ -33,35 +33,53 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
         setIsOpen(false);
     }, [location.pathname]);
 
-    const navigationGroups = [
+    const rawNavigationGroups = [
         {
-            group: 'Administration',
+            group: 'Knowledge Hub',
+            items: [
+                { name: 'Class Recordings', path: '/admin/recordings', icon: <Video size={18} />, permission: 'Class Recordings' },
+                { name: 'Exams & Quizzes', path: '/admin/quizzes', icon: <BookOpen size={18} />, permission: 'Exams & Quizzes' },
+                { name: 'Past Papers', path: '/admin/papers', icon: <FileText size={18} />, permission: 'Past Papers' },
+            ]
+        },
+        {
+            group: 'Learning Hub',
+            items: [
+                { name: 'Learning Hub', path: '/admin/learning-hub', icon: <Box size={18} />, permission: 'Learning Hub' },
+                { name: 'Announcements', path: '/admin/announcements', icon: <Megaphone size={18} />, permission: 'Announcements' },
+                { name: 'Student Marks', path: '/admin/marks', icon: <ClipboardList size={18} />, permission: 'Student Marks' },
+                { name: 'Exam Results', path: '/admin/results', icon: <Activity size={18} />, permission: 'Exam Results' },
+            ]
+        },
+        {
+            group: 'Home Page',
+            items: [
+                { name: 'Homepage Ads', path: '/admin/homepage', icon: <Home size={18} />, permission: 'Homepage Ads' },
+                { name: 'Hero Sliders', path: '/admin/sliders', icon: <Layers size={18} />, permission: 'Hero Sliders' },
+            ]
+        },
+        {
+            group: 'Common Controls',
             items: [
                 { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
-                { name: 'Students', path: '/admin/students', icon: <Users size={18} /> },
-                { name: 'Settings', path: '/admin/settings', icon: <Settings size={18} /> },
-            ]
-        },
-        {
-            group: 'Learning Portal',
-            items: [
-                { name: 'Announcements', path: '/admin/announcements', icon: <Megaphone size={18} /> },
-                { name: 'Class Recordings', path: '/admin/recordings', icon: <Video size={18} /> },
-                { name: 'Exams & Quizzes', path: '/admin/quizzes', icon: <BookOpen size={18} /> },
-                { name: 'Past Papers', path: '/admin/papers', icon: <FileText size={18} /> },
-                { name: 'Student Marks', path: '/admin/marks', icon: <ClipboardList size={18} /> },
-                { name: 'Exam Results', path: '/admin/results', icon: <Activity size={18} /> },
-            ]
-        },
-        {
-            group: 'Website Management',
-            items: [
-                { name: 'Homepage Ads', path: '/admin/homepage', icon: <Home size={18} /> },
-                { name: 'Hero Sliders', path: '/admin/sliders', icon: <Layers size={18} /> },
-                { name: 'Learning Hub', path: '/admin/learning-hub', icon: <Box size={18} /> },
+                { name: 'Students', path: '/admin/students', icon: <Users size={18} />, permission: 'Students' },
+                { name: 'Settings', path: '/admin/settings', icon: <Settings size={18} />, permission: 'Settings' },
             ]
         }
     ];
+
+    // Filter items based on sub-admin permissions
+    const permitted = user?.permissions ? user.permissions.split(',').map(p => p.trim()) : [];
+    const navigationGroups = rawNavigationGroups.map(group => {
+        const filteredItems = group.items.filter(item => {
+            // Dashboard is always visible
+            if (item.name === 'Dashboard') return true;
+            if (user?.role === 'admin') return true;
+            // Check if item permission matches user permissions
+            return item.permission && permitted.includes(item.permission);
+        });
+        return { ...group, items: filteredItems };
+    }).filter(group => group.items.length > 0);
 
     return (
         <>

@@ -21,9 +21,8 @@ function src(url) {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
+.kh-page-wrapper *, .kh-page-wrapper *::before, .kh-page-wrapper *::after { box-sizing: border-box; }
+.kh-page-wrapper {
   font-family: 'Inter', sans-serif;
   background: #fafafa;
   color: #171717;
@@ -341,7 +340,7 @@ export default function KnowledgeHub() {
             setLoading(false);
             try {
                 (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch (err) {
+            } catch {
                 console.log("AdSense load deferred");
             }
         });
@@ -568,7 +567,7 @@ export default function KnowledgeHub() {
             {/* Grid layout decoration background */}
             <div className="physics-bg" />
 
-            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <div className="kh-page-wrapper" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
                 {/* ─── TOP NAVBAR ─── */}
                 <nav className="kh-nav">
@@ -690,7 +689,7 @@ export default function KnowledgeHub() {
                                         </button>
                                         <button className={`tab-trigger${tab === 'quizzes' ? ' active' : ''}`} onClick={() => { setTab('quizzes'); setSearch(''); setYearFilter(''); }}>
                                             <Lucide.Zap size={14} />
-                                            Practice Quizzes
+                                            Spark Exam
                                         </button>
                                     </div>
 
