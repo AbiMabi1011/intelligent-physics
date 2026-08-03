@@ -13,7 +13,13 @@ import {
     ChevronRight,
     Trophy,
     TrendingUp,
-    ShieldCheck
+    ShieldCheck,
+    X,
+    AlertTriangle,
+    Monitor,
+    Globe,
+    Clock,
+    Cpu
 } from 'lucide-react';
 import { API_URL } from '../../config';
 
@@ -21,6 +27,7 @@ const ResultsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedResult, setSelectedResult] = useState(null);
 
     useEffect(() => {
         fetchResults();
@@ -147,15 +154,8 @@ const ResultsPage = () => {
                                     <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Loading Results...</span>
                                 </td>
                             </tr>
-                        ) : filteredResults.length === 0 ? (
-                            <tr>
-                                <td colSpan="5" className="px-10 py-24 text-center">
-                                    <Database size={48} className="mx-auto text-slate-800 mb-4" />
-                                    <p className="text-slate-500 font-black text-xs uppercase tracking-widest">No results found.</p>
-                                </td>
-                            </tr>
                         ) : filteredResults.map((r) => (
-                            <tr key={r.id} className="group hover:bg-white/[0.02] transition-colors">
+                            <tr key={r.id} onClick={() => setSelectedResult(r)} className="group hover:bg-white/[0.02] transition-colors cursor-pointer">
                                 <td className="px-10 py-6">
                                     <div className="flex items-center gap-5">
                                         <div className="h-10 w-10 rounded-xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] text-xs font-black transition-transform group-hover:scale-110">
@@ -192,10 +192,10 @@ const ResultsPage = () => {
                                     })()}
                                 </td>
                                 <td className="px-8 py-6">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(r.timestamp).toLocaleString()}</span>
+                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(r.timestamp || r.created_at).toLocaleString()}</span>
                                 </td>
                                 <td className="px-6 py-6 text-center">
-                                    <button className="h-10 w-10 rounded-xl bg-white/5 text-slate-500 hover:bg-[#656CFF]/10 hover:text-[#656CFF] transition-all group-hover:scale-110 active:scale-95 shadow-xl">
+                                    <button onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }} className="h-10 w-10 rounded-xl bg-white/5 text-slate-500 hover:bg-[#656CFF]/10 hover:text-[#656CFF] transition-all group-hover:scale-110 active:scale-95 shadow-xl">
                                         <ChevronRight size={20} />
                                     </button>
                                 </td>
@@ -204,6 +204,174 @@ const ResultsPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* ══ SESSION PROCTORING DETAILS MODAL ══ */}
+            {selectedResult && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="w-full max-w-2xl rounded-3xl border border-white/10 overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+                        style={{ background: '#0D0E18' }}>
+                        
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-white/8 flex items-center justify-between"
+                            style={{ background: 'linear-gradient(135deg, #131424, #0D0E18)' }}>
+                            <div>
+                                <p className="text-[10px] font-black text-[#656CFF] uppercase tracking-[0.25em]">Security & Integrity Report</p>
+                                <h3 className="text-lg font-black text-white mt-1">
+                                    {selectedResult.student.full_name}'s Exam Session
+                                </h3>
+                            </div>
+                            <button onClick={() => setSelectedResult(null)}
+                                className="h-10 w-10 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 flex items-center justify-center transition-all">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content Scroll Container */}
+                        <div className="p-6 overflow-y-auto space-y-6">
+                            
+                            {/* Device & Connection Stats Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl border border-white/5 bg-[#090A10]/60 space-y-3">
+                                    <div className="flex items-center gap-2.5 text-[#10B981]">
+                                        <Globe size={18} />
+                                        <span className="text-xs font-black uppercase tracking-wider text-slate-400">Connection</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-slate-500">IP Address</p>
+                                        <p className="text-sm font-bold text-slate-200">
+                                            {selectedResult.session?.ip_address || "Unknown / Logged-out Submission"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 rounded-2xl border border-white/5 bg-[#090A10]/60 space-y-3">
+                                    <div className="flex items-center gap-2.5 text-[#656CFF]">
+                                        <Cpu size={18} />
+                                        <span className="text-xs font-black uppercase tracking-wider text-slate-400">Device fingerprint</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-slate-500">Timezone & Screen Details</p>
+                                        <p className="text-xs text-slate-300 truncate" title={selectedResult.session?.device_fingerprint}>
+                                            {selectedResult.session?.device_fingerprint 
+                                                ? selectedResult.session.device_fingerprint.split('|').slice(1).join(' | ') 
+                                                : "No Device Fingerprint Captured"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Session Times & Duration */}
+                            <div className="p-4 rounded-2xl border border-white/5 bg-[#090A10]/60 flex items-center justify-between gap-4 flex-wrap">
+                                <div className="flex items-center gap-3">
+                                    <Clock size={20} className="text-slate-400" />
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Started At</p>
+                                        <p className="text-xs font-bold text-slate-200 mt-0.5">
+                                            {selectedResult.session?.started_at 
+                                                ? new Date(selectedResult.session.started_at).toLocaleString() 
+                                                : "N/A"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <Clock size={20} className="text-slate-400" />
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Submitted At</p>
+                                        <p className="text-xs font-bold text-slate-200 mt-0.5">
+                                            {selectedResult.session?.submitted_at 
+                                                ? new Date(selectedResult.session.submitted_at).toLocaleString() 
+                                                : new Date(selectedResult.created_at).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="px-4 py-2 bg-white/5 border border-white/8 rounded-xl text-center">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Duration Taken</p>
+                                    <p className="text-xs font-mono font-black text-white mt-0.5">
+                                        {(() => {
+                                            if (!selectedResult.session?.started_at) return "N/A";
+                                            const start = new Date(selectedResult.session.started_at);
+                                            const end = selectedResult.session.submitted_at 
+                                                ? new Date(selectedResult.session.submitted_at) 
+                                                : new Date(selectedResult.created_at);
+                                            const diffSec = Math.floor((end - start) / 1000);
+                                            if (isNaN(diffSec) || diffSec < 0) return "N/A";
+                                            const mins = Math.floor(diffSec / 60);
+                                            const secs = diffSec % 60;
+                                            return `${mins}m ${secs}s`;
+                                        })()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Proctoring Violations Log list */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                                    <span>Session Violations Logs</span>
+                                    <span className="text-[10px] font-mono px-2 py-0.5 bg-white/5 rounded">
+                                        Total: {selectedResult.violations?.length || 0}
+                                    </span>
+                                </h4>
+
+                                {(!selectedResult.violations || selectedResult.violations.length === 0) ? (
+                                    <div className="flex flex-col items-center justify-center py-10 rounded-2xl border border-dashed border-emerald-500/20 bg-emerald-500/[0.02]">
+                                        <ShieldCheck size={36} className="text-emerald-500 mb-3" />
+                                        <p className="text-sm font-bold text-emerald-400">Shield Clean</p>
+                                        <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">No exam violations were logged for this session</p>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-white/5 bg-[#090A10]/60 overflow-hidden">
+                                        <div className="max-h-56 overflow-y-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr className="bg-white/5 border-b border-white/5 text-[9px] uppercase tracking-wider text-slate-400 font-bold">
+                                                        <th className="px-4 py-3">Time</th>
+                                                        <th className="px-4 py-3">Violation Type</th>
+                                                        <th className="px-4 py-3 text-center">Trigger Count</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-white/5 text-xs">
+                                                    {selectedResult.violations.map((v) => {
+                                                        const labelMap = {
+                                                            tab_switch: "Tab/Window Switch",
+                                                            window_blur: "Window Focus Loss",
+                                                            exit_fullscreen: "Exited Fullscreen",
+                                                            devtools_shortcut: "DevTools Shortcut Attempt",
+                                                            mouse_leave: "Cursor Left Screen",
+                                                            window_resize: "Window Resized"
+                                                        };
+                                                        return (
+                                                            <tr key={v.id} className="hover:bg-white/[0.01]">
+                                                                <td className="px-4 py-3 font-mono text-[10px] text-slate-400">
+                                                                    {new Date(v.timestamp).toLocaleTimeString()}
+                                                                </td>
+                                                                <td className="px-4 py-3 font-bold text-red-400">
+                                                                    {labelMap[v.violation_type] || v.violation_type}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center font-mono font-black text-slate-200">
+                                                                    {v.violation_count}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-white/8 bg-[#090A10]/60 flex justify-end">
+                            <button onClick={() => setSelectedResult(null)}
+                                className="px-6 py-2.5 rounded-xl bg-white/5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:bg-white/10 hover:text-white transition-all">
+                                Close Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

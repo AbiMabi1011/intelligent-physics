@@ -206,7 +206,148 @@ def send_simple_email_async(to_email: str, subject: str, body: str):
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+# ── Proctoring & Randomization Helpers ─────────────────────────────────────
+import hashlib
+import random
+import re
+
+def safe_eval(expr: str, variables: dict) -> float:
+    expr = expr.strip()
+    for var, val in sorted(variables.items(), key=lambda x: len(x[0]), reverse=True):
+        expr = expr.replace(var, str(val))
+    if not re.match(r'^[0-9\.\+\-\*\/\(\)\s\*\*]+$', expr):
+        raise ValueError(f"Unsafe expression: {expr}")
+    try:
+        val = eval(expr, {"__builtins__": None}, {})
+        if isinstance(val, float):
+            if val.is_integer():
+                return int(val)
+            return round(val, 2)
+        return val
+    except Exception:
+        return 0.0
+
+def get_shuffled_and_randomized_questions(questions: list, student_email: str, quiz_id: int):
+    email_key = student_email.strip().lower()
+    seed_str = f"{email_key}_{quiz_id}"
+    seed_bytes = hashlib.md5(seed_str.encode()).digest()
+    seed_int = int.from_bytes(seed_bytes, 'big')
+    
+    shuffled = []
+    quiz_random = random.Random(seed_int)
+    question_indices = list(range(len(questions)))
+    quiz_random.shuffle(question_indices)
+    
+    ordered_questions = [questions[i] for i in question_indices]
+    
+    for q in ordered_questions:
+        q_seed_str = f"{email_key}_{quiz_id}_{q.id}"
+        q_seed_bytes = hashlib.md5(q_seed_str.encode()).digest()
+        q_seed_int = int.from_bytes(q_seed_bytes, 'big')
+        q_random = random.Random(q_seed_int)
+        
+        var_pattern = r'\[\[\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*([\d\.\-]+)\s*\.\.\s*([\d\.\-]+)(?:\s*\.\.\s*([\d\.\-]+))?\s*\]\]'
+        matches = re.findall(var_pattern, q.text)
+        
+        variables = {}
+        for var_name, min_val, max_val, step_val in matches:
+            min_f = float(min_val)
+            max_f = float(max_val)
+            if step_val:
+                step_f = float(step_val)
+                choices = []
+                curr = min_f
+                while curr <= max_f + 1e-9:
+                    choices.append(curr)
+                    curr += step_f
+                val = q_random.choice(choices) if choices else min_f
+            else:
+                if '.' in min_val or '.' in max_val:
+                    val = q_random.uniform(min_f, max_f)
+                else:
+                    val = q_random.randint(int(min_f), int(max_f))
+            
+            if isinstance(val, float):
+                val = round(val, 2)
+                if val.is_integer():
+                    val = int(val)
+            variables[var_name] = val
+            
+        def repl(match):
+            return str(variables.get(match.group(1), match.group(0)))
+            
+        final_text = re.sub(var_pattern, repl, q.text)
+        
+        orig_options = {
+            'A': q.option_a,
+            'B': q.option_b,
+            'C': q.option_c,
+            'D': q.option_d,
+            'E': q.option_e
+        }
+        orig_option_images = {
+            'A': q.option_a_image_url,
+            'B': q.option_b_image_url,
+            'C': q.option_c_image_url,
+            'D': q.option_d_image_url,
+            'E': q.option_e_image_url
+        }
+        
+        evaluated_options = {}
+        expr_pattern = r'\{\{([^}]+)\}\}'
+        for opt_key, opt_val in orig_options.items():
+            if not opt_val:
+                evaluated_options[opt_key] = None
+                continue
+            def repl_expr(match):
+                expr = match.group(1)
+                try:
+                    return str(safe_eval(expr, variables))
+                except Exception:
+                    return match.group(0)
+            evaluated_options[opt_key] = re.sub(expr_pattern, repl_expr, opt_val)
+            
+        available_keys = [k for k, v in evaluated_options.items() if (v is not None or orig_option_images[k] is not None)]
+        shuffled_keys = list(available_keys)
+        q_random.shuffle(shuffled_keys)
+        
+        final_options = {}
+        final_option_images = {}
+        new_correct_option = None
+        
+        target_keys = ['A', 'B', 'C', 'D', 'E'][:len(shuffled_keys)]
+        for t_key, s_key in zip(target_keys, shuffled_keys):
+            final_options[t_key] = evaluated_options[s_key]
+            final_option_images[t_key] = orig_option_images[s_key]
+            if q.correct_option == s_key:
+                new_correct_option = t_key
+                
+        for r_key in ['A', 'B', 'C', 'D', 'E'][len(shuffled_keys):]:
+            final_options[r_key] = None
+            final_option_images[r_key] = None
+            
+        shuffled.append({
+            "id": q.id,
+            "quiz_id": q.quiz_id,
+            "text": final_text,
+            "option_a": final_options.get('A'),
+            "option_b": final_options.get('B'),
+            "option_c": final_options.get('C'),
+            "option_d": final_options.get('D'),
+            "option_e": final_options.get('E'),
+            "option_a_image_url": final_option_images.get('A'),
+            "option_b_image_url": final_option_images.get('B'),
+            "option_c_image_url": final_option_images.get('C'),
+            "option_d_image_url": final_option_images.get('D'),
+            "option_e_image_url": final_option_images.get('E'),
+            "image_url": q.image_url,
+            "correct_option": new_correct_option or q.correct_option
+        })
+        
+    return shuffled
+
 # Routes
+
 
 @app.get("/")
 def read_root():
@@ -740,7 +881,30 @@ def bulk_invite_users(payload: schemas.BulkInviteRequest, background_tasks: Back
 
 @app.get("/results", response_model=List[schemas.FullQuizResult])
 def get_all_results(db: Session = Depends(get_db)):
-    return db.query(models.QuizResult).all()
+    results = db.query(models.QuizResult).all()
+    out = []
+    for r in results:
+        session = db.query(models.QuizSession).filter(
+            models.QuizSession.user_id == r.user_id,
+            models.QuizSession.quiz_id == r.quiz_id
+        ).first()
+        violations = db.query(models.QuizViolation).filter(
+            models.QuizViolation.user_id == r.user_id,
+            models.QuizViolation.quiz_id == r.quiz_id
+        ).all()
+        out.append({
+            "id": r.id,
+            "quiz_id": r.quiz_id,
+            "user_id": r.user_id,
+            "score": r.score,
+            "total_questions": r.total_questions,
+            "created_at": r.created_at,
+            "student": r.student,
+            "quiz": r.quiz,
+            "session": session,
+            "violations": violations
+        })
+    return out
 
 # --- MARKS ENDPOINTS ---
 
@@ -1323,9 +1487,140 @@ def get_student_scores(email: str, db: Session = Depends(get_db)):
         }
     return out
 
+from fastapi import Request
+import uuid
+
+@app.post("/quizzes/{quiz_id}/start")
+def start_quiz_session(quiz_id: int, payload: dict, request: Request, db: Session = Depends(get_db)):
+    student_email = payload.get("student_email")
+    device_fingerprint = payload.get("device_fingerprint")
+    client_session_token = payload.get("session_token")
+    
+    student = db.query(models.User).filter(models.User.email == student_email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+        
+    already_submitted = db.query(models.QuizResult).filter(
+        models.QuizResult.quiz_id == quiz_id,
+        models.QuizResult.user_id == student.id
+    ).first()
+    if already_submitted:
+        raise HTTPException(status_code=400, detail="You have already taken this quiz.")
+        
+    active_session = db.query(models.QuizSession).filter(
+        models.QuizSession.user_id == student.id,
+        models.QuizSession.quiz_id == quiz_id,
+        models.QuizSession.submitted_at.is_(None)
+    ).first()
+    
+    ip_addr = request.client.host
+    user_agent = request.headers.get("user-agent")
+    
+    if active_session:
+        started_time = datetime.fromisoformat(active_session.started_at)
+        elapsed_seconds = (datetime.now() - started_time).total_seconds()
+        duration_seconds = (quiz.duration_minutes or 30) * 60
+        
+        if elapsed_seconds < duration_seconds + 60:
+            if client_session_token == active_session.session_token or active_session.device_fingerprint == device_fingerprint:
+                remaining_time = max(0, int(duration_seconds - elapsed_seconds))
+                shuffled_questions = get_shuffled_and_randomized_questions(quiz.questions, student_email, quiz_id)
+                saved_answers = json.loads(active_session.answers_json) if active_session.answers_json else {}
+                
+                return {
+                    "status": "resumed",
+                    "session_token": active_session.session_token,
+                    "started_at": active_session.started_at,
+                    "duration_seconds": remaining_time,
+                    "questions": shuffled_questions,
+                    "answers": saved_answers
+                }
+            else:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Session locked: Active exam session detected in another tab or device. Only one active tab/device is allowed."
+                )
+        else:
+            active_session.submitted_at = datetime.now().isoformat()
+            db.commit()
+            raise HTTPException(status_code=400, detail="Quiz session has expired.")
+            
+    session_token = str(uuid.uuid4())
+    started_at = datetime.now().isoformat()
+    duration_seconds = (quiz.duration_minutes or 30) * 60
+    
+    new_session = models.QuizSession(
+        user_id=student.id,
+        quiz_id=quiz_id,
+        started_at=started_at,
+        session_token=session_token,
+        ip_address=ip_addr,
+        user_agent=user_agent,
+        device_fingerprint=device_fingerprint,
+        answers_json="{}"
+    )
+    db.add(new_session)
+    db.commit()
+    
+    shuffled_questions = get_shuffled_and_randomized_questions(quiz.questions, student_email, quiz_id)
+    
+    return {
+        "status": "started",
+        "session_token": session_token,
+        "started_at": started_at,
+        "duration_seconds": duration_seconds,
+        "questions": shuffled_questions,
+        "answers": {}
+    }
+
+@app.post("/quizzes/{quiz_id}/sync")
+def sync_quiz_answers(quiz_id: int, payload: dict, db: Session = Depends(get_db)):
+    student_email = payload.get("student_email")
+    session_token = payload.get("session_token")
+    answers = payload.get("answers", {})
+    
+    student = db.query(models.User).filter(models.User.email == student_email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    session = db.query(models.QuizSession).filter(
+        models.QuizSession.user_id == student.id,
+        models.QuizSession.quiz_id == quiz_id,
+        models.QuizSession.submitted_at.is_(None)
+    ).first()
+    
+    if not session:
+        raise HTTPException(status_code=404, detail="No active quiz session found.")
+        
+    if session.session_token != session_token:
+        raise HTTPException(status_code=403, detail="Session lock error: Token mismatch.")
+        
+    session.answers_json = json.dumps(answers)
+    db.commit()
+    return {"status": "synced"}
+
+@app.get("/quizzes/{quiz_id}/session")
+def check_quiz_session(quiz_id: int, email: str, token: str, db: Session = Depends(get_db)):
+    student = db.query(models.User).filter(models.User.email == email).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    session = db.query(models.QuizSession).filter(
+        models.QuizSession.user_id == student.id,
+        models.QuizSession.quiz_id == quiz_id,
+        models.QuizSession.submitted_at.is_(None)
+    ).first()
+    if not session:
+        return {"status": "inactive"}
+    if session.session_token != token:
+        return {"status": "locked"}
+    return {"status": "active"}
+
 @app.post("/quizzes/submit", response_model=schemas.QuizResultResponse)
 def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db)):
-    # Find Student (Optional: require auth)
     student = db.query(models.User).filter(models.User.email == submission.student_email).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
@@ -1333,6 +1628,32 @@ def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db
     quiz = db.query(models.Quiz).filter(models.Quiz.id == submission.quiz_id).first()
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
+        
+    session = db.query(models.QuizSession).filter(
+        models.QuizSession.user_id == student.id,
+        models.QuizSession.quiz_id == submission.quiz_id,
+        models.QuizSession.submitted_at.is_(None)
+    ).first()
+    
+    if session:
+        started_time = datetime.fromisoformat(session.started_at)
+        elapsed_seconds = (datetime.now() - started_time).total_seconds()
+        duration_seconds = (quiz.duration_minutes or 30) * 60
+        
+        # We allow submission even if expired but keep a record of elapsed time.
+        session.submitted_at = datetime.now().isoformat()
+        session.answers_json = json.dumps(submission.answers)
+    else:
+        # Fallback to creating a new manual submission session
+        session = models.QuizSession(
+            user_id=student.id,
+            quiz_id=submission.quiz_id,
+            started_at=datetime.now().isoformat(),
+            submitted_at=datetime.now().isoformat(),
+            session_token="manual-submit-" + str(uuid.uuid4()),
+            answers_json=json.dumps(submission.answers)
+        )
+        db.add(session)
         
     already_taken = db.query(models.QuizResult).filter(
         models.QuizResult.quiz_id == submission.quiz_id,
@@ -1344,15 +1665,15 @@ def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db
     score = 0
     total = len(quiz.questions)
     
-    # Calculate Score
-    # answers is dict { "question_id_str": "A" }
-    for q in quiz.questions:
-        q_id_str = str(q.id)
+    shuffled_questions = get_shuffled_and_randomized_questions(quiz.questions, submission.student_email, quiz.id)
+    shuffled_map = {q["id"]: q for q in shuffled_questions}
+    
+    for q_id, q_data in shuffled_map.items():
+        q_id_str = str(q_id)
         if q_id_str in submission.answers:
-            if submission.answers[q_id_str] == q.correct_option:
+            if submission.answers[q_id_str] == q_data["correct_option"]:
                 score += 1
     
-    # Save Result
     result = models.QuizResult(
         quiz_id=quiz.id,
         user_id=student.id,
@@ -1363,7 +1684,6 @@ def submit_quiz(submission: schemas.QuizSubmission, db: Session = Depends(get_db
     db.commit()
     db.refresh(result)
 
-    # Calculate rank immediately (competition ranking)
     all_quiz_results = db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz.id).all()
     higher_scores_count = sum(1 for qr in all_quiz_results if qr.score > score)
     rank = higher_scores_count + 1
@@ -1770,6 +2090,28 @@ def report_quiz_violation(payload: dict, db: Session = Depends(get_db)):
     violation_type = payload.get("violation_type","Unknown")
     violation_count = payload.get("violation_count", 1)
     timestamp_str   = payload.get("timestamp", _datetime.now().isoformat())
+    details        = payload.get("details", None)
+    quiz_id        = payload.get("quiz_id", None)
+
+    # Resolve student and quiz ID
+    student = db.query(models.User).filter(models.User.email == student_email).first()
+    
+    if not quiz_id and quiz_title != "Unknown Quiz":
+        qz = db.query(models.Quiz).filter(models.Quiz.title == quiz_title).first()
+        if qz:
+            quiz_id = qz.id
+
+    if student and quiz_id:
+        new_violation = models.QuizViolation(
+            user_id=student.id,
+            quiz_id=quiz_id,
+            violation_type=violation_type,
+            violation_count=violation_count,
+            details=details,
+            timestamp=timestamp_str
+        )
+        db.add(new_violation)
+        db.commit()
 
     # Friendly label
     labels = {

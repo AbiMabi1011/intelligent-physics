@@ -19,6 +19,7 @@ export default function AdvancedQuizPortal({
     logo,
     studentEmail = '',
     studentName = '',
+    sessionToken = '',
 }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [flagged, setFlagged] = useState({});
@@ -29,6 +30,7 @@ export default function AdvancedQuizPortal({
     const [expandedImg, setExpandedImg] = useState(null);
     const [violationCount, setViolationCount] = useState(0);
     const [showViolationWarning, setShowViolationWarning] = useState(false);
+    const [showFullscreenModal, setShowFullscreenModal] = useState(false);
     const mainRef = useRef(null);
     const violationCountRef = useRef(0);
 
@@ -60,10 +62,69 @@ export default function AdvancedQuizPortal({
         if (mainRef.current) mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Keyboard nav
+    // Fullscreen handlers
+    const enterFullscreen = () => {
+        const element = document.documentElement;
+        const requestMethod = element.requestFullscreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
+        if (requestMethod) {
+            requestMethod.call(element).then(() => {
+                setShowFullscreenModal(false);
+            }).catch(err => {
+                console.error("Error enabling fullscreen:", err);
+            });
+        }
+    };
+
+    // Auto-request fullscreen on mount/start
+    useEffect(() => {
+        if (quizResult || !currentQuiz) return;
+        
+        // Timeout to let DOM initialize
+        const t = setTimeout(() => {
+            if (!document.fullscreenElement) {
+                setShowFullscreenModal(true);
+            }
+        }, 1000);
+
+        const handleFullscreenChange = () => {
+            if (!document.fullscreenElement && !quizResult) {
+                setShowFullscreenModal(true);
+                reportViolation('exit_fullscreen');
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        return () => {
+            clearTimeout(t);
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+        };
+    }, [quizResult, currentQuiz]);
+
+    // Keyboard navigation and shortcut blocking (F12, Ctrl+U, Ctrl+Shift+I, etc.)
     useEffect(() => {
         const onKey = (e) => {
-            if (showSubmitModal || showExitModal || expandedImg || quizResult) return;
+            const isCtrlShiftI = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i';
+            const isCtrlShiftJ = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'j';
+            const isCtrlShiftC = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c';
+            const isCtrlU = e.ctrlKey && e.key.toLowerCase() === 'u';
+            const isCtrlS = e.ctrlKey && e.key.toLowerCase() === 's';
+            const isF12 = e.key === 'F12' || e.keyCode === 123;
+
+            if (isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlU || isCtrlS || isF12) {
+                e.preventDefault();
+                e.stopPropagation();
+                reportViolation('devtools_shortcut');
+                return;
+            }
+
+            if (showSubmitModal || showExitModal || expandedImg || quizResult || showFullscreenModal) return;
             if (e.key === 'ArrowRight') goTo(currentIndex + 1);
             else if (e.key === 'ArrowLeft') goTo(currentIndex - 1);
             else if (e.key.toLowerCase() === 'f' && currentQ) setFlagged(p => ({ ...p, [currentQ.id]: !p[currentQ.id] }));
@@ -74,7 +135,7 @@ export default function AdvancedQuizPortal({
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [currentIndex, currentQ, showSubmitModal, showExitModal, expandedImg, quizResult]);
+    }, [currentIndex, currentQ, showSubmitModal, showExitModal, expandedImg, quizResult, showFullscreenModal]);
 
     // ── PROCTORING: Report violation to admin ──
     const reportViolation = (type) => {
@@ -90,6 +151,7 @@ export default function AdvancedQuizPortal({
                     student_email: studentEmail,
                     student_name: studentName,
                     quiz_title: currentQuiz?.title || 'Unknown Quiz',
+                    quiz_id: currentQuiz?.id,
                     violation_type: type,
                     violation_count: count,
                     timestamp: new Date().toISOString(),
@@ -113,31 +175,102 @@ export default function AdvancedQuizPortal({
     // ── 2. popstate: neutralise browser back button ──
     useEffect(() => {
         if (quizResult) return;
-        // Push a dummy state so back-press hits it first
         window.history.pushState({ examActive: true }, '', window.location.href);
         const handler = () => {
             reportViolation('back_button');
-            // Re-push so repeated back-presses keep getting blocked
             window.history.pushState({ examActive: true }, '', window.location.href);
         };
         window.addEventListener('popstate', handler);
         return () => window.removeEventListener('popstate', handler);
     }, [quizResult, currentQuiz]);
 
-    // ── 3. visibilitychange: detect tab switch / minimize ──
+    // ── 3. visibilitychange + blur: detect tab switch / minimize / focus loss ──
     useEffect(() => {
         if (quizResult) return;
-        const handler = () => {
+        const handleVisibilityChange = () => {
             if (document.hidden) {
                 reportViolation('tab_switch');
             } else {
-                // Student came back — show warning overlay
                 setShowViolationWarning(true);
             }
         };
-        document.addEventListener('visibilitychange', handler);
-        return () => document.removeEventListener('visibilitychange', handler);
+        const handleBlur = () => {
+            reportViolation('window_blur');
+            setShowViolationWarning(true);
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleBlur);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleBlur);
+        };
     }, [quizResult, currentQuiz]);
+
+    // ── 4. mouseleave: detect cursor leaving viewport ──
+    useEffect(() => {
+        if (quizResult) return;
+        const handleMouseLeave = () => {
+            reportViolation('mouse_leave');
+        };
+        document.addEventListener('mouseleave', handleMouseLeave);
+        return () => document.removeEventListener('mouseleave', handleMouseLeave);
+    }, [quizResult, currentQuiz]);
+
+    // ── 5. resize: detect split screen / resize attempts ──
+    useEffect(() => {
+        if (quizResult) return;
+        let resizeTimeout;
+        const handleResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                reportViolation('window_resize');
+            }, 500);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(resizeTimeout);
+        };
+    }, [quizResult, currentQuiz]);
+
+    // ── 6. Block copy, cut, paste, and right-click context menu ──
+    useEffect(() => {
+        if (quizResult || !currentQuiz) return;
+        const preventDefault = (e) => e.preventDefault();
+        window.addEventListener('contextmenu', preventDefault);
+        window.addEventListener('copy', preventDefault);
+        window.addEventListener('cut', preventDefault);
+        window.addEventListener('paste', preventDefault);
+        return () => {
+            window.removeEventListener('contextmenu', preventDefault);
+            window.removeEventListener('copy', preventDefault);
+            window.removeEventListener('cut', preventDefault);
+            window.removeEventListener('paste', preventDefault);
+        };
+    }, [quizResult, currentQuiz]);
+
+    // ── 7. Periodic progress sync to backend ──
+    useEffect(() => {
+        if (quizResult || !currentQuiz || !sessionToken) return;
+        const syncAnswers = async () => {
+            try {
+                await fetch(`${API_URL}/quizzes/${currentQuiz.id}/sync`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_email: studentEmail,
+                        session_token: sessionToken,
+                        answers: answers
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to sync answers:", e);
+            }
+        };
+        
+        const delay = setTimeout(syncAnswers, 1500);
+        return () => clearTimeout(delay);
+    }, [answers, quizResult, currentQuiz, sessionToken, studentEmail]);
 
 
     /* ═══════════════════════════════════════════════════
@@ -339,7 +472,7 @@ export default function AdvancedQuizPortal({
     };
 
     return (
-        <div className="min-h-screen bg-[#06070E] text-white flex flex-col" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div className="min-h-screen bg-[#06070E] text-white flex flex-col select-none" style={{ fontFamily: "'Inter', system-ui, sans-serif", userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
 
             {/* Ambient */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -811,6 +944,41 @@ export default function AdvancedQuizPortal({
                                 className="w-full py-3.5 rounded-2xl font-black text-sm text-white transition-all hover:opacity-90"
                                 style={{ background: violationCount >= 3 ? 'linear-gradient(135deg,#EF4444,#DC2626)' : 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
                                 I understand — Return to Exam
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* ══ FULLSCREEN REQUIRED OVERLAY ══ */}
+            {showFullscreenModal && !quizResult && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    style={{ background: 'rgba(6, 7, 14, 0.96)', backdropFilter: 'blur(24px)' }}>
+                    <div className="w-full max-w-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl"
+                        style={{ background: '#0D0E18' }}>
+                        <div className="h-1.5 w-full bg-[#656CFF]" />
+                        
+                        <div className="px-8 py-10 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+                                style={{ background: '#656CFF15', border: '2px solid #656CFF50' }}>
+                                <Maximize2 size={30} style={{ color: '#656CFF' }} />
+                            </div>
+
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#656CFF] mb-2">
+                                Lockdown Mode Active
+                            </p>
+                            <h2 className="text-xl font-black text-white mb-3">Fullscreen Mode Required</h2>
+                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
+                                To ensure exam integrity, this test must be taken in fullscreen mode. 
+                                Leaving fullscreen is logged as a violation.
+                            </p>
+
+                            <button
+                                onClick={enterFullscreen}
+                                className="w-full py-4 rounded-2xl font-black text-sm text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
+                                style={{ background: 'linear-gradient(135deg, #656CFF, #4F46E5)', boxShadow: '0 8px 24px rgba(101,108,255,0.3)' }}>
+                                <ShieldCheck size={18} />
+                                Enter Fullscreen Mode
                             </button>
                         </div>
                     </div>

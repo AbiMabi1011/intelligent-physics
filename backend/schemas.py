@@ -123,9 +123,8 @@ class QuizResponse(QuizBase):
 class QuizSubmission(BaseModel):
     quiz_id: int
     student_email: str
-    answers: dict # { "QuestionID": "A", "QuestionID": "B" } assuming QID is key
-    # Or simpler:
-    # Key is Question ID (as string), Value is Option (A, B, C, D)
+    answers: dict
+    session_token: Optional[str] = None
 
 class QuizResultResponse(BaseModel):
     score: int
@@ -133,6 +132,32 @@ class QuizResultResponse(BaseModel):
     percentage: float
     rank: Optional[int] = None
     total_participants: Optional[int] = None
+
+class QuizViolationResponse(BaseModel):
+    id: int
+    user_id: int
+    quiz_id: int
+    violation_type: str
+    violation_count: int
+    details: Optional[str] = None
+    timestamp: str
+
+    class Config:
+        from_attributes = True
+
+class QuizSessionResponse(BaseModel):
+    id: int
+    user_id: int
+    quiz_id: int
+    started_at: str
+    submitted_at: Optional[str] = None
+    session_token: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    device_fingerprint: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class FullQuizResult(BaseModel):
     id: int
@@ -143,6 +168,8 @@ class FullQuizResult(BaseModel):
     created_at: str
     student: UserBase
     quiz: QuizBase
+    session: Optional[QuizSessionResponse] = None
+    violations: List[QuizViolationResponse] = []
 
     class Config:
         from_attributes = True

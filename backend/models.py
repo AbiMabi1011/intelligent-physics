@@ -67,6 +67,36 @@ class QuizResult(Base):
     quiz = relationship("Quiz", back_populates="results")
     student = relationship("User", back_populates="quiz_results")
 
+class QuizSession(Base):
+    __tablename__ = "quiz_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"))
+    started_at = Column(String)  # ISO timestamp on server
+    submitted_at = Column(String, nullable=True)
+    session_token = Column(String, unique=True, index=True)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    device_fingerprint = Column(String, nullable=True)
+    answers_json = Column(String, nullable=True)
+
+    user = relationship("User")
+    quiz = relationship("Quiz")
+
+class QuizViolation(Base):
+    __tablename__ = "quiz_violations"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    quiz_id = Column(Integer, ForeignKey("quizzes.id"))
+    violation_type = Column(String)
+    violation_count = Column(Integer)
+    details = Column(String, nullable=True)
+    timestamp = Column(String)
+
+    user = relationship("User")
+    quiz = relationship("Quiz")
+
+
 class Mark(Base):
     __tablename__ = "marks"
     id = Column(Integer, primary_key=True, index=True)

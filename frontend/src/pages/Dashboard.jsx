@@ -356,6 +356,7 @@ const Dashboard = () => {
     const [answers, setAnswersRaw] = useState({});
     const [quizResult, setQuizResult] = useState(null);
     const [timeLeft, setTimeLeft] = useState(null);
+    const [sessionToken, setSessionToken] = useState('');
 
     // ── Quiz session persistence (fixed key, email stored inside JSON) ──
     const QUIZ_SESSION_KEY = 'ip_quiz_session';
@@ -363,6 +364,17 @@ const Dashboard = () => {
     const getStoredSession = () => {
         try { const r = localStorage.getItem(QUIZ_SESSION_KEY); return r ? JSON.parse(r) : null; }
         catch (_) { return null; }
+    };
+
+    const getDeviceFingerprint = () => {
+        const parts = [
+            navigator.userAgent,
+            screen.width,
+            screen.height,
+            navigator.language,
+            Intl.DateTimeFormat().resolvedOptions().timeZone
+        ];
+        return parts.join('|');
     };
 
     const setCurrentQuiz = (quiz) => {
@@ -381,18 +393,14 @@ const Dashboard = () => {
         });
     };
 
-    // On mount: restore session if browser was refreshed mid-quiz
+    // On mount: restore session if browser was refreshed mid-quiz by querying backend start
     useEffect(() => {
+        if (quizzes.length === 0) return;
         const session = getStoredSession();
-        if (!session?.quiz || !session?.startedAt || !session?.durationSeconds) return;
-        const elapsed = Math.floor((Date.now() - session.startedAt) / 1000);
-        const remaining = session.durationSeconds - elapsed;
-        if (remaining <= 0) { localStorage.removeItem(QUIZ_SESSION_KEY); return; }
-        setCurrentQuizRaw(session.quiz);
-        setAnswersRaw(session.answers || {});
-        setTimeLeft(remaining);
+        if (!session?.quiz) return;
+        startQuiz(session.quiz.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [quizzes]);
 
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -590,9 +598,22 @@ const Dashboard = () => {
     const handleSubmit = async (force = false) => {
         if (!currentQuiz || quizResult) return;
         if (!force) { const a = Object.keys(answers).length, t = currentQuiz.questions.length; if (a < t && !window.confirm(`Answered ${a}/${t}. Submit?`)) return; }
+        
         // Clear session on submit
         localStorage.removeItem(QUIZ_SESSION_KEY);
-        const res = await fetch(`${API_URL}/quizzes/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ quiz_id: currentQuiz.id, student_email: user?.email, answers }) });
+        sessionStorage.removeItem(`quiz_session_token_${currentQuiz.id}`);
+        
+        const res = await fetch(`${API_URL}/quizzes/submit`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ 
+                quiz_id: currentQuiz.id, 
+                student_email: user?.email, 
+                answers,
+                session_token: sessionToken
+            }) 
+        });
+        
         if (res.ok) {
             const data = await res.json();
             setQuizResult(data);
@@ -606,6 +627,7 @@ const Dashboard = () => {
                     total_participants: data.total_participants
                 }
             }));
+            setSessionToken('');
         }
     };
 
@@ -618,22 +640,51 @@ const Dashboard = () => {
     }, [currentQuiz, quizResult, timeLeft]);
 
     const startQuiz = async id => {
-        const res = await fetch(`${API_URL}/quizzes/${id}`);
-        if (res.ok) {
-            const d = await res.json();
-            const durationSeconds = (d.duration_minutes || 30) * 60;
-            const startedAt = Date.now();
-            // Persist session so a refresh restores the exam
-            localStorage.setItem(QUIZ_SESSION_KEY, JSON.stringify({
-                quiz: d,
-                answers: {},
-                startedAt,
-                durationSeconds,
-            }));
-            setCurrentQuizRaw(d);
-            setAnswersRaw({});
-            setQuizResult(null);
-            setTimeLeft(durationSeconds);
+        const tokenInStorage = sessionStorage.getItem(`quiz_session_token_${id}`);
+        const fingerprint = getDeviceFingerprint();
+        
+        try {
+            const res = await fetch(`${API_URL}/quizzes/${id}/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_email: user?.email,
+                    device_fingerprint: fingerprint,
+                    session_token: tokenInStorage
+                })
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                sessionStorage.setItem(`quiz_session_token_${id}`, data.session_token);
+                setSessionToken(data.session_token);
+                
+                const q_title = quizzes.find(q => q.id === id)?.title || "Quiz";
+                const mockQuizObj = {
+                    id: id,
+                    title: q_title,
+                    questions: data.questions
+                };
+                
+                setCurrentQuizRaw(mockQuizObj);
+                setAnswersRaw(data.answers || {});
+                setQuizResult(null);
+                setTimeLeft(data.duration_seconds);
+                
+                // Backup storage
+                localStorage.setItem(QUIZ_SESSION_KEY, JSON.stringify({
+                    quiz: mockQuizObj,
+                    answers: data.answers || {},
+                    startedAt: Date.now() - ( (quizzes.find(q => q.id === id)?.duration_minutes * 60 || 1800) - data.duration_seconds ) * 1000,
+                    durationSeconds: quizzes.find(q => q.id === id)?.duration_minutes * 60 || 1800,
+                }));
+            } else {
+                const errData = await res.json();
+                alert(errData.detail || "Unable to start quiz session. It may be locked or expired.");
+            }
+        } catch (err) {
+            console.error("Error starting quiz session:", err);
+            alert("Connection error: Unable to start the exam.");
         }
     };
 
@@ -647,7 +698,6 @@ const Dashboard = () => {
         // If there's already a valid in-progress session for this quiz, don't restart it
         const session = getStoredSession();
         if (session?.quiz?.id === quizId) {
-            // Session is already restored from localStorage on mount — don't reset timer
             return;
         }
 
@@ -681,6 +731,7 @@ const Dashboard = () => {
             logo={logo}
             studentEmail={user?.email || ''}
             studentName={user?.full_name || ''}
+            sessionToken={sessionToken}
         />
     );
 

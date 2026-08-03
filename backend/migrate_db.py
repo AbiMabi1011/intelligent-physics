@@ -179,6 +179,47 @@ def migrate():
             cursor.execute(f"ALTER TABLE {table} ADD COLUMN visibility TEXT DEFAULT 'both'")
             print(f"visibility column added to {table}.")
 
+    # Create quiz_sessions table
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='quiz_sessions'")
+    if not cursor.fetchone():
+        print("Creating quiz_sessions table...")
+        cursor.execute('''
+            CREATE TABLE quiz_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                quiz_id INTEGER,
+                started_at VARCHAR,
+                submitted_at VARCHAR,
+                session_token VARCHAR UNIQUE,
+                ip_address VARCHAR,
+                user_agent VARCHAR,
+                device_fingerprint VARCHAR,
+                answers_json TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
+            )
+        ''')
+        print("quiz_sessions table created.")
+
+    # Create quiz_violations table
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='quiz_violations'")
+    if not cursor.fetchone():
+        print("Creating quiz_violations table...")
+        cursor.execute('''
+            CREATE TABLE quiz_violations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                quiz_id INTEGER,
+                violation_type VARCHAR,
+                violation_count INTEGER,
+                details VARCHAR,
+                timestamp VARCHAR,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (quiz_id) REFERENCES quizzes(id)
+            )
+        ''')
+        print("quiz_violations table created.")
+
     conn.commit()
     conn.close()
 
