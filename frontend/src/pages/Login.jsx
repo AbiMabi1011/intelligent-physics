@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, ArrowLeft, Eye, EyeOff, Shield, Sparkles, Mail, User, BookOpen, Activity, ChevronRight, Home, Key, Database, Monitor } from 'lucide-react';
+import { Loader2, ArrowLeft, Eye, EyeOff, Shield, Sparkles, Mail, User, BookOpen, Activity, ChevronRight, Home, Key, Database, Monitor, Phone } from 'lucide-react';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
@@ -155,6 +155,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
     const [className, setClassName] = useState('');
+    const [whatsappNumber, setWhatsappNumber] = useState('');
     const [batches, setBatches] = useState([]);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -241,7 +242,8 @@ const Login = () => {
                         email: cleanInput,
                         password: password.trim(),
                         full_name: fullName,
-                        class_name: className
+                        class_name: className,
+                        whatsapp_number: whatsappNumber
                     })
                 });
                 const data = await response.json();
@@ -453,6 +455,24 @@ const Login = () => {
                                         <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-600">
                                             ▼
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* WhatsApp number field (register only) */}
+                            {mode === 'register' && (
+                                <div className="space-y-2 group/field animate-in slide-in-from-top-4 duration-300 delay-100">
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 group-focus-within/field:text-[#656CFF] transition-colors">WhatsApp Number</label>
+                                    <div className="relative">
+                                        <Phone size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within/field:text-[#656CFF] transition-colors" />
+                                        <input
+                                            type="text"
+                                            className="w-full bg-[#08090C]/90 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-xs font-bold text-white focus:border-[#656CFF]/50 focus:ring-4 focus:ring-[#656CFF]/10 outline-none transition-all placeholder:text-slate-700"
+                                            placeholder="Enter your WhatsApp number"
+                                            value={whatsappNumber}
+                                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                                            required
+                                        />
                                     </div>
                                 </div>
                             )}

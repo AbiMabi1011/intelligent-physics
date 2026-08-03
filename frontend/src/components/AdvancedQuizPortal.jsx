@@ -30,7 +30,7 @@ export default function AdvancedQuizPortal({
     const [expandedImg, setExpandedImg] = useState(null);
     const [violationCount, setViolationCount] = useState(0);
     const [showViolationWarning, setShowViolationWarning] = useState(false);
-    const [showFullscreenModal, setShowFullscreenModal] = useState(false);
+    const [violationWarningMsg, setViolationWarningMsg] = useState('');
     const mainRef = useRef(null);
     const violationCountRef = useRef(0);
 
@@ -62,50 +62,7 @@ export default function AdvancedQuizPortal({
         if (mainRef.current) mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // Fullscreen handlers
-    const enterFullscreen = () => {
-        const element = document.documentElement;
-        const requestMethod = element.requestFullscreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
-        if (requestMethod) {
-            requestMethod.call(element).then(() => {
-                setShowFullscreenModal(false);
-            }).catch(err => {
-                console.error("Error enabling fullscreen:", err);
-            });
-        }
-    };
-
-    // Auto-request fullscreen on mount/start
-    useEffect(() => {
-        if (quizResult || !currentQuiz) return;
-        
-        // Timeout to let DOM initialize
-        const t = setTimeout(() => {
-            if (!document.fullscreenElement) {
-                setShowFullscreenModal(true);
-            }
-        }, 1000);
-
-        const handleFullscreenChange = () => {
-            if (!document.fullscreenElement && !quizResult) {
-                setShowFullscreenModal(true);
-                reportViolation('exit_fullscreen');
-            }
-        };
-
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-        return () => {
-            clearTimeout(t);
-            document.removeEventListener('fullscreenchange', handleFullscreenChange);
-            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-        };
-    }, [quizResult, currentQuiz]);
+    // Fullscreen mode requirement removed as requested
 
     // Keyboard navigation and shortcut blocking (F12, Ctrl+U, Ctrl+Shift+I, etc.)
     useEffect(() => {
@@ -124,7 +81,7 @@ export default function AdvancedQuizPortal({
                 return;
             }
 
-            if (showSubmitModal || showExitModal || expandedImg || quizResult || showFullscreenModal) return;
+            if (showSubmitModal || showExitModal || expandedImg || quizResult || showViolationWarning) return;
             if (e.key === 'ArrowRight') goTo(currentIndex + 1);
             else if (e.key === 'ArrowLeft') goTo(currentIndex - 1);
             else if (e.key.toLowerCase() === 'f' && currentQ) setFlagged(p => ({ ...p, [currentQ.id]: !p[currentQ.id] }));
@@ -135,7 +92,7 @@ export default function AdvancedQuizPortal({
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [currentIndex, currentQ, showSubmitModal, showExitModal, expandedImg, quizResult, showFullscreenModal]);
+    }, [currentIndex, currentQ, showSubmitModal, showExitModal, expandedImg, quizResult, showViolationWarning]);
 
     // ── PROCTORING: Report violation to admin ──
     const reportViolation = (type) => {
@@ -190,12 +147,13 @@ export default function AdvancedQuizPortal({
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 reportViolation('tab_switch');
-            } else {
+                setViolationWarningMsg('Switching tabs, minimizing the browser, or switching applications is strictly prohibited.');
                 setShowViolationWarning(true);
             }
         };
         const handleBlur = () => {
             reportViolation('window_blur');
+            setViolationWarningMsg('Leaving the exam window focus is strictly prohibited.');
             setShowViolationWarning(true);
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -211,6 +169,8 @@ export default function AdvancedQuizPortal({
         if (quizResult) return;
         const handleMouseLeave = () => {
             reportViolation('mouse_leave');
+            setViolationWarningMsg('Moving your mouse cursor outside the exam window is strictly prohibited.');
+            setShowViolationWarning(true);
         };
         document.addEventListener('mouseleave', handleMouseLeave);
         return () => document.removeEventListener('mouseleave', handleMouseLeave);
@@ -224,6 +184,8 @@ export default function AdvancedQuizPortal({
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 reportViolation('window_resize');
+                setViolationWarningMsg('Resizing the exam window or splitting your screen is strictly prohibited.');
+                setShowViolationWarning(true);
             }, 500);
         };
         window.addEventListener('resize', handleResize);
@@ -374,81 +336,6 @@ export default function AdvancedQuizPortal({
                             ))}
                         </div>
                     </div>
-
-                    {/* Review toggle */}
-                    <div className="flex justify-center">
-                        <button
-                            onClick={() => setShowReview(v => !v)}
-                            className="flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-sm font-bold border transition-all"
-                            style={showReview
-                                ? { background: '#656CFF20', borderColor: '#656CFF60', color: '#A5B4FC' }
-                                : { background: 'transparent', borderColor: '#ffffff20', color: '#94A3B8' }}>
-                            <Eye size={16} style={{ color: '#656CFF' }} />
-                            {showReview ? 'Hide Answer Review' : 'Review All Answers & Solutions'}
-                        </button>
-                    </div>
-
-                    {/* Answer review */}
-                    {showReview && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            {questions.map((q, idx) => {
-                                const sa = answers[q.id];
-                                const correct = sa === q.correct_option;
-                                const status = correct ? 'correct' : sa ? 'wrong' : 'skipped';
-                                const statusMap = {
-                                    correct: { label: 'Correct', color: '#10B981', bg: '#10B98115', border: '#10B98130' },
-                                    wrong: { label: 'Incorrect', color: '#EF4444', bg: '#EF444415', border: '#EF444430' },
-                                    skipped: { label: 'Skipped', color: '#F59E0B', bg: '#F59E0B15', border: '#F59E0B30' },
-                                };
-                                const s = statusMap[status];
-                                return (
-                                    <div key={q.id} className="rounded-2xl border overflow-hidden"
-                                        style={{ background: '#0D0E18', borderColor: s.border }}>
-                                        <div className="flex items-start justify-between gap-4 p-5">
-                                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                <span className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0"
-                                                    style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-                                                    {idx + 1}
-                                                </span>
-                                                <p className="text-sm text-slate-200 leading-relaxed font-medium pt-1">{q.text}</p>
-                                            </div>
-                                            <span className="shrink-0 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full"
-                                                style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-                                                {s.label}
-                                            </span>
-                                        </div>
-
-                                        {q.image_url && (
-                                            <div className="mx-5 mb-4 p-3 rounded-xl border border-white/8 bg-black/30 max-w-sm">
-                                                <img src={getImgSrc(q.image_url)} alt="Diagram" className="max-h-44 object-contain rounded" />
-                                            </div>
-                                        )}
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-5 pb-5">
-                                            {['A', 'B', 'C', 'D', 'E'].map(opt => {
-                                                const txt = q[`option_${opt.toLowerCase()}`];
-                                                const img = q[`option_${opt.toLowerCase()}_image_url`];
-                                                if (!txt && !img) return null;
-                                                const isCorrect = q.correct_option === opt;
-                                                const isChosen = sa === opt;
-                                                let bg = '#ffffff06', border = '#ffffff12', color = '#94A3B8', labelBg = '#1E2130', labelColor = '#64748B';
-                                                if (isCorrect) { bg = '#10B98112'; border = '#10B98140'; color = '#6EE7B7'; labelBg = '#10B98125'; labelColor = '#10B981'; }
-                                                if (isChosen && !isCorrect) { bg = '#EF444412'; border = '#EF444440'; color = '#FCA5A5'; labelBg = '#EF444425'; labelColor = '#EF4444'; }
-                                                return (
-                                                    <div key={opt} className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: bg, borderColor: border }}>
-                                                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0" style={{ background: labelBg, color: labelColor }}>{opt}</span>
-                                                        <span className="text-xs font-medium flex-1" style={{ color }}>{txt}</span>
-                                                        {isCorrect && <Check size={14} style={{ color: '#10B981' }} className="shrink-0" />}
-                                                        {isChosen && !isCorrect && <X size={14} style={{ color: '#EF4444' }} className="shrink-0" />}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
                 </main>
             </div>
         );
@@ -923,9 +810,9 @@ export default function AdvancedQuizPortal({
                                 style={{ color: violationCount >= 3 ? '#EF4444' : '#F59E0B' }}>
                                 {violationCount >= 3 ? 'Serious Violation' : 'Exam Warning'}
                             </p>
-                            <h2 className="text-xl font-black text-white mb-3">You left the exam window</h2>
+                            <h2 className="text-xl font-black text-white mb-3">Exam Integrity Alert</h2>
                             <p className="text-sm text-slate-400 leading-relaxed mb-4">
-                                Switching tabs, minimizing, or leaving the exam page is not allowed.
+                                {violationWarningMsg || 'Switching tabs, minimizing, or leaving the exam page is not allowed.'}
                                 <strong className="text-white"> Your teacher has been notified.</strong>
                             </p>
 
@@ -944,41 +831,6 @@ export default function AdvancedQuizPortal({
                                 className="w-full py-3.5 rounded-2xl font-black text-sm text-white transition-all hover:opacity-90"
                                 style={{ background: violationCount >= 3 ? 'linear-gradient(135deg,#EF4444,#DC2626)' : 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
                                 I understand — Return to Exam
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            
-            {/* ══ FULLSCREEN REQUIRED OVERLAY ══ */}
-            {showFullscreenModal && !quizResult && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-300"
-                    style={{ background: 'rgba(6, 7, 14, 0.96)', backdropFilter: 'blur(24px)' }}>
-                    <div className="w-full max-w-md rounded-3xl border border-white/10 overflow-hidden shadow-2xl"
-                        style={{ background: '#0D0E18' }}>
-                        <div className="h-1.5 w-full bg-[#656CFF]" />
-                        
-                        <div className="px-8 py-10 flex flex-col items-center text-center">
-                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-                                style={{ background: '#656CFF15', border: '2px solid #656CFF50' }}>
-                                <Maximize2 size={30} style={{ color: '#656CFF' }} />
-                            </div>
-
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#656CFF] mb-2">
-                                Lockdown Mode Active
-                            </p>
-                            <h2 className="text-xl font-black text-white mb-3">Fullscreen Mode Required</h2>
-                            <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                                To ensure exam integrity, this test must be taken in fullscreen mode. 
-                                Leaving fullscreen is logged as a violation.
-                            </p>
-
-                            <button
-                                onClick={enterFullscreen}
-                                className="w-full py-4 rounded-2xl font-black text-sm text-white transition-all hover:opacity-90 active:scale-95 flex items-center justify-center gap-2"
-                                style={{ background: 'linear-gradient(135deg, #656CFF, #4F46E5)', boxShadow: '0 8px 24px rgba(101,108,255,0.3)' }}>
-                                <ShieldCheck size={18} />
-                                Enter Fullscreen Mode
                             </button>
                         </div>
                     </div>

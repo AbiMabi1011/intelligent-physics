@@ -13,7 +13,12 @@ import logo from '../assets/logo.jpeg';
 import Footer from '../components/Footer';
 import AdvancedQuizPortal from '../components/AdvancedQuizPortal';
 
-const batchMatch = (t, c) => !t || t.split(',').some(b => b.trim() === (c || '').trim());
+const batchMatch = (t, c) => {
+    if (!t) return true;
+    const list = t.split(',').map(b => b.trim().toLowerCase());
+    if (list.includes('knowledge hub')) return true;
+    return list.includes((c || '').trim().toLowerCase());
+};
 const imgSrc = u => u?.startsWith('/') ? `${API_URL}${u}` : u || '';
 const isNew = d => d && (Date.now() - new Date(d).getTime()) < 7 * 86400000;
 

@@ -17,6 +17,7 @@ import json
 import urllib.request
 import urllib.error
 from pypdf import PdfReader
+from datetime import datetime
 
 import models
 import schemas
@@ -203,6 +204,59 @@ def send_simple_email_async(to_email: str, subject: str, body: str):
     )
     thread.start()
 
+def send_welcome_email_async(to_email: str, student_name: str, batch: str, whatsapp: str):
+    subject = "Welcome to Intelligent Physics — Registration Pending Approval"
+    
+    html_content = f"""
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f4f0e6; border: 2px solid #0a0a0a; box-shadow: 8px 8px 0px #0a0a0a;">
+        <div style="background-color: #0a0a0a; padding: 30px; text-align: center; border-bottom: 2px solid #0a0a0a;">
+            <h1 style="color: #ffffff; margin: 0; font-family: 'Trebuchet MS', sans-serif; text-transform: uppercase; letter-spacing: 2px; font-size: 24px;">Intelligent Physics</h1>
+            <p style="color: #b91c1c; margin: 5px 0 0 0; font-family: monospace; font-size: 12px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase;">Student Portal Registration</p>
+        </div>
+        <div style="padding: 30px; background-color: #f9f6ee;">
+            <h2 style="color: #0a0a0a; margin-top: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; border-left: 4px solid #b91c1c; padding-left: 15px; line-height: 1.2;">Welcome, {student_name}!</h2>
+            <p style="color: #6b6558; font-size: 14px; line-height: 1.6; margin-bottom: 25px;">
+                Thank you for registering at Intelligent Physics. Your student profile request has been successfully received and is currently **pending administrator review**.
+            </p>
+            
+            <p style="color: #0a0a0a; font-size: 12px; font-weight: bold; text-transform: uppercase; tracking-wider; mb: 10px;">Your Registered Details:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background-color: #f4f0e6; border: 1px solid #d5d0c2;">
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558; width: 30%;">Full Name</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-size: 13px; font-weight: bold; color: #0a0a0a;">{student_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558;">Email Address</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-size: 13px; color: #0a0a0a;">{to_email}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558;">Selected Batch</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #d5d0c2; font-size: 13px; font-weight: bold; color: #656CFF;">{batch or 'N/A'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px 15px; font-family: monospace; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #6b6558;">WhatsApp No</td>
+                    <td style="padding: 12px 15px; font-size: 13px; color: #0a0a0a;">{whatsapp or 'Not Provided'}</td>
+                </tr>
+            </table>
+
+            <div style="border-left: 3px solid #b91c1c; padding-left: 15px; margin-bottom: 25px;">
+                <p style="color: #6b6558; font-size: 13px; line-height: 1.5; margin: 0;">
+                    <strong>What happens next?</strong> Once our enrollment administrators validate your registration, you will receive a second email notifying you of your account activation. You can then log into the portal.
+                </p>
+            </div>
+        </div>
+        <div style="background-color: #f4f0e6; padding: 20px; text-align: center; border-top: 1px solid #d5d0c2; font-family: monospace; font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">
+            Intelligent Physics © 2026 — All Rights Reserved
+        </div>
+    </div>
+    """
+    import threading
+    thread = threading.Thread(
+        target=send_custom_html_email,
+        args=([to_email], subject, html_content)
+    )
+    thread.start()
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -374,17 +428,13 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     
-    # Send pending approval confirmation email to the student
-    subject = "Registration Pending Approval - Intelligent Physics"
-    body = (
-        f"Dear {new_user.full_name},\n\n"
-        f"Thank you for registering at Intelligent Physics.\n\n"
-        f"Your account registration has been received and is currently pending administrator approval.\n"
-        f"You will receive another email notification once your registration is approved.\n\n"
-        f"Best regards,\n"
-        f"Intelligent Physics Team"
+    # Send premium pending approval confirmation HTML email to the student
+    send_welcome_email_async(
+        to_email=new_user.email,
+        student_name=new_user.full_name,
+        batch=new_user.class_name,
+        whatsapp=new_user.whatsapp_number
     )
-    send_simple_email_async(new_user.email, subject, body)
     
     return new_user
 
@@ -1889,53 +1939,63 @@ import urllib.request
 import urllib.error
 from pypdf import PdfReader
 
-# 1. Consonant translation matrix
-CONSONANTS = {
-    'f': 'க', 'r': 'ச', 'l': 'ட', 'z': 'ண', 'j': 'த', 'n': 'ந', 'g': 'ப', 'k': 'ம',
-    'a': 'ய', 'u': 'ர', 'y': 'ல', 't': 'வ', 's': 'ள', 'w': 'ற', 'd': 'ன', 'q': 'ங', 'o': 'ழ'
+BAMINI_MAP = {
+    "sp": "ளி", "hp": "ரி", "hP": "ரீ", "uP": "ரீ", "u;": "ர்", "h;": "ர்", "H": "ர்",
+    "nfs": "கௌ", "Nfh": "கோ", "nfh": "கொ", "fh": "கா", "fp": "கி", "fP": "கீ",
+    "F": "கு", "$": "கூ", "nf": "கெ", "Nf": "கே", "if": "கை", "f;": "க்", "f": "க",
+    "nqs": "ஙௌ", "Nqh": "ஙோ", "nqh": "ஙொ", "qh": "ஙா", "qp": "ஙி", "qP": "ஙீ",
+    "nq": "ஙெ", "Nq": "ஙே", "iq": "ஙை", "q;": "ங்", "q": "ங",
+    "nrs": "சௌ", "Nrh": "சோ", "nrh": "சொ", "rh": "சா", "rp": "சி", "rP": "சீ",
+    "R": "சு", "#": "சூ", "nr": "செ", "Nr": "சே", "ir": "சை", "r;": "ச்", "r": "ச",
+    "n[s": "ஜௌ", "N[h": "ஜோ", "n[h": "ஜொ", "[h": "ஜா", "[p": "ஜி", "[P": "ஜீ",
+    "[{": "ஜு", "[_": "ஜூ", "n[": "ஜெ", "N[": "ஜே", "i[": "ஜை", "[;": "ஜ்",
+    "nQs": "ஞௌ", "NQh": "ஞோ", "nQh": "ஞொ", "Qh": "ஞா", "Qp": "ஞி", "QP": "ஞீ",
+    "nQ": "ஞெ", "NQ": "ஞே", "iQ": "ஞை", "Q;": "ஞ்", "Q": "ஞ",
+    "nls": "டௌ", "Nlh": "டோ", "nlh": "டொ", "lp": "டி", "lP": "டீ", "lh": "டா",
+    "b": "டி", "B": "டீ", "L": "டு", "^": "டூ", "nl": "டெ", "Nl": "டே", "il": "டை",
+    "l;": "ட்", "l": "ட",
+    "nzs": "ணௌ", "Nzh": "ணோ", "nzh": "ணொ", "zh": "ணா", "zp": "ணி", "zP": "ணீ",
+    "Zh": "ணூ", "Z}": "ணூ", "nz": "ணெ", "Nz": "ணே", "iz": "ணை", "z;": "ண்", "Z": "ணு", "z": "ண",
+    "njs": "தௌ", "Njh": "தோ", "njh": "தொ", "jh": "தா", "jp": "தி", "jP": "தீ",
+    "Jh": "தூ", "J}": "தூ", "J": "து", "nj": "தெ", "Nj": "தே", "ij": "தை", "j;": "த்", "j": "த",
+    "nes": "நௌ", "Neh": "நோ", "neh": "நொ", "eh": "நா", "ep": "நி", "eP": "நீ",
+    "E}": "நூ", "Eh": "நூ", "E": "நு", "ne": "நெ", "Ne": "நே", "ie": "நை", "e;": "ந்", "e": "ந",
+    "nds": "னௌ", "Ndh": "னோ", "ndh": "னொ", "dh": "னா", "dp": "னி", "dP": "னீ",
+    "D}": "னூ", "Dh": "னூ", "D": "னு", "nd": "னெ", "Nd": "னே", "id": "னை", "d;": "ன்", "d": "ன",
+    "ngs": "பௌ", "Ngh": "போ", "ngh": "பொ", "gh": "பா", "gp": "பி", "gP": "பீ",
+    "G": "பு", "ng": "பெ", "Ng": "பே", "ig": "பை", "g;": "ப்", "g": "ப",
+    "nks": "மௌ", "Nkh": "மோ", "nkh": "மொ", "kh": "மா", "kp": "மி", "kP": "மீ",
+    "K": "மு", "%": "மூ", "nk": "மெ", "Nk": "மே", "ik": "மை", "k;": "ம்", "k": "ம",
+    "nas": "யௌ", "Nah": "யோ", "nah": "யொ", "ah": "யா", "ap": "யி", "aP": "யீ",
+    "A": "யு", "A+": "யூ", "na": "யெ", "Na": "யே", "ia": "யை", "a;": "ய்", "a": "ய",
+    "nus": "ரௌ", "Nuh": "ரோ", "nuh": "ரொ", "uh": "ரா", "up": "ரி", "U": "ரு",
+    "&": "ரூ", "nu": "ரெ", "Nu": "ரே", "iu": "ரை", "u": "ர",
+    "nys": "லௌ", "Nyh": "லோ", "nyh": "லொ", "yh": "லா", "yp": "லி", "yP": "லீ",
+    "Yh": "லூ", "Y}": "லூ", "Y": "லு", "ny": "லெ", "Ny": "லே", "iy": "லை", "y;": "ல்", "y": "ல",
+    "nss": "ளௌ", "Nsh": "ளோ", "nsh": "ளொ", "sh": "ளா", "sP": "ளீ", "Sh": "ளூ",
+    "S": "ளு", "ns": "ளெ", "Ns": "ளே", "is": "ளை", "s;": "ள்", "s": "ள",
+    "ntt": "வௌ", "Nth": "வோ", "nth": "வொ", "th": "வா", "tp": "வி", "tP": "வீ",
+    "nt": "வெ", "Nt": "வே", "it": "வை", "t;": "வ்", "t": "வ",
+    "noo": "ழௌ", "Noh": "ழோ", "noh": "ழொ", "oh": "ழா", "op": "ழி", "oP": "ழீ",
+    "*": "ழூ", "O": "ழு", "no": "ழெ", "No": "ழே", "io": "ழை", "o;": "ழ்", "o": "ழ",
+    "nws": "றௌ", "Nwh": "றோ", "nwh": "றொ", "wh": "றா", "wp": "றி", "wP": "றீ",
+    "Wh": "றூ", "W}": "றூ", "W": "று", "nw": "றெ", "Nw": "றே", "iw": "றை", "w;": "ற்", "w": "ற",
+    "n``": "ஹௌ", "N`h": "ஹோ", "n`h": "ஹொ", "`h": "ஹா", "`p": "ஹி", "`P": "ஹீ",
+    "n`": "ஹெ", "N`": "ஹே", "i`": "ஹை", "`;": "ஹ்", "`": "ஹ",
+    "n\\s": "ஷௌ", "N\\h": "ஷோ", "n\\h": "ஷொ", "\\h": "ஷா", "\\p": "ஷி", "\\P": "ஷீ",
+    "n\\\\": "ஷெ", "N\\\\": "ஷே", "i\\\\": "ஷை", "\\\\;": "ஷ்", "\\\\": "ஷ",
+    "n]s": "ஸௌ", "N]h": "ஸோ", "n]h": "ஸொ", "]h": "ஸா", "]p": "ஸி", "]P": "ஸீ",
+    "n]": "ஸெ", "N]": "ஸே", "i]": "ஸை", "];": "ஸ்",
+    "m": "அ", "M": "ஆ", "<": "ஈ", "c": "உ", "C": "ஊ", "v": "எ", "V": "ஏ", "I": "ஐ",
+    "x": "ஒ", "X": "ஓ", "xs": "ஔ", "/": "ஃ", ",": "இ", "=": "ஸ்ரீ", ">": ",", "T": "வு",
+    "வு+": "வூ", "பு+": "பூ", "யு+": "யூ", "சு+": "சூ", "+": "ooh", ";": "்", "@": ";",
+    "¿f": "கை", "¿q": "ஙை", "¿r": "சை", "¿[": "ஜை", "¿Q": "ஞை", "¿l": "டை", "¿z": "ணை",
+    "¿j": "தை", "¿e": "நை", "¿d": "னை", "¿g": "பை", "¿k": "மை", "¿a": "யை", "¿u": "ரை",
+    "¿y": "லை", "¿s": "ளை", "¿t": "வை", "¿o": "ழை", "¿w": "றை", "¿`": "ஹை", "¿\\": "ஷை",
+    "¿]": "ஸை", "¿": "ை", "≈": "ௐ", "xk;": "உம்", "[": "ஐ"
 }
 
-B_REPLACEMENT = []
-
-# 1. Prefix and suffix combinations
-for k, val in CONSONANTS.items():
-    B_REPLACEMENT.append(('N' + k + 'h;', val + 'ோ'))
-    B_REPLACEMENT.append(('N' + k + 'h', val + 'ோ'))
-    B_REPLACEMENT.append(('N' + k + ';', val + 'ே'))
-    B_REPLACEMENT.append(('N' + k, val + 'ே'))
-    
-    B_REPLACEMENT.append(('e' + k + 'h;', val + 'ொ'))
-    B_REPLACEMENT.append(('e' + k + 'h', val + 'ொ'))
-    B_REPLACEMENT.append(('e' + k + ';', val + 'ெ'))
-    B_REPLACEMENT.append(('e' + k, val + 'ெ'))
-    
-    B_REPLACEMENT.append(('i' + k + ';', val + 'ை'))
-    B_REPLACEMENT.append(('i' + k, val + 'ை'))
-
-    # base combinations
-    B_REPLACEMENT.append((k + 'p;', val + 'ீ'))
-    B_REPLACEMENT.append((k + 'p', val + 'ி'))
-    B_REPLACEMENT.append((k + 'P', val + 'ீ'))
-    B_REPLACEMENT.append((k + 'h;', val + 'ா'))
-    B_REPLACEMENT.append((k + 'h', val + 'ா'))
-    B_REPLACEMENT.append((k + ';', val + '்'))
-
-# Extra static rules
-EXTRA_RULES = [
-    ('A', 'அ'), ('M', 'ஆ'), ('I', 'ஐ'), ('X', 'ஓ'), ('x', 'ஒ'),
-    ('c', 'உ'), ('C', 'ஊ'), ('v', 'எ'), ('V', 'ஏ'), (',', 'இ'),
-    ('<', 'ஈ'), ('F', 'கு'), ('G', 'பு'), ('K', 'ழு'), ('W', 'று'),
-    ('J', 'து'), ('L', 'ட'), ('S', 'ளு'), ('T', 'வு'), ('U', 'ரு'), ('D', 'னு'),
-    ('Jh', 'தூ'), ('\\', 'ஹ')
-]
-
-for k, val in CONSONANTS.items():
-    B_REPLACEMENT.append((k, val))
-
-B_REPLACEMENT.extend(EXTRA_RULES)
-
-# Sort replacements by pattern length descending to guarantee longest matches replace first!
-B_REPLACEMENT.sort(key=lambda x: len(x[0]), reverse=True)
+B_REPLACEMENT = sorted(BAMINI_MAP.items(), key=lambda x: len(x[0]), reverse=True)
 
 def convert_bamini_to_unicode(text: str) -> str:
     unicode_text = text
@@ -1947,12 +2007,25 @@ def is_bamini(text: str) -> bool:
     import re
     return bool(re.search(r'MdJ|Nthy;w;W|,yj;jpud;|[jrlztngkahyvwdqcs];', text))
 
+def fix_tamil_unicode_reordering(text: str) -> str:
+    import re
+    # Swap visual vowel signs (ெ, ே, ை) that precede a consonant,
+    # ensuring they are NOT already preceded by a consonant (using negative lookbehind)
+    fixed = re.sub(r'(?<![\u0B95-\u0BB9])([\u0BC6\u0BC7\u0BC8])([\u0B95-\u0BB9])', r'\2\1', text)
+    return fixed
+
 def translate_bamini_text(text: str) -> str:
     import re
+    # Convert Celsius degree typos (e.g. 400C -> 40°C, 100C -> 10°C)
+    text = re.sub(r'(\d+)0C\b', r'\1°C', text)
     if is_bamini(text):
         def replace_token(match):
             token = match.group(0)
             if len(token) <= 1:
+                if re.match(r'^[a-zA-Z]$', token):
+                    return token
+                return convert_bamini_to_unicode(token)
+            if re.match(r'^\[[a-zA-Z]\]$', token):
                 return token
             if re.match(r'^(GMm|GM|eV|N|G|M|m|r|r\^2|GMm\/r|GMm\/r\^2|GM\/r)$', token, re.IGNORECASE):
                 return token
@@ -1960,10 +2033,34 @@ def translate_bamini_text(text: str) -> str:
                 return token
             if '/' in token or '^' in token:
                 return token
+            
+            # Keep a single English letter variable followed by a number (e.g., r1, v2)
+            if re.match(r'^[a-zA-Z]\d+$', token):
+                return token
+
+            # Split variable name followed by number if merged with suffix (e.g., r1ck; -> r1 + ck;)
+            var_num_match = re.match(r'^([a-zA-Z]\d+)([a-zA-Z;,<>]+)$', token)
+            if var_num_match:
+                return var_num_match.group(1) + convert_bamini_to_unicode(var_num_match.group(2))
+
+            # Keep numbers followed by a single English letter variable (e.g., 2L, 2d, 400C)
+            if re.match(r'^\d+[a-zA-Z]$', token):
+                return token
+
+            # Split variable name preceded by number if merged with suffix (e.g., 2Lck; -> 2L + ck;)
+            num_var_match = re.match(r'^(\d+[a-zA-Z])([a-zA-Z;,<>]+)$', token)
+            if num_var_match:
+                return num_var_match.group(1) + convert_bamini_to_unicode(num_var_match.group(2))
+
+            # Split variable name if merged with suffix (e.g., Yxk; -> Y + xk;)
+            var_match = re.match(r'^([XY])([a-zA-Z;,<>]+)$', token)
+            if var_match:
+                return var_match.group(1) + convert_bamini_to_unicode(var_match.group(2))
+                
             return convert_bamini_to_unicode(token)
             
-        return re.sub(r'[a-zA-Z;,<>\\^\\/\\*\\-\\+0-9]+', replace_token, text)
-    return text
+        text = re.sub(r'[a-zA-Z;,<>\\^\\/\\*\\-\\+0-9\[\]$#%&_\{\}¿≈]+', replace_token, text)
+    return fix_tamil_unicode_reordering(text)
 
 @app.post("/quizzes/generate-from-pdf")
 async def generate_quiz_from_pdf(file: UploadFile = File(...)):
@@ -1993,8 +2090,8 @@ async def generate_quiz_from_pdf(file: UploadFile = File(...)):
     
     prompt = (
         "You are an expert physics teacher. Extract all the multiple choice questions (MCQs) from the following exam text. "
-        "Structure them exactly matching the JSON response format requested. Ensure all question texts, options A through E, "
-        "and correct_option (A, B, C, D, or E) are populated. If option E is not present in the question, set option_e to empty string. "
+        "Structure them exactly matching the JSON response format requested. Ensure all questions have exactly 5 options (options A, B, C, D, and E) "
+        "and a valid correct_option (A, B, C, D, or E) fully populated. No option or correct_option field should be left blank or empty. "
         "Format any mathematical expressions or variables nicely.\n\n"
         "Exam Text:\n" + decoded_text
     )

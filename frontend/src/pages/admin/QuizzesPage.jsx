@@ -135,54 +135,63 @@ function fixPlainTextNotation(text) {
 }
 
 /* ─── Bamini to Unicode Conversion Engine ─── */
-const consonants = {
-    'f': 'க', 'r': 'ச', 'l': 'ட', 'z': 'ண', 'j': 'த', 'n': 'ந', 'g': 'ப', 'k': 'ம',
-    'a': 'ய', 'u': 'ர', 'y': 'ல', 't': 'வ', 's': 'ள', 'w': 'ற', 'd': 'ன', 'q': 'ங', 'o': 'ழ'
+const BAMINI_MAP = {
+    "sp": "ளி", "hp": "ரி", "hP": "ரீ", "uP": "ரீ", "u;": "ர்", "h;": "ர்", "H": "ர்",
+    "nfs": "கௌ", "Nfh": "கோ", "nfh": "கொ", "fh": "கா", "fp": "கி", "fP": "கீ",
+    "F": "கு", "$": "கூ", "nf": "கெ", "Nf": "கே", "if": "கை", "f;": "க்", "f": "க",
+    "nqs": "ஙௌ", "Nqh": "ஙோ", "nqh": "ஙொ", "qh": "ஙா", "qp": "ஙி", "qP": "ஙீ",
+    "nq": "ஙெ", "Nq": "ஙே", "iq": "ஙை", "q;": "ங்", "q": "ங",
+    "nrs": "சௌ", "Nrh": "சோ", "nrh": "சொ", "rh": "சா", "rp": "சி", "rP": "சீ",
+    "R": "சு", "#": "சூ", "nr": "செ", "Nr": "சே", "ir": "சை", "r;": "ச்", "r": "ச",
+    "n[s": "ஜௌ", "N[h": "ஜோ", "n[h": "ஜொ", "[h": "ஜா", "[p": "ஜி", "[P": "ஜீ",
+    "[{": "ஜு", "[_": "ஜூ", "n[": "ஜெ", "N[": "ஜே", "i[": "ஜை", "[;": "ஜ்",
+    "nQs": "ஞௌ", "NQh": "ஞோ", "nQh": "ஞொ", "Qh": "ஞா", "Qp": "ஞி", "QP": "ஞீ",
+    "nQ": "ஞெ", "NQ": "ஞே", "iQ": "ஞை", "Q;": "ஞ்", "Q": "ஞ",
+    "nls": "டௌ", "Nlh": "டோ", "nlh": "டொ", "lp": "டி", "lP": "டீ", "lh": "டா",
+    "b": "டி", "B": "டீ", "L": "டு", "^": "டூ", "nl": "டெ", "Nl": "டே", "il": "டை",
+    "l;": "ட்", "l": "ட",
+    "nzs": "ணௌ", "Nzh": "ணோ", "nzh": "ணொ", "zh": "ணா", "zp": "ணி", "zP": "ணீ",
+    "Zh": "ணூ", "Z}": "ணூ", "nz": "ணெ", "Nz": "ணே", "iz": "ணை", "z;": "ண்", "Z": "ணு", "z": "ண",
+    "njs": "தௌ", "Njh": "தோ", "njh": "தொ", "jh": "தா", "jp": "தி", "jP": "தீ",
+    "Jh": "தூ", "J}": "தூ", "J": "து", "nj": "தெ", "Nj": "தே", "ij": "தை", "j;": "த்", "j": "த",
+    "nes": "நௌ", "Neh": "நோ", "neh": "நொ", "eh": "நா", "ep": "நி", "eP": "நீ",
+    "E}": "நூ", "Eh": "நூ", "E": "நு", "ne": "நெ", "Ne": "நே", "ie": "நை", "e;": "ந்", "e": "ந",
+    "nds": "னௌ", "Ndh": "னோ", "ndh": "னொ", "dh": "னா", "dp": "னி", "dP": "னீ",
+    "D}": "னூ", "Dh": "னூ", "D": "னு", "nd": "னெ", "Nd": "னே", "id": "னை", "d;": "ன்", "d": "ன",
+    "ngs": "பௌ", "Ngh": "போ", "ngh": "பொ", "gh": "பா", "gp": "பி", "gP": "பீ",
+    "G": "பு", "ng": "பெ", "Ng": "பே", "ig": "பை", "g;": "ப்", "g": "ப",
+    "nks": "மௌ", "Nkh": "மோ", "nkh": "மொ", "kh": "மா", "kp": "மி", "kP": "மீ",
+    "K": "மு", "%": "மூ", "nk": "மெ", "Nk": "மே", "ik": "மை", "k;": "ம்", "k": "ம",
+    "nas": "யௌ", "Nah": "யோ", "nah": "யொ", "ah": "யா", "ap": "யி", "aP": "யீ",
+    "A": "யு", "A+": "யூ", "na": "யெ", "Na": "யே", "ia": "யை", "a;": "ய்", "a": "ய",
+    "nus": "ரௌ", "Nuh": "ரோ", "nuh": "ரொ", "uh": "ரா", "up": "ரி", "U": "ரு",
+    "&": "ரூ", "nu": "ரெ", "Nu": "ரே", "iu": "ரை", "u": "ர",
+    "nys": "லௌ", "Nyh": "லோ", "nyh": "லொ", "yh": "லா", "yp": "லி", "yP": "லீ",
+    "Yh": "லூ", "Y}": "லூ", "Y": "லு", "ny": "லெ", "Ny": "லே", "iy": "லை", "y;": "ல்", "y": "ல",
+    "nss": "ளௌ", "Nsh": "ளோ", "nsh": "ளொ", "sh": "ளா", "sP": "ளீ", "Sh": "ளூ",
+    "S": "ளு", "ns": "ளெ", "Ns": "ளே", "is": "ளை", "s;": "ள்", "s": "ள",
+    "ntt": "வௌ", "Nth": "வோ", "nth": "வொ", "th": "வா", "tp": "வி", "tP": "வீ",
+    "nt": "வெ", "Nt": "வே", "it": "வை", "t;": "வ்", "t": "வ",
+    "noo": "ழௌ", "Noh": "ழோ", "noh": "ழொ", "oh": "ழா", "op": "ழி", "oP": "ழீ",
+    "*": "ழூ", "O": "ழு", "no": "ழெ", "No": "ழே", "io": "ழை", "o;": "ழ்", "o": "ழ",
+    "nws": "றௌ", "Nwh": "றோ", "nwh": "றொ", "wh": "றா", "wp": "றி", "wP": "றீ",
+    "Wh": "றூ", "W}": "றூ", "W": "று", "nw": "றெ", "Nw": "றே", "iw": "றை", "w;": "ற்", "w": "ற",
+    "n``": "ஹௌ", "N`h": "ஹோ", "n`h": "ஹொ", "`h": "ஹா", "`p": "ஹி", "`P": "ஹீ",
+    "n`": "ஹெ", "N`": "ஹே", "i`": "ஹை", "`;": "ஹ்", "`": "ஹ",
+    "n\\s": "ஷௌ", "N\\h": "ஷோ", "n\\h": "ஷொ", "\\h": "ஷா", "\\p": "ஷி", "\\P": "ஷீ",
+    "n\\\\": "ஷெ", "N\\\\": "ஷே", "i\\\\": "ஷை", "\\\\;": "ஷ்", "\\\\": "ஷ",
+    "n]s": "ஸௌ", "N]h": "ஸோ", "n]h": "ஸொ", "]h": "ஸா", "]p": "ஸி", "]P": "ஸீ",
+    "n]": "ஸெ", "N]": "ஸே", "i]": "ஸை", "];": "ஸ்",
+    "m": "அ", "M": "ஆ", "<": "ஈ", "c": "உ", "C": "ஊ", "v": "எ", "V": "ஏ", "I": "ஐ",
+    "x": "ஒ", "X": "ஓ", "xs": "ஔ", "/": "ஃ", ",": "இ", "=": "ஸ்ரீ", ">": ",", "T": "வு",
+    "வு+": "வூ", "பு+": "பூ", "யு+": "யூ", "சு+": "சூ", "+": "ooh", ";": "்", "@": ";",
+    "¿f": "கை", "¿q": "ஙை", "¿r": "சை", "¿[": "ஜை", "¿Q": "ஞை", "¿l": "டை", "¿z": "ணை",
+    "¿j": "தை", "¿e": "நை", "¿d": "னை", "¿g": "பை", "¿k": "மை", "¿a": "யை", "¿u": "ரை",
+    "¿y": "லை", "¿s": "ளை", "¿t": "வை", "¿o": "ழை", "¿w": "றை", "¿`": "ஹை", "¿\\": "ஷை",
+    "¿]": "ஸை", "¿": "ை", "≈": "ௐ", "xk;": "உம்", "[": "ஐ"
 };
 
-const bReplacement = [];
-
-// 1. Prefix and suffix combinations
-for (const [k, val] of Object.entries(consonants)) {
-    bReplacement.push(['N' + k + 'h;', val + 'ோ']);
-    bReplacement.push(['N' + k + 'h', val + 'ோ']);
-    bReplacement.push(['N' + k + ';', val + 'ே']);
-    bReplacement.push(['N' + k, val + 'ே']);
-    
-    bReplacement.push(['e' + k + 'h;', val + 'ொ']);
-    bReplacement.push(['e' + k + 'h', val + 'ொ']);
-    bReplacement.push(['e' + k + ';', val + 'ெ']);
-    bReplacement.push(['e' + k, val + 'ெ']);
-    
-    bReplacement.push(['i' + k + ';', val + 'ை']);
-    bReplacement.push(['i' + k, val + 'ை']);
-
-    // base combinations
-    bReplacement.push([k + 'p;', val + 'ீ']);
-    bReplacement.push([k + 'p', val + 'ி']);
-    bReplacement.push([k + 'P', val + 'ீ']);
-    bReplacement.push([k + 'h;', val + 'ா']);
-    bReplacement.push([k + 'h', val + 'ா']);
-    bReplacement.push([k + ';', val + '்']);
-}
-
-// Extra static rules
-const extraRules = [
-    ['A', 'அ'], ['M', 'ஆ'], ['I', 'ஐ'], ['X', 'ஓ'], ['x', 'ஒ'],
-    ['c', 'உ'], ['C', 'ஊ'], ['v', 'எ'], ['V', 'ஏ'], [',', 'இ'],
-    ['<', 'ஈ'], ['F', 'கு'], ['G', 'பு'], ['K', 'ழு'], ['W', 'று'],
-    ['J', 'து'], ['L', 'ட'], ['S', 'ளு'], ['T', 'வு'], ['U', 'ரு'], ['D', 'னு'],
-    ['Jh', 'தூ'], ['\\', 'ஹ']
-];
-
-for (const [k, val] of Object.entries(consonants)) {
-    bReplacement.push([k, val]);
-}
-
-bReplacement.push(...extraRules);
-
-// Sort replacements by pattern length descending to guarantee longest matches replace first!
-bReplacement.sort((a, b) => b[0].length - a[0].length);
+const bReplacement = Object.entries(BAMINI_MAP).sort((a, b) => b[0].length - a[0].length);
 
 function convertBaminiToUnicode(text) {
     let unicodeText = text;
@@ -196,15 +205,59 @@ function isBamini(text) {
     return /MdJ|Nthy;w;W|,yj;jpud;|[jrlztngkahyvwdqcs];/.test(text);
 }
 
+function fixTamilUnicodeReordering(text) {
+    // Swaps visual combination markers (ெ, ே, ை) that precede consonants,
+    // ensuring they are NOT already preceded by a consonant (using negative lookbehind)
+    return text.replace(/(?<![\u0B95-\u0BB9])([\u0BC6\u0BC7\u0BC8])([\u0B95-\u0BB9])/g, '$2$1');
+}
+
 function autoFixPhysicsNotation(text) {
+    // Convert Celsius degree typos (e.g. 400C -> 40°C, 100C -> 10°C)
+    text = text.replace(/(\d+)0C\b/g, '$1°C');
     if (isBamini(text)) {
-        return text.replace(/[a-zA-Z;,<>\\^\\/\\*\\-\\+0-9]+/g, (token) => {
-            if (token.length <= 1) return token;
+        const translated = text.replace(/[a-zA-Z;,<>\\^\\/\\*\\-\\+0-9\[\]$#%&_\{\}¿≈]+/g, (token) => {
+            if (token.length <= 1) {
+                if (/^[a-zA-Z]$/.test(token)) {
+                    return token;
+                }
+                return convertBaminiToUnicode(token);
+            }
+            if (/^\[[a-zA-Z]\]$/.test(token)) return token;
             if (/^(GMm|GM|eV|N|G|M|m|r|r\^2|GMm\/r|GMm\/r\^2|GM\/r)$/i.test(token)) return token;
             if (/^[Mmr],?[Mmr]?$/.test(token)) return token;
             if (token.includes('/') || token.includes('^')) return token;
+            
+            // Keep a single English letter variable followed by a number (e.g., r1, v2)
+            if (/^[a-zA-Z]\d+$/.test(token)) {
+                return token;
+            }
+
+            // Split variable name followed by number if merged with suffix (e.g., r1ck; -> r1 + ck;)
+            const varNumMatch = token.match(/^([a-zA-Z]\d+)([a-zA-Z;,<>]+)$/);
+            if (varNumMatch) {
+                return varNumMatch[1] + convertBaminiToUnicode(varNumMatch[2]);
+            }
+
+            // Keep numbers followed by a single English letter variable (e.g., 2L, 2d, 400C)
+            if (/^\d+[a-zA-Z]$/.test(token)) {
+                return token;
+            }
+
+            // Split variable name preceded by number if merged with suffix (e.g., 2Lck; -> 2L + ck;)
+            const numVarMatch = token.match(/^(\d+[a-zA-Z])([a-zA-Z;,<>]+)$/);
+            if (numVarMatch) {
+                return numVarMatch[1] + convertBaminiToUnicode(numVarMatch[2]);
+            }
+
+            // Split variable name if merged with suffix (e.g., Yxk; -> Y + xk;)
+            const varMatch = token.match(/^([XY])([a-zA-Z;,<>]+)$/);
+            if (varMatch) {
+                return varMatch[1] + convertBaminiToUnicode(varMatch[2]);
+            }
+            
             return convertBaminiToUnicode(token);
         });
+        return fixTamilUnicodeReordering(translated);
     }
 
     // Check for LaTeX markers
@@ -674,6 +727,9 @@ const QuizzesPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fixToast, setFixToast] = useState(null); // { msg } | null
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showJsonModal, setShowJsonModal] = useState(false);
+    const [jsonInput, setJsonInput] = useState('');
+    const [jsonImportIndex, setJsonImportIndex] = useState(null);
 
     const handlePdfUpload = async (file) => {
         setIsGenerating(true);
@@ -715,6 +771,48 @@ const QuizzesPage = () => {
             alert(`Error: ${error.message}`);
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleImportJson = (jsonString) => {
+        try {
+            const parsed = JSON.parse(jsonString);
+            const items = Array.isArray(parsed) ? parsed : [parsed];
+            
+            const newQuestions = items.map(q => ({
+                text: q.text || '',
+                option_a: q.option_a || '',
+                option_b: q.option_b || '',
+                option_c: q.option_c || '',
+                option_d: q.option_d || '',
+                option_e: q.option_e || '',
+                correct_option: (q.correct_option || '').toUpperCase(),
+                image_url: q.image_url || '',
+                option_a_image_url: q.option_a_image_url || '',
+                option_b_image_url: q.option_b_image_url || '',
+                option_c_image_url: q.option_c_image_url || '',
+                option_d_image_url: q.option_d_image_url || '',
+                option_e_image_url: q.option_e_image_url || ''
+            }));
+            
+            if (jsonImportIndex !== null && jsonImportIndex !== undefined) {
+                const newQList = [...questions];
+                newQList[jsonImportIndex] = newQuestions[0];
+                setQuestions(newQList);
+                setFixToast(`Successfully populated Question ${jsonImportIndex + 1}! 📋`);
+            } else {
+                if (questions.length === 1 && !questions[0].text && !questions[0].option_a) {
+                    setQuestions(newQuestions);
+                } else {
+                    setQuestions([...questions, ...newQuestions]);
+                }
+                setFixToast(`Successfully imported ${newQuestions.length} questions! 📋`);
+            }
+            setShowJsonModal(false);
+            setJsonInput('');
+            setJsonImportIndex(null);
+        } catch (err) {
+            alert(`Invalid JSON format: ${err.message}`);
         }
     };
 
@@ -1000,19 +1098,28 @@ const QuizzesPage = () => {
 
                     {/* PDF Quiz Generator Zone */}
                     <div className="admin-card p-6 border border-dashed border-[#656CFF]/30 bg-[#656CFF]/5 rounded-[2rem] space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
                             <div className="flex items-center gap-3">
                                 <span className="text-xl">✨</span>
                                 <div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-wider">AI Quiz Import</h3>
-                                    <p className="text-xs text-slate-400">Upload a PDF exam or question paper to auto-generate questions using Gemini AI</p>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Quiz Importer</h3>
+                                    <p className="text-xs text-slate-400">Upload an exam PDF to extract questions via Gemini AI, or paste questions in JSON format directly</p>
                                 </div>
                             </div>
-                            {isGenerating && (
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#656CFF] bg-[#656CFF]/10 px-3 py-1.5 rounded-full flex items-center gap-2">
-                                    <Loader2 size={12} className="animate-spin" /> Processing PDF...
-                                </span>
-                            )}
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowJsonModal(true)}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    📋 Paste JSON
+                                </button>
+                                {isGenerating && (
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-[#656CFF] bg-[#656CFF]/10 px-3 py-1.5 rounded-full flex items-center gap-2">
+                                        <Loader2 size={12} className="animate-spin" /> Processing PDF...
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <div 
@@ -1056,11 +1163,23 @@ const QuizzesPage = () => {
                                         <Trash2 size={20} />
                                     </button>
                                 </div>
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="h-8 w-8 bg-[#656CFF]/10 text-[#656CFF] flex items-center justify-center rounded-lg font-black text-xs">
-                                        Q{idx + 1}
+                                <div className="flex items-center justify-between mb-6 flex-wrap gap-4 pr-12">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-8 w-8 bg-[#656CFF]/10 text-[#656CFF] flex items-center justify-center rounded-lg font-black text-xs">
+                                            Q{idx + 1}
+                                        </div>
+                                        <h3 className="text-sm font-black text-white uppercase tracking-widest opacity-80">Question Content</h3>
                                     </div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest opacity-80">Question Content</h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setJsonImportIndex(idx);
+                                            setShowJsonModal(true);
+                                        }}
+                                        className="px-3 py-1.5 bg-[#656CFF]/10 hover:bg-[#656CFF]/30 border border-[#656CFF]/20 text-[#656CFF] text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5"
+                                    >
+                                        📋 Paste JSON
+                                    </button>
                                 </div>
 
                                 <div className="space-y-6">
@@ -1275,6 +1394,83 @@ const QuizzesPage = () => {
                         {isSubmitting ? 'Saving...' : 'Save Quiz'}
                     </button>
                 </div>
+
+                {/* JSON Import Modal */}
+                {showJsonModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                        <div className="bg-[#15171C] border border-[#23262D] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in scale-in duration-300">
+                            <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-[#0D0E12]/50">
+                                <div>
+                                    <h3 className="text-lg font-black text-white uppercase tracking-wider">
+                                        {jsonImportIndex !== null ? `Import JSON to Question ${jsonImportIndex + 1}` : 'Paste JSON Questions'}
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-1">
+                                        {jsonImportIndex !== null ? `Populate fields for Question ${jsonImportIndex + 1} from JSON` : 'Paste a JSON question object or a JSON array of questions'}
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={() => { setShowJsonModal(false); setJsonInput(''); }}
+                                    className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className="p-8 space-y-6">
+                                <div className="flex flex-col gap-4">
+                                    <div 
+                                        onClick={() => document.getElementById('json-file-input').click()}
+                                        className="border border-dashed border-[#23262D] hover:border-[#656CFF]/55 bg-[#0D0E12]/50 hover:bg-[#0D0E12] rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 group"
+                                    >
+                                        <input 
+                                            id="json-file-input"
+                                            type="file"
+                                            accept=".json"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                    setJsonInput(event.target.result);
+                                                };
+                                                reader.readAsText(file);
+                                            }}
+                                        />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[#656CFF] group-hover:text-white transition-colors">📂 Upload .json file</span>
+                                        <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider">Click to browse your computer</span>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between ml-1">
+                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Or Paste JSON text below</label>
+                                        </div>
+                                        <textarea
+                                            className="w-full bg-[#0D0E12] border border-[#23262D] rounded-2xl py-4 px-5 text-xs font-mono text-indigo-400 placeholder:text-slate-700 focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none"
+                                            rows="10"
+                                            placeholder={`[\n  {\n    "text": "01. வோல்ட் (V) என்பது எதற்கான SI அலகாகும்?",\n    "option_a": "சக்தி",\n    "option_b": "வலி",\n    "option_c": "வேலை",\n    "option_d": "மின்னழுத்தம்",\n    "option_e": "மின்திறன்",\n    "correct_option": "D"\n  }\n]`}
+                                            value={jsonInput}
+                                            onChange={(e) => setJsonInput(e.target.value)}
+                                        ></textarea>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-2">
+                                    <button
+                                        onClick={() => { setShowJsonModal(false); setJsonInput(''); }}
+                                        className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => handleImportJson(jsonInput)}
+                                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+                                    >
+                                        Import Questions
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -1388,6 +1584,7 @@ const QuizzesPage = () => {
                     ))}
                 </div>
             )}
+
         </div>
     );
 };
