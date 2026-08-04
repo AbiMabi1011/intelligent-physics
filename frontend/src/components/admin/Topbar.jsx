@@ -14,34 +14,34 @@ const Topbar = ({ onToggleSidebar, displayName, onLogout, theme, onSelectTheme, 
     ];
 
     return (
-        <header className="h-24 bg-[#0D0E12]/90 backdrop-blur-3xl border-b border-[#23262D] sticky top-0 z-40 px-8 lg:px-12">
+        <header className="h-20 bg-[#0D0E12]/90 backdrop-blur-3xl border-b border-[#23262D] sticky top-0 z-40 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-full w-full mx-auto relative overflow-hidden">
                 {/* Background Accent */}
                 <div className="absolute top-0 right-[20%] w-64 h-64 bg-[#656CFF]/5 blur-[100px] rounded-full pointer-events-none" />
                 
                 {/* Left Side: Search & Toggle */}
-                <div className="flex items-center gap-8 flex-1 relative z-10">
+                <div className="flex items-center gap-4 sm:gap-6 flex-1 relative z-10">
                     <button 
                         onClick={onToggleSidebar}
-                        className="lg:hidden h-12 w-12 flex items-center justify-center rounded-2xl text-slate-400 bg-white/5 border border-white/5 hover:bg-[#656CFF] hover:text-white transition-all shadow-xl active:scale-90"
+                        className="lg:hidden h-10 w-10 flex items-center justify-center rounded-xl text-slate-400 bg-white/5 border border-white/5 hover:bg-[#656CFF] hover:text-white transition-all shadow-xl active:scale-95 shrink-0"
                     >
-                        <Menu size={24} />
+                        <Menu size={20} />
                     </button>
 
-                    <div className="hidden md:flex items-center relative max-w-xl w-full group">
-                        <span className="absolute left-6 text-slate-500 group-focus-within:text-[#656CFF] transition-all duration-500 group-focus-within:scale-110">
-                            <Search size={20} />
+                    <div className="hidden md:flex items-center relative max-w-md w-full group">
+                        <span className="absolute left-5 text-slate-500 group-focus-within:text-[#656CFF] transition-all duration-500 group-focus-within:scale-110">
+                            <Search size={18} />
                         </span>
                         <input 
                             type="text" 
                             placeholder="Search..." 
-                            className="w-full bg-[#15171C] border border-[#23262D] rounded-[2rem] py-4 pl-16 pr-6 text-[11px] font-black uppercase tracking-widest text-white placeholder:text-slate-700 focus:ring-4 focus:ring-[#656CFF]/10 focus:border-[#656CFF]/50 transition-all outline-none shadow-lg group-hover:bg-[#1c1f26]"
+                            className="w-full bg-[#15171C] border border-[#23262D] rounded-2xl py-3 pl-12 pr-5 text-xs font-bold uppercase tracking-wider text-white placeholder:text-slate-600 focus:ring-2 focus:ring-[#656CFF]/20 focus:border-[#656CFF]/50 transition-all outline-none shadow-lg group-hover:bg-[#1c1f26]"
                         />
                     </div>
                 </div>
 
                 {/* Right Side: Actions & Profile */}
-                <div className="flex items-center gap-4 lg:gap-8 relative z-10">
+                <div className="flex items-center gap-3 sm:gap-6 relative z-10">
                     
                     {/* Server Status */}
                     <div className="hidden xl:flex items-center gap-6 px-8 py-3 bg-white/5 border border-white/5 rounded-2xl mr-4">

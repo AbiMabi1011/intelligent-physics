@@ -141,7 +141,7 @@ export default function AdvancedQuizPortal({
         return () => window.removeEventListener('popstate', handler);
     }, [quizResult, currentQuiz]);
 
-    // ── 3. visibilitychange + blur: detect tab switch / minimize / focus loss ──
+    // ── 3. visibilitychange: detect tab switch or minimizing browser ──
     useEffect(() => {
         if (quizResult) return;
         const handleVisibilityChange = () => {
@@ -151,29 +151,10 @@ export default function AdvancedQuizPortal({
                 setShowViolationWarning(true);
             }
         };
-        const handleBlur = () => {
-            reportViolation('window_blur');
-            setViolationWarningMsg('Leaving the exam window focus is strictly prohibited.');
-            setShowViolationWarning(true);
-        };
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('blur', handleBlur);
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('blur', handleBlur);
         };
-    }, [quizResult, currentQuiz]);
-
-    // ── 4. mouseleave: detect cursor leaving viewport ──
-    useEffect(() => {
-        if (quizResult) return;
-        const handleMouseLeave = () => {
-            reportViolation('mouse_leave');
-            setViolationWarningMsg('Moving your mouse cursor outside the exam window is strictly prohibited.');
-            setShowViolationWarning(true);
-        };
-        document.addEventListener('mouseleave', handleMouseLeave);
-        return () => document.removeEventListener('mouseleave', handleMouseLeave);
     }, [quizResult, currentQuiz]);
 
     // ── 5. resize: detect split screen / resize attempts ──

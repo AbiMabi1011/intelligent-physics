@@ -96,12 +96,12 @@ export default function HomePageAdmin() {
             </div>
 
             {/* Tabs List */}
-            <div className="flex flex-wrap items-center gap-2 bg-[#15171C] border border-[#23262D] p-2 rounded-2xl w-full">
+            <div className="flex items-center gap-2 bg-[#15171C] border border-[#23262D] p-2 rounded-2xl w-full overflow-x-auto custom-scrollbar">
                 {TABS_LIST.map((t) => (
                     <button
                         key={t.id}
                         onClick={() => setTab(t.id)}
-                        className={`flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${tab === t.id ? 'bg-[#656CFF] text-white shadow-xl shadow-[#656CFF]/20' : 'text-slate-500 hover:text-white hover:bg-white/5'} `}
+                        className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest shrink-0 transition-all ${tab === t.id ? 'bg-[#656CFF] text-white shadow-xl shadow-[#656CFF]/20' : 'text-slate-500 hover:text-white hover:bg-white/5'} `}
                     >
                         {t.icon} {t.label}
                     </button>

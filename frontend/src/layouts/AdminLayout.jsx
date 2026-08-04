@@ -133,8 +133,8 @@ const AdminLayout = () => {
                 />
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#0D0E12] p-6 lg:p-10 pb-24 lg:pb-10">
-                    <div className="max-w-[1600px] mx-auto">
+                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#0D0E12] p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10">
+                    <div className="max-w-[1600px] mx-auto w-full">
                         <Outlet context={{ theme, setTheme, compact, setCompact, sidebarGlass, setSidebarGlass, glowsEnabled, setGlowsEnabled }} />
                     </div>
                 </main>
