@@ -102,12 +102,10 @@ const CSS = `
 .cta-text h3 { font-size: 0.95rem; font-weight: 600; color: #171717; }
 .cta-text p { font-size: 0.8rem; color: #71717a; margin-top: 4px; line-height: 1.4; }
 
-/* Grid Layout: Main & Sidebar */
+/* Grid Layout: Full Width Main Workspace */
 .workspace-grid {
-  display: grid;
-  grid-template-columns: 3.2fr 1fr;
-  gap: 40px;
-  align-items: start;
+  display: block;
+  width: 100%;
 }
 
 /* Left Workspace Main */
@@ -338,11 +336,6 @@ export default function KnowledgeHub() {
             setQuizzes((q || []).filter(x => x.is_published && x.class_name && x.class_name.split(',').some(b => b.trim() === 'knowledge hub')));
         }).finally(() => {
             setLoading(false);
-            try {
-                (window.adsbygoogle = window.adsbygoogle || []).push({});
-            } catch {
-                console.log("AdSense load deferred");
-            }
         });
     }, []);
 
@@ -625,35 +618,6 @@ export default function KnowledgeHub() {
                         </div>
                     </div>
 
-                    {/* ADVERTISEMENT / PROMO SECTION */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', margin: '8px 0' }}>
-                        {/* Custom Promo Ad */}
-                        <div style={{ background: 'linear-gradient(135deg, #fee2e2 0%, #fecdd3 100%)', border: '1px solid #fda4af', borderRadius: '12px', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                            <div>
-                                <span style={{ fontSize: '0.62rem', background: '#c00202ff', color: '#ffffff', padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Special Promo</span>
-                                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#991b1b', marginTop: 8 }}>Theory & Revision Batch Registration</h3>
-                                <p style={{ fontSize: '0.76rem', color: '#be123c', marginTop: 4 }}>Get direct teacher feedback & unlock mock exams. Limited seats left!</p>
-                            </div>
-                            <button className="btn-action" onClick={() => navigate('/login')} style={{ background: '#c00202ff', color: '#ffffff', border: 'none', fontWeight: 600 }}>
-                                Enroll Now
-                            </button>
-                        </div>
-
-                        {/* Google AdSense / Monetization Slot */}
-                        <div style={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden', minHeight: '100px' }}>
-                            <span style={{ position: 'absolute', top: 8, right: 12, fontSize: '0.58rem', color: '#a1a1aa', fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.05em', zIndex: 10 }}>Sponsored Ad</span>
-                            
-                            {/* React-compatible AdSense Element */}
-                            <ins className="adsbygoogle"
-                                 style={{ display: 'block', width: '100%', minHeight: '80px' }}
-                                 data-ad-client="ca-pub-2891295631901898"
-                                 data-ad-slot="6454512107"
-                                 data-ad-format="auto"
-                                 data-full-width-responsive="true">
-                            </ins>
-                        </div>
-                    </div>
-
                     {/* TWO-COLUMN GRID */}
                     <div className="workspace-grid">
 
@@ -675,197 +639,199 @@ export default function KnowledgeHub() {
                                 </div>
                             )}
 
-                            {/* CONTROLS & CONTENT LIST */}
-                            <div>
-                                <div className="workspace-control-bar">
-                                    <div className="workspace-tabs">
-                                        <button className={`tab-trigger${tab === 'recordings' ? ' active' : ''}`} onClick={() => { setTab('recordings'); setSearch(''); setYearFilter(''); }}>
-                                            <Lucide.Video size={14} />
-                                            Class Videos
-                                        </button>
-                                        <button className={`tab-trigger${tab === 'papers' ? ' active' : ''}`} onClick={() => { setTab('papers'); setSearch(''); setYearFilter(''); }}>
-                                            <Lucide.FileText size={14} />
-                                            Past Papers
-                                        </button>
-                                        <button className={`tab-trigger${tab === 'quizzes' ? ' active' : ''}`} onClick={() => { setTab('quizzes'); setSearch(''); setYearFilter(''); }}>
-                                            <Lucide.Zap size={14} />
-                                            Spark Exam
-                                        </button>
-                                    </div>
-
-                                    <div className="workspace-search">
-                                        <Lucide.Search size={14} />
-                                        <input
-                                            placeholder="Search resources..."
-                                            value={search}
-                                            onChange={e => setSearch(e.target.value)}
-                                        />
-                                    </div>
+                            {/* SEARCH BAR (Global Filter) */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '12px 20px', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Lucide.Search size={16} color="#71717a" />
+                                    <input
+                                        placeholder="Search across videos, past papers, and spark quizzes..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        style={{ border: 'none', outline: 'none', background: 'transparent', width: '320px', fontSize: '0.85rem' }}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <a href="#class-videos-section" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}>🎥 Class Videos ({recordings.length})</a>
+                                    <a href="#past-papers-section" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}>📝 Past Papers ({papers.length})</a>
+                                    <a href="#spark-section" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4f46e5', textDecoration: 'none' }}>⚡ Spark ({quizzes.length})</a>
                                 </div>
                             </div>
 
-                            {/* MAIN WORKSPACE CONTENT LIST */}
-                            <div style={{ minHeight: '300px' }}>
-                                {loading ? <Spinner /> : (
-                                    <div key={tab} style={{ animation: 'fadeIn 0.2s ease-out' }}>
+                            {loading ? <Spinner /> : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                                    
+                                    {/* ─── SECTION 1: CLASS VIDEOS ─── */}
+                                    <div id="class-videos-section" style={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f4f4f5', marginBottom: '20px' }}>
+                                            <div>
+                                                <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: '#e0e7ff', color: '#4338ca', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>SECTION 01</span>
+                                                <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Lucide.Video size={20} color="#4f46e5" />
+                                                    Class Videos ({filteredRecs.length})
+                                                </h2>
+                                                <p style={{ fontSize: '0.8rem', color: '#71717a', marginTop: '2px' }}>
+                                                    Access 1080p HD class recordings, experiment walkthroughs, and theory video archives.
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div className="list-container">
-                                            {tab === 'papers' && (
-                                                filteredPapers.length === 0 ? (
-                                                    <Empty icon="📄" msg="No papers match your search parameters." />
-                                                ) : (
-                                                    filteredPapers.map((p, i) => (
-                                                        <div key={p.id || i} className="row-item">
+                                            {filteredRecs.length === 0 ? (
+                                                <Empty icon="🎥" msg="No class video recordings available." />
+                                            ) : (
+                                                filteredRecs.map((r, i) => {
+                                                    const ytId = getYouTubeId(r.video_url);
+                                                    return (
+                                                        <div key={r.id || i} className="row-item">
                                                             <div className="row-left">
-                                                                <div className="row-icon-wrapper">
-                                                                    <Lucide.FileText size={18} />
+                                                                <div className="row-icon-wrapper" style={{ background: '#e0e7ff', color: '#4338ca' }}>
+                                                                    <Lucide.Play size={18} />
                                                                 </div>
                                                                 <div className="row-details">
-                                                                    <h3 className="row-title">{p.title || p.name || 'Physics Resource File'}</h3>
+                                                                    <h3 className="row-title">{r.title}</h3>
                                                                     <div className="row-meta">
-                                                                        <span className="meta-badge">{p.year || 'A/L'}</span>
-                                                                        <span>{p.class_name || 'General physics theory'}</span>
+                                                                        <span className="meta-badge" style={{ background: '#e0e7ff', color: '#4338ca' }}>HD Video</span>
+                                                                        <span>{r.class_name || 'Physics Theory Video'}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="row-actions">
-                                                                {p.file_url ? (
-                                                                    <a href={src(p.file_url)} target="_blank" rel="noreferrer" className="btn-action btn-action-primary">
-                                                                        <Lucide.Download size={13} /> Download PDF
-                                                                    </a>
+                                                                <button onClick={() => setActiveVideoId(ytId || r.video_url)} className="btn-action btn-action-primary">
+                                                                    <Lucide.Tv size={13} /> Watch Preview
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ─── SECTION 2: PAST PAPERS ─── */}
+                                    <div id="past-papers-section" style={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f4f4f5', marginBottom: '20px' }}>
+                                            <div>
+                                                <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: '#fef3c7', color: '#b45309', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>SECTION 02</span>
+                                                <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Lucide.FileText size={20} color="#d97706" />
+                                                    Past Papers & Marking Schemes ({filteredPapers.length})
+                                                </h2>
+                                                <p style={{ fontSize: '0.8rem', color: '#71717a', marginTop: '2px' }}>
+                                                    Download official G.C.E. A/L past papers, structured essay questions, and model answers.
+                                                </p>
+                                            </div>
+                                            {years.length > 0 && (
+                                                <select 
+                                                    value={yearFilter} 
+                                                    onChange={e => setYearFilter(e.target.value)}
+                                                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e5e5e5', fontSize: '0.8rem', fontWeight: 600, background: '#fafafa', cursor: 'pointer' }}
+                                                >
+                                                    <option value="">All Exam Years</option>
+                                                    {years.map(y => (
+                                                        <option key={y} value={String(y)}>Year {y}</option>
+                                                    ))}
+                                                </select>
+                                            )}
+                                        </div>
+
+                                        <div className="list-container">
+                                            {filteredPapers.length === 0 ? (
+                                                <Empty icon="📄" msg="No past papers match your parameters." />
+                                            ) : (
+                                                filteredPapers.map((p, i) => (
+                                                    <div key={p.id || i} className="row-item">
+                                                        <div className="row-left">
+                                                            <div className="row-icon-wrapper" style={{ background: '#fef3c7', color: '#b45309' }}>
+                                                                <Lucide.FileText size={18} />
+                                                            </div>
+                                                            <div className="row-details">
+                                                                <h3 className="row-title">{p.title || p.name || 'Physics Resource File'}</h3>
+                                                                <div className="row-meta">
+                                                                    <span className="meta-badge" style={{ background: '#fef3c7', color: '#b45309' }}>Year {p.year || 'A/L'}</span>
+                                                                    <span>{p.class_name || 'General physics theory'}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="row-actions">
+                                                            {p.file_url ? (
+                                                                <a href={src(p.file_url)} target="_blank" rel="noreferrer" className="btn-action btn-action-primary">
+                                                                    <Lucide.Download size={13} /> Download PDF
+                                                                </a>
+                                                            ) : (
+                                                                <button className="btn-action" onClick={() => navigate('/login')}>
+                                                                    <Lucide.Lock size={12} /> Locked
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* ─── SECTION 3: SPARK EXAM ─── */}
+                                    <div id="spark-section" style={{ background: '#ffffff', border: '1px solid #e5e5e5', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid #f4f4f5', marginBottom: '20px' }}>
+                                            <div>
+                                                <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: '#dcfce7', color: '#15803d', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>SECTION 03</span>
+                                                <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: '#09090b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Lucide.Zap size={20} color="#16a34a" />
+                                                    Spark Physics Practice Quizzes ({filteredQuizzes.length})
+                                                </h2>
+                                                <p style={{ fontSize: '0.8rem', color: '#71717a', marginTop: '2px' }}>
+                                                    Test your speed and accuracy with instant physics diagnostic assessments & rank reports.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="list-container">
+                                            {filteredQuizzes.length === 0 ? (
+                                                <Empty icon="⚡" msg="No Spark practice quizzes available at the moment." />
+                                            ) : (
+                                                filteredQuizzes.map((qz, i) => {
+                                                    const isAttempted = !!takenQuizzes[qz.id];
+                                                    return (
+                                                        <div key={qz.id || i} className="row-item">
+                                                            <div className="row-left">
+                                                                <div className="row-icon-wrapper" style={{ background: '#dcfce7', color: '#15803d' }}>
+                                                                    <Lucide.Zap size={18} />
+                                                                </div>
+                                                                <div className="row-details">
+                                                                    <h3 className="row-title">{qz.title}</h3>
+                                                                    <div className="row-meta">
+                                                                        <span className="meta-badge" style={{ background: '#dcfce7', color: '#15803d' }}>{qz.duration_minutes || 30} mins</span>
+                                                                        <span>{qz.class_name || 'Physics Practice Test'}</span>
+                                                                        {isAttempted && (
+                                                                            <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                                                <Lucide.CheckCircle size={12} /> Score: {takenQuizzes[qz.id].score}/{takenQuizzes[qz.id].total} ({takenQuizzes[qz.id].percentage.toFixed(0)}%)
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="row-actions">
+                                                                {isAttempted ? (
+                                                                    <button disabled className="btn-action" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+                                                                        Completed
+                                                                    </button>
                                                                 ) : (
-                                                                    <button className="btn-action" onClick={() => navigate('/login')}>
-                                                                        <Lucide.Lock size={12} /> Locked
+                                                                    <button onClick={() => startQuiz(qz.id)} className="btn-action btn-action-primary">
+                                                                        <Lucide.Play size={13} style={{ marginRight: 4 }} /> Start Practice
                                                                     </button>
                                                                 )}
                                                             </div>
                                                         </div>
-                                                    ))
-                                                )
-                                            )}
-
-                                            {tab === 'recordings' && (
-                                                filteredRecs.length === 0 ? (
-                                                    <Empty icon="🎥" msg="No recordings match your search parameters." />
-                                                ) : (
-                                                    filteredRecs.map((r, i) => {
-                                                        const ytId = getYouTubeId(r.video_url);
-                                                        return (
-                                                            <div key={r.id || i} className="row-item">
-                                                                <div className="row-left">
-                                                                    <div className="row-icon-wrapper">
-                                                                        <Lucide.Play size={18} />
-                                                                    </div>
-                                                                    <div className="row-details">
-                                                                        <h3 className="row-title">{r.title}</h3>
-                                                                        <div className="row-meta">
-                                                                            <span>{r.class_name}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="row-actions">
-                                                                    <button onClick={() => setActiveVideoId(ytId || r.video_url)} className="btn-action btn-action-primary">
-                                                                        <Lucide.Tv size={13} /> Watch Preview
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )
-                                            )}
-
-                                            {tab === 'quizzes' && (
-                                                filteredQuizzes.length === 0 ? (
-                                                    <Empty icon="⚡" msg="No practice quizzes available at the moment." />
-                                                ) : (
-                                                    filteredQuizzes.map((qz, i) => {
-                                                        const isAttempted = !!takenQuizzes[qz.id];
-                                                        return (
-                                                            <div key={qz.id || i} className="row-item">
-                                                                <div className="row-left">
-                                                                    <div className="row-icon-wrapper">
-                                                                        <Lucide.Zap size={18} />
-                                                                    </div>
-                                                                    <div className="row-details">
-                                                                        <h3 className="row-title">{qz.title}</h3>
-                                                                        <div className="row-meta">
-                                                                            <span className="meta-badge">{qz.duration_minutes || 30} mins</span>
-                                                                            <span>{qz.class_name || 'Physics Practice Test'}</span>
-                                                                            {isAttempted && (
-                                                                                <span style={{ color: '#10b981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                                                                    <Lucide.CheckCircle size={12} /> Score: {takenQuizzes[qz.id].score}/{takenQuizzes[qz.id].total} ({takenQuizzes[qz.id].percentage.toFixed(0)}%)
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="row-actions">
-                                                                    {isAttempted ? (
-                                                                        <button disabled className="btn-action" style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-                                                                            Completed
-                                                                        </button>
-                                                                    ) : (
-                                                                        <button onClick={() => startQuiz(qz.id)} className="btn-action btn-action-primary">
-                                                                            <Lucide.Play size={13} style={{ marginRight: 4 }} /> Start Practice
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })
-                                                )
+                                                    );
+                                                })
                                             )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        {/* RIGHT COLUMN: Sidebar Filters & Info */}
-                        <div className="workspace-sidebar">
-
-                            {/* Year Filter Widget */}
-                            {tab === 'papers' && years.length > 0 && (
-                                <div className="sidebar-widget">
-                                    <div className="widget-title">
-                                        <Lucide.Filter size={13} />
-                                        Filter by Year
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                        <button
-                                            className={`btn-action${!yearFilter ? ' btn-action-primary' : ''}`}
-                                            onClick={() => setYearFilter('')}
-                                            style={{ justifyContent: 'flex-start', fontSize: '0.75rem', padding: '6px 12px' }}
-                                        >
-                                            All Years
-                                        </button>
-                                        {years.map(y => (
-                                            <button
-                                                key={y}
-                                                className={`btn-action${yearFilter === String(y) ? ' btn-action-primary' : ''}`}
-                                                onClick={() => setYearFilter(String(y))}
-                                                style={{ justifyContent: 'flex-start', fontSize: '0.75rem', padding: '6px 12px' }}
-                                            >
-                                                Year {y}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
                             )}
-
-                            {/* Help / Instructions Widget */}
-                            <div className="sidebar-widget">
-                                <div className="widget-title">
-                                    <Lucide.Info size={13} />
-                                    Learning Resources
-                                </div>
-                                <p style={{ fontSize: '0.75rem', color: '#52525b', lineHeight: 1.5 }}>
-                                    Welcome to our workspace portal. Here, you can search and reference public resources. For complete mock tests, homework submissions, and personal support, please log in with your credentials.
-                                </p>
-                            </div>
                         </div>
 
                     </div>
-
                 </div>
 
                 <Footer />

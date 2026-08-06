@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from typing import List
+from typing import List, Optional, Dict, Any
 import smtplib
 import os
 from dotenv import load_dotenv
@@ -43,6 +43,20 @@ app.add_middleware(
 
 # Serve uploaded files statically
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename.replace(' ', '_')}"
+        file_path = UPLOADS_DIR / filename
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        file_url = f"/uploads/{filename}"
+        return {"file_url": file_url, "url": file_url, "filename": filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
 # Password Hashing

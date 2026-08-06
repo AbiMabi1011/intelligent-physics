@@ -153,24 +153,33 @@ const FAQS = [
   { q: 'How are results and answers processed?', a: 'Students submit answers via the Learning Hub. Assessment marks, correct answers, step-by-step explanations, and your rank in the batch are available immediately.' }
 ];
 
-const FALLBACK_SLIDES = [
-  { id: 's1', badge: 'PHYSICS ACADEMY', title: 'SRI LANKA PREMIER LMS PORTAL', subtitle: 'Covering the entire advanced level national curriculum in Sinhala and English mediums.', button_text: 'ENTER PORTAL', button_link: '/login', gradient: 'linear-gradient(135deg,#0B132B,#1C2541)' },
-  { id: 's2', badge: 'ENROLLMENT OPEN', title: 'THEORY & REVISION BATCHES', subtitle: 'Live lectures, weekly assessments, and interactive grading reports are now active.', button_text: 'SECURE A SEAT', button_link: '/login', gradient: 'linear-gradient(135deg,#0d1f3e,#1a365d)' },
-  { id: 's3', badge: 'FREE STUDY GUIDES', title: 'DOWNLOAD PAST PAPERS', subtitle: 'Archive repository containing structural essay papers and marking guides.', button_text: 'BROWSE LIBRARY', button_link: '/knowledge-hub', gradient: 'linear-gradient(135deg,#1e1b4b,#312e81)' },
-];
-
-const IMG = url => (!url ? '' : url.startsWith('/') ? `${API_URL}${url}` : url);
+const IMG = url => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  if (url.startsWith('/')) return `${API_URL}${url}`;
+  return `${API_URL}/${url}`;
+};
 
 export default function HomePage() {
   const navigate = useNavigate();
 
   /* ─── State Hooks ─── */
   const [slides, setSlides] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [announcements, setAnnouncements] = useState([]);
   const [homeStats, setHomeStats] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Auto-play slides timer
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   // Dynamic Content & Filter States
   const [teacher, setTeacher] = useState(null);
@@ -197,7 +206,7 @@ export default function HomePage() {
       fetch(`${API_URL}/home-faqs`).then(r => (r.ok ? r.json() : [])).catch(() => []),
     ])
       .then(([sliders, ann, stats, teacherProf, syllabus, features, batches, testimonials, faqs]) => {
-        const activeSliders = (sliders || []).filter(s => s.is_active).sort((a, b) => a.order_index - b.order_index);
+        const activeSliders = (sliders || []).filter(s => s.is_active !== false && s.is_active !== 0).sort((a, b) => a.order_index - b.order_index);
         setSlides(activeSliders.length > 0 ? activeSliders : FALLBACK_SLIDES);
         setAnnouncements(ann || []);
         setHomeStats((stats || []).filter(s => s.is_active !== false && s.is_active !== 0));
@@ -334,35 +343,35 @@ export default function HomePage() {
         )}
       </header>
 
-      {/* ─── Hero Split Section ─── */}
-      <section className="pt-28 sm:pt-36 pb-14 sm:pb-20 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+      {/* ─── Hero Section (Single Master Unified Card Box) ─── */}
+      <section className="pt-20 sm:pt-24 pb-8 px-6">
+        <div className="max-w-7xl mx-auto bg-[#FDFBF7] border border-[#EBE5D9] rounded-3xl p-6 sm:p-10 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Linen Card Box */}
-          <div className="lg:col-span-6 bg-[#FDFBF7] border border-[#EBE5D9] rounded-[2rem] p-8 sm:p-12 flex flex-col justify-between shadow-sm">
+          {/* Left Column: Teacher & Portal Info */}
+          <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
             <div>
               
               {/* Trust Badge Tag */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#FDF3E7] border border-[#FADDBB] text-[#C25E00] text-[10px] font-black uppercase tracking-wider mb-8">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#FDF3E7] border border-[#FADDBB] text-[#C25E00] text-[10px] font-black uppercase tracking-wider mb-5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>★ 1,200+ A/L SRI LANKAN STUDENTS TRUST US</span>
               </div>
 
               {/* Lecturer Info */}
-              <div className="flex items-center gap-5 mb-8">
+              <div className="flex items-center gap-4 mb-5">
                 <img 
                   src={teacherImgSrc} 
                   alt={activeTeacher.name} 
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-white shadow-md bg-white shrink-0" 
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border-2 border-white shadow-md bg-white shrink-0" 
                 />
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
                     {activeTeacher.name}
                   </h1>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#C25E00] block mt-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#C25E00] block mt-0.5">
                     {activeTeacher.title || 'LEAD LECTURER'}
                   </span>
-                  <p className="text-xs font-bold text-slate-500 mt-1">
+                  <p className="text-xs font-bold text-slate-500 mt-0.5">
                     {activeTeacher.credentials || 'B.Sc. Physics - University of Jaffna'}
                   </p>
                   {activeTeacher.mediums && (
@@ -372,7 +381,7 @@ export default function HomePage() {
               </div>
 
               {/* Highlight Concept Quote Card */}
-              <div className="bg-white border-l-4 border-[#C25E00] border-y border-r border-slate-200/70 p-5 rounded-r-xl shadow-xs mb-8">
+              <div className="bg-white border-l-4 border-[#C25E00] border-y border-r border-slate-200/70 p-4 rounded-r-xl shadow-xs">
                 <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
                   Redefine how you learn <span className="font-extrabold text-[#C25E00]"><SloganRotator /></span>. {activeTeacher.bio_text}
                 </p>
@@ -381,16 +390,16 @@ export default function HomePage() {
             </div>
 
             {/* Action CTA Buttons */}
-            <div className="flex flex-wrap gap-4 pt-4">
+            <div className="flex flex-wrap gap-3 pt-2">
               <button 
                 onClick={() => navigate('/login')}
-                className="px-8 py-3.5 bg-[#C25E00] hover:bg-[#A85000] text-white text-xs font-extrabold uppercase tracking-widest rounded-full transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
+                className="px-6 py-3 bg-[#C25E00] hover:bg-[#A85000] text-white text-xs font-extrabold uppercase tracking-widest rounded-full transition-all flex items-center gap-2 shadow-md hover:shadow-lg cursor-pointer"
               >
                 ENTER STUDENT PORTAL 🎓 <span>›</span>
               </button>
               <button 
                 onClick={() => scrollTo('batches')}
-                className="px-8 py-3.5 bg-transparent hover:bg-slate-100/60 text-slate-700 border border-slate-300 text-xs font-extrabold uppercase tracking-widest rounded-full transition-all cursor-pointer"
+                className="px-6 py-3 bg-transparent hover:bg-slate-100/60 text-slate-700 border border-slate-300 text-xs font-extrabold uppercase tracking-widest rounded-full transition-all cursor-pointer"
               >
                 VIEW BATCH OFFERS
               </button>
@@ -398,53 +407,75 @@ export default function HomePage() {
 
           </div>
 
-          {/* Right Dark Navy Banner / Visual Sandbox Container */}
-          <div className="lg:col-span-6 bg-[#090F26] border border-[#1C2541] rounded-[2rem] p-8 sm:p-12 text-white relative overflow-hidden flex flex-col justify-between shadow-xl min-h-[440px]">
-            
-            {/* Visual Glassmorphism Mesh Graphic */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(37,99,235,0.25),transparent_60%)] pointer-events-none" />
-
-            <div className="relative z-10 space-y-4 max-w-lg">
-              <span className="px-3 py-1 rounded bg-blue-500/20 border border-blue-400/30 text-blue-400 text-[10px] font-black tracking-widest uppercase inline-block">
-                PREMIUM LMS EXPERIENCE
-              </span>
-              <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight uppercase">
-                INTELLIGENT PHYSICS LEARNING HUB
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                Access HD video recordings, unit-wise past paper banks, adaptive assessments, and real-time rank leaderboards.
-              </p>
-            </div>
-
-            {/* Interactive Hero Slider Showcase */}
-            <div className="relative z-10 my-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-inner">
+          {/* Right Column: Interactive Hero Slider Showcase (Narrower Width, Taller Height) */}
+          <div className="lg:col-span-5 flex flex-col justify-between">
+            <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl overflow-hidden">
               {slides.length > 0 && (
                 <div className="space-y-3">
-                  <span className="px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-black uppercase tracking-wider">
-                    {slides[0]?.badge || 'DIGITAL LMS PLATFORM'}
-                  </span>
-                  <h3 className="text-lg font-extrabold uppercase text-white tracking-tight">{slides[0]?.title}</h3>
-                  <p className="text-xs text-slate-400 font-medium">{slides[0]?.subtitle}</p>
+                  {slides[currentSlide]?.image_url && (
+                    <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-700/60 bg-black/40 shadow-lg relative group">
+                      <img 
+                        src={IMG(slides[currentSlide].image_url)} 
+                        alt={slides[currentSlide]?.title || 'Hero Banner'} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 text-[9px] font-black uppercase tracking-wider inline-block">
+                      {slides[currentSlide]?.badge || 'DIGITAL LMS PLATFORM'}
+                    </span>
+                    {slides.length > 1 && (
+                      <span className="text-[10px] font-mono font-bold text-slate-400">
+                        {currentSlide + 1} / {slides.length}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold uppercase text-white tracking-tight leading-snug">{slides[currentSlide]?.title}</h3>
+                  <p className="text-xs text-slate-400 font-medium line-clamp-1">{slides[currentSlide]?.subtitle}</p>
                 </div>
               )}
-            </div>
 
-            {/* Slider / Controls */}
-            <div className="relative z-10 flex items-center justify-between pt-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>ONLINE PORTAL ACTIVE</span>
+              {/* Slider Controls & Pagination */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 mt-3">
+                <div className="flex items-center gap-2">
+                  {slides.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentSlide(idx)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${currentSlide === idx ? 'w-6 bg-blue-500 shadow-md shadow-blue-500/50' : 'w-1.5 bg-slate-700 hover:bg-slate-500'}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  {slides.length > 1 && (
+                    <>
+                      <button 
+                        onClick={() => setCurrentSlide(prev => (prev - 1 + slides.length) % slides.length)}
+                        className="p-1.5 rounded-md bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 transition-colors cursor-pointer"
+                        title="Previous Banner"
+                      >
+                        <Lucide.ChevronLeft size={14} />
+                      </button>
+                      <button 
+                        onClick={() => setCurrentSlide(prev => (prev + 1) % slides.length)}
+                        className="p-1.5 rounded-md bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 transition-colors cursor-pointer"
+                        title="Next Banner"
+                      >
+                        <Lucide.ChevronRight size={14} />
+                      </button>
+                    </>
+                  )}
+                  <button 
+                    onClick={() => navigate('/login')}
+                    className="px-4 py-1.5 rounded-md bg-[#2563EB] hover:bg-[#1D4ED8] text-[10px] font-bold text-white uppercase tracking-wider transition-colors cursor-pointer shadow-md"
+                  >
+                    LAUNCH PORTAL
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => navigate('/login')}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  LAUNCH PORTAL
-                </button>
-              </div>
-            </div>
 
+            </div>
           </div>
 
         </div>

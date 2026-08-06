@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
 
     const rawNavigationGroups = [
         {
-            group: 'Overview & Main',
+            group: 'Overview',
             items: [
                 { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
             ]
@@ -43,17 +43,17 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
         {
             group: 'Home Page Management',
             items: [
-                { name: 'Homepage Content Manager', path: '/admin/homepage', icon: <Home size={18} />, permission: 'Homepage Ads' },
+                { name: 'Landing Page Content', path: '/admin/homepage', icon: <Home size={18} />, permission: 'Homepage Ads' },
                 { name: 'Hero Sliders & Banners', path: '/admin/sliders', icon: <Layers size={18} />, permission: 'Hero Sliders' },
             ]
         },
         {
             group: 'Learning Hub Management',
             items: [
-                { name: 'Student Portal LMS', path: '/admin/learning-hub', icon: <Box size={18} />, permission: 'Learning Hub' },
-                { name: 'Announcements & Notices', path: '/admin/announcements', icon: <Megaphone size={18} />, permission: 'Announcements' },
+                { name: 'Student Directory', path: '/admin/students', icon: <Users size={18} />, permission: 'Students' },
                 { name: 'Student Marks', path: '/admin/marks', icon: <ClipboardList size={18} />, permission: 'Student Marks' },
                 { name: 'Exam Results', path: '/admin/results', icon: <Activity size={18} />, permission: 'Exam Results' },
+                { name: 'Announcements & Notices', path: '/admin/announcements', icon: <Megaphone size={18} />, permission: 'Announcements' },
             ]
         },
         {
@@ -65,9 +65,8 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
             ]
         },
         {
-            group: 'Administration & Control',
+            group: 'Administration & Security',
             items: [
-                { name: 'Student Directory', path: '/admin/students', icon: <Users size={18} />, permission: 'Students' },
                 { name: 'System Settings', path: '/admin/settings', icon: <Settings size={18} />, permission: 'Settings' },
             ]
         }

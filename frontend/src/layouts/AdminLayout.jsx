@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/admin/Sidebar';
-import Topbar from '../components/admin/Topbar';
-import BottomNav from '../components/admin/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import { X, Sliders, Layout, Sparkles, Sidebar as SidebarIcon, Check } from 'lucide-react';
 
@@ -270,9 +268,6 @@ const AdminLayout = () => {
                     </div>
                 </div>
             )}
-
-            {/* Bottom nav (mobile only) */}
-            <BottomNav />
         </div>
     );
 };
