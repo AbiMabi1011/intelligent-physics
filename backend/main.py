@@ -1847,6 +1847,26 @@ def publish_quiz(quiz_id: int, db: Session = Depends(get_db)):
         
     return quiz
 
+@app.delete("/quizzes/{quiz_id}")
+def delete_quiz(quiz_id: int, db: Session = Depends(get_db)):
+    quiz = db.query(models.Quiz).filter(models.Quiz.id == quiz_id).first()
+    if not quiz:
+        raise HTTPException(status_code=404, detail="Quiz not found")
+    
+    try:
+        db.query(models.QuizViolation).filter(models.QuizViolation.quiz_id == quiz_id).delete()
+        db.query(models.QuizSession).filter(models.QuizSession.quiz_id == quiz_id).delete()
+        db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz_id).delete()
+        db.query(models.Question).filter(models.Question.quiz_id == quiz_id).delete()
+        
+        db.delete(quiz)
+        db.commit()
+        return {"message": "Quiz deleted successfully", "id": quiz_id}
+    except Exception as e:
+        db.rollback()
+        print(f"[DELETE QUIZ ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/quizzes/student/{email}/taken")
 def get_taken_quizzes(email: str, db: Session = Depends(get_db)):
     student = db.query(models.User).filter(models.User.email == email).first()

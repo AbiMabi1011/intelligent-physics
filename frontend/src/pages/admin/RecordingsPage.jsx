@@ -249,7 +249,7 @@ const RecordingsPage = () => {
                                     <Layers size={14} className="text-[#656CFF]" /> Target Batches
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {batches.map(batch => (
+                                    {[{ id: 'kh', name: 'Knowledge Hub' }, ...batches].map(batch => (
                                         <button
                                             key={batch.id}
                                             type="button"

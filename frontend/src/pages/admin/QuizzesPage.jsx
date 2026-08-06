@@ -964,12 +964,19 @@ const QuizzesPage = () => {
     };
 
     const deleteQuiz = async (id) => {
-        if (!window.confirm("Delete this quiz permanently?")) return;
+        if (!window.confirm("Are you sure you want to delete this quiz permanently?")) return;
         try {
+            setQuizzes(prev => prev.filter(q => q.id !== id));
             const res = await fetch(`${API_URL}/quizzes/${id}`, { method: 'DELETE' });
-            if (res.ok) fetchQuizzes();
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Failed to delete quiz: ${errData.detail || 'Server error'}`);
+                fetchQuizzes();
+            }
         } catch (err) {
             console.error("Failed to delete quiz:", err);
+            alert(`Error: ${err.message}`);
+            fetchQuizzes();
         }
     };
 

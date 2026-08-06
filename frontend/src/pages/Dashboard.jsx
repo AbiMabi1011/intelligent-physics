@@ -333,7 +333,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         if (!user) navigate('/login' + window.location.search);
-        else if (user.role === 'admin') navigate('/admin/dashboard');
+        else if (user.role === 'admin' || user.role === 'sub_admin') navigate('/admin/dashboard');
     }, [user, navigate]);
 
     // Fetch fresh user profile to get up-to-date class_name

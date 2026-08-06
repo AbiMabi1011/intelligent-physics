@@ -276,7 +276,7 @@ const PapersPage = () => {
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-1">Target Batches</label>
                                         <div className="grid grid-cols-2 gap-3">
-                                            {batches.map(batch => (
+                                            {[{ id: 'kh', name: 'Knowledge Hub' }, ...batches].map(batch => (
                                                 <button
                                                     key={batch.id}
                                                     type="button"

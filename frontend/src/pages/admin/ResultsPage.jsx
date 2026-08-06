@@ -28,6 +28,7 @@ const ResultsPage = () => {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedExamFilter, setSelectedExamFilter] = useState('');
+    const [selectedResult, setSelectedResult] = useState(null);
 
     useEffect(() => {
         fetchResults();
@@ -50,28 +51,33 @@ const ResultsPage = () => {
 
     // Extract unique Exam / Quiz Names for Category Filtering
     const examCategories = Array.from(
-        new Set(results.map(r => r.quiz?.title).filter(Boolean))
+        new Set(results.map(r => r.quiz?.title || r.quiz_title || 'Spark Quiz').filter(Boolean))
     ).sort();
 
     // Filter results strictly by Exam Name & Search Term
     const filteredResults = results.filter(r => {
-        const matchesCategory = !selectedExamFilter || r.quiz?.title === selectedExamFilter;
+        const title = r.quiz?.title || r.quiz_title || 'Spark Quiz';
+        const sName = r.student?.full_name || '';
+        const sEmail = r.student?.email || '';
+
+        const matchesCategory = !selectedExamFilter || title === selectedExamFilter;
         const matchesSearch = !searchTerm || (
-            r.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            r.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            r.quiz?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+            sName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            sEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            title.toLowerCase().includes(searchTerm.toLowerCase())
         );
         return matchesCategory && matchesSearch;
     });
 
     // Average score dynamically calculated for currently active category
-    const categoryResults = selectedExamFilter ? results.filter(r => r.quiz?.title === selectedExamFilter) : results;
+    const categoryResults = selectedExamFilter ? results.filter(r => (r.quiz?.title || r.quiz_title || 'Spark Quiz') === selectedExamFilter) : results;
     const averageScore = categoryResults.length > 0
         ? (categoryResults.reduce((acc, r) => acc + (r.score / (r.total_questions || 1)), 0) / categoryResults.length * 100).toFixed(1)
         : 0;
 
     const getRank = (r) => {
-        const sameQuizResults = results.filter(item => item.quiz_id === r.quiz_id || item.quiz?.id === r.quiz?.id || item.quiz?.title === r.quiz?.title);
+        const title = r.quiz?.title || r.quiz_title || 'Spark Quiz';
+        const sameQuizResults = results.filter(item => (item.quiz_id === r.quiz_id) || (item.quiz?.id === r.quiz?.id) || ((item.quiz?.title || item.quiz_title) === title));
         const higherScoresCount = sameQuizResults.filter(item => item.score > r.score).length;
         return {
             rank: higherScoresCount + 1,
@@ -85,10 +91,10 @@ const ResultsPage = () => {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 <div className="w-full">
                     <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-4">
-                        <Activity size={32} className="text-[#10B981]" /> Exam Results
+                        <Activity size={32} className="text-[#10B981]" /> Spark Exam Results
                     </h1>
                     <p className="text-sm text-slate-500 font-black uppercase tracking-[0.2em] mt-2 italic text-wrap">
-                        View and manage all student quiz scores categorized strictly by exam title
+                        View online Spark quiz scores, answer submissions, and automated batch rankings
                     </p>
                 </div>
                 <button onClick={fetchResults} className="w-full lg:w-auto h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl px-10 transition-all border border-white/10 flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 shadow-xl">
@@ -215,58 +221,73 @@ const ResultsPage = () => {
                     <tbody className="divide-y divide-white/5">
                         {loading ? (
                             <tr>
-                                <td colSpan="5" className="px-10 py-24 text-center">
+                                <td colSpan="6" className="px-10 py-24 text-center">
                                     <Loader2 size={40} className="animate-spin mx-auto text-[#656CFF] mb-4" />
                                     <span className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Loading Results...</span>
                                 </td>
                             </tr>
-                        ) : filteredResults.map((r) => (
-                            <tr key={r.id} onClick={() => setSelectedResult(r)} className="group hover:bg-white/[0.02] transition-colors cursor-pointer">
-                                <td className="px-10 py-6">
-                                    <div className="flex items-center gap-5">
-                                        <div className="h-10 w-10 rounded-xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] text-xs font-black transition-transform group-hover:scale-110">
-                                            {r.student.full_name?.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-white leading-tight group-hover:text-[#656CFF] transition-colors">{r.student.full_name}</p>
-                                            <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mt-1 italic">{r.student.email}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{r.quiz.title}</span>
-                                        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">{r.quiz.batch_name}</span>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-1.5 w-24 bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                                             <div className="h-full bg-[#10B981] shadow-[0_0_10px_#10B981]" style={{ width: `${(r.score / r.total_questions) * 100}%` }} />
-                                        </div>
-                                        <span className="text-sm font-black text-white italic">{r.score}/{r.total_questions}</span>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6">
-                                    {(() => {
-                                        const { rank, total } = getRank(r);
-                                        return (
-                                            <span className="text-xs font-black text-white italic">
-                                                Rank: <span className="text-[#10B981] font-black">{rank}</span>/{total}
-                                            </span>
-                                        );
-                                    })()}
-                                </td>
-                                <td className="px-8 py-6">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(r.timestamp || r.created_at).toLocaleString()}</span>
-                                </td>
-                                <td className="px-6 py-6 text-center">
-                                    <button onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }} className="h-10 w-10 rounded-xl bg-white/5 text-slate-500 hover:bg-[#656CFF]/10 hover:text-[#656CFF] transition-all group-hover:scale-110 active:scale-95 shadow-xl">
-                                        <ChevronRight size={20} />
-                                    </button>
+                        ) : filteredResults.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="px-10 py-20 text-center text-slate-500 text-xs font-black uppercase tracking-widest">
+                                    No student quiz attempts recorded yet.
                                 </td>
                             </tr>
-                        ))}
+                        ) : filteredResults.map((r) => {
+                            const studentName = r.student?.full_name || 'Student';
+                            const studentEmail = r.student?.email || 'N/A';
+                            const quizTitle = r.quiz?.title || r.quiz_title || 'Spark Quiz';
+                            const className = r.quiz?.class_name || r.quiz?.batch_name || 'General';
+                            const totalQuestions = r.total_questions || 1;
+                            const pct = Math.min(100, Math.max(0, ((r.score / totalQuestions) * 100)));
+
+                            return (
+                                <tr key={r.id} onClick={() => setSelectedResult(r)} className="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+                                    <td className="px-10 py-6">
+                                        <div className="flex items-center gap-5">
+                                            <div className="h-10 w-10 rounded-xl bg-[#656CFF]/10 flex items-center justify-center text-[#656CFF] text-xs font-black transition-transform group-hover:scale-110">
+                                                {studentName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-white leading-tight group-hover:text-[#656CFF] transition-colors">{studentName}</p>
+                                                <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mt-1 italic">{studentEmail}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-white uppercase tracking-widest">{quizTitle}</span>
+                                            <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-1">{className}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-1.5 w-24 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                                                 <div className="h-full bg-[#10B981] shadow-[0_0_10px_#10B981]" style={{ width: `${pct}%` }} />
+                                            </div>
+                                            <span className="text-sm font-black text-white italic">{r.score}/{r.total_questions || totalQuestions}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        {(() => {
+                                            const { rank, total } = getRank(r);
+                                            return (
+                                                <span className="text-xs font-black text-white italic">
+                                                    Rank: <span className="text-[#10B981] font-black">{rank}</span>/{total}
+                                                </span>
+                                            );
+                                        })()}
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{new Date(r.timestamp || r.created_at || Date.now()).toLocaleString()}</span>
+                                    </td>
+                                    <td className="px-6 py-6 text-center">
+                                        <button onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }} className="h-10 w-10 rounded-xl bg-white/5 text-slate-500 hover:bg-[#656CFF]/10 hover:text-[#656CFF] transition-all group-hover:scale-110 active:scale-95 shadow-xl">
+                                            <ChevronRight size={20} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -283,7 +304,7 @@ const ResultsPage = () => {
                             <div>
                                 <p className="text-[10px] font-black text-[#656CFF] uppercase tracking-[0.25em]">Security & Integrity Report</p>
                                 <h3 className="text-lg font-black text-white mt-1">
-                                    {selectedResult.student.full_name}'s Exam Session
+                                    {selectedResult.student?.full_name || 'Student'}'s Exam Session
                                 </h3>
                             </div>
                             <button onClick={() => setSelectedResult(null)}

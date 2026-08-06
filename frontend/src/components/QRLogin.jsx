@@ -68,7 +68,7 @@ const QRLogin = () => {
             setSuccess(true);
             login(data);
             setTimeout(() => {
-                 navigate(data.role === 'admin' ? '/admin/dashboard' : '/dashboard', { replace: true });
+                 navigate((data.role === 'admin' || data.role === 'sub_admin') ? '/admin/dashboard' : '/dashboard', { replace: true });
             }, 1000);
             
         } catch (err) {

@@ -52,16 +52,11 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
             items: [
                 { name: 'Student Directory', path: '/admin/students', icon: <Users size={18} />, permission: 'Students' },
                 { name: 'Student Marks', path: '/admin/marks', icon: <ClipboardList size={18} />, permission: 'Student Marks' },
-                { name: 'Exam Results', path: '/admin/results', icon: <Activity size={18} />, permission: 'Exam Results' },
-                { name: 'Announcements & Notices', path: '/admin/announcements', icon: <Megaphone size={18} />, permission: 'Announcements' },
-            ]
-        },
-        {
-            group: 'Knowledge Hub Management',
-            items: [
-                { name: 'Class Recordings', path: '/admin/recordings', icon: <Video size={18} />, permission: 'Class Recordings' },
                 { name: 'Exams & Quizzes', path: '/admin/quizzes', icon: <BookOpen size={18} />, permission: 'Exams & Quizzes' },
+                { name: 'Spark Exam Results', path: '/admin/results', icon: <Zap size={18} />, permission: 'Exam Results' },
+                { name: 'Class Recordings', path: '/admin/recordings', icon: <Video size={18} />, permission: 'Class Recordings' },
                 { name: 'Past Papers Vault', path: '/admin/papers', icon: <FileText size={18} />, permission: 'Past Papers' },
+                { name: 'Announcements & Notices', path: '/admin/announcements', icon: <Megaphone size={18} />, permission: 'Announcements' },
             ]
         },
         {

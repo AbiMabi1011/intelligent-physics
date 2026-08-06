@@ -226,9 +226,9 @@ const Login = () => {
                 login(data);
 
                 // Redirect user based on role:
-                // - Admin to /admin/dashboard
+                // - Admin & Sub-Admin to /admin/dashboard
                 // - Students to /dashboard
-                if (data.role === 'admin') {
+                if (data.role === 'admin' || data.role === 'sub_admin') {
                     navigate('/admin/dashboard' + window.location.search, { replace: true });
                 } else {
                     navigate('/dashboard' + window.location.search, { replace: true });
