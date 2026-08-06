@@ -100,6 +100,10 @@ export default function AdvancedQuizPortal({
         violationCountRef.current += 1;
         const count = violationCountRef.current;
         setViolationCount(count);
+
+        // Do NOT save violation in DB for Knowledge Hub practice quizzes / guest users
+        if (!studentEmail || studentEmail.toLowerCase() === 'guest') return;
+
         try {
             fetch(`${API_URL}/quizzes/violation`, {
                 method: 'POST',

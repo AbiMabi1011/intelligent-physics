@@ -48,13 +48,13 @@ const CSS = `
 
 /* Nav */
 .kh-nav {
-  position: sticky; top: 0; z-index: 500; height: 64px;
+  position: sticky; top: 0; z-index: 500; height: 70px;
   display: flex; align-items: center; justify-content: space-between; padding: 0 32px;
   background: rgba(255, 255, 255, 0.85); border-bottom: 1px solid #eaeaea;
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
 }
-.kh-nav-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; }
-.kh-nav-logo { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e5e5e5; }
+.kh-nav-brand { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
+.kh-nav-logo { width: 42px; height: 42px; border-radius: 8px; border: 1px solid #e5e5e5; object-fit: contain; }
 .kh-nav-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; color: #000; letter-spacing: -0.01em; }
 .kh-nav-sub { font-size: 0.58rem; color: #4f46e5; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 6px; padding: 2px 6px; background: rgba(99,102,241,0.08); border-radius: 4px; }
 
@@ -245,41 +245,41 @@ const CSS = `
 }
 .modal-close:hover { background: #e4e4e7; }
 
-/* Dynamic Fullscreen Quiz Screen */
+/* Dynamic Fullscreen Quiz Screen - Dark Theme */
 .quiz-screen-container {
-  min-height: 100vh; background: #fcfcfc; display: flex; flex-direction: column; z-index: 1000; position: fixed; inset: 0; overflow-y: auto;
+  min-height: 100vh; background: #090A10; color: #f4f0e6; display: flex; flex-direction: column; z-index: 1000; position: fixed; inset: 0; overflow-y: auto;
 }
 .quiz-header {
-  position: sticky; top: 0; background: #ffffff; border-bottom: 1px solid #e5e5e5; padding: 16px 32px;
+  position: sticky; top: 0; background: #0D0E15; border-bottom: 1px solid #1E202E; padding: 16px 32px;
   display: flex; flex-direction: column; gap: 8px; z-index: 10;
 }
 .quiz-header-top { display: flex; justify-content: space-between; align-items: center; }
-.quiz-timer { font-weight: 700; color: #4f46e5; background: rgba(99,102,241,0.08); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; }
-.quiz-progress-bar-bg { width: 100%; height: 4px; background: #f4f4f5; border-radius: 99px; overflow: hidden; }
-.quiz-progress-bar-fill { height: 100%; background: #4f46e5; transition: width 0.3s; }
+.quiz-timer { font-weight: 800; color: #818cf8; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); padding: 6px 14px; border-radius: 8px; font-size: 0.88rem; font-family: monospace; }
+.quiz-progress-bar-bg { width: 100%; height: 4px; background: #1E202E; border-radius: 99px; overflow: hidden; }
+.quiz-progress-bar-fill { height: 100%; background: #6366f1; transition: width 0.3s; }
 
 .quiz-main {
-  max-width: 800px; width: 100%; margin: 40px auto 120px; padding: 0 24px; display: flex; flex-direction: column; gap: 24px;
+  max-width: 850px; width: 100%; margin: 40px auto 120px; padding: 0 24px; display: flex; flex-direction: column; gap: 24px;
 }
 .quiz-question-card {
-  background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  background: #151722; border: 1px solid #232636; border-radius: 16px; padding: 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
-.quiz-question-text { font-size: 1rem; font-weight: 600; color: #171717; margin-bottom: 16px; line-height: 1.5; }
-.quiz-options-list { display: flex; flex-direction: column; gap: 8px; }
+.quiz-question-text { font-size: 1.05rem; font-weight: 700; color: #ffffff; margin-bottom: 20px; line-height: 1.6; }
+.quiz-options-list { display: flex; flex-direction: column; gap: 10px; }
 .quiz-option-btn {
-  width: 100%; text-align: left; padding: 12px 16px; border: 1px solid #e5e5e5; border-radius: 8px;
-  background: #ffffff; color: #3f3f46; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  width: 100%; text-align: left; padding: 14px 18px; border: 1px solid #232636; border-radius: 12px;
+  background: #0D0E15; color: #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
-.quiz-option-btn:hover:not(:disabled) { border-color: #a1a1aa; background: #fafafa; }
+.quiz-option-btn:hover:not(:disabled) { border-color: #6366f1; background: #181926; color: #ffffff; }
 
 /* Option status colors */
-.quiz-option-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.04); color: #4f46e5; font-weight: 600; }
-.quiz-option-btn.correct { border-color: #10b981; background: rgba(16,185,129,0.06); color: #065f46; font-weight: 600; }
-.quiz-option-btn.incorrect { border-color: #ef4444; background: rgba(239,68,68,0.06); color: #991b1b; }
+.quiz-option-btn.selected { border-color: #6366f1; background: rgba(99,102,241,0.25); color: #ffffff; font-weight: 700; box-shadow: 0 0 12px rgba(99,102,241,0.25); }
+.quiz-option-btn.correct { border-color: #10b981; background: rgba(16,185,129,0.25); color: #34d399; font-weight: 700; }
+.quiz-option-btn.incorrect { border-color: #ef4444; background: rgba(239,68,68,0.25); color: #f87171; }
 
 .quiz-bottom-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e5e5e5; padding: 16px; text-align: center; z-index: 10;
+  position: fixed; bottom: 0; left: 0; right: 0; background: #0D0E15; border-top: 1px solid #1E202E; padding: 16px; text-align: center; z-index: 10;
 }
 
 /* Responsive adjustments */
@@ -319,11 +319,69 @@ export default function KnowledgeHub() {
         }
     });
 
-    /* Practice Quiz States */
+    /* Practice Quiz States & Security */
     const [currentQuiz, setCurrentQuiz] = useState(null);
     const [answers, setAnswers] = useState({});
     const [quizResult, setQuizResult] = useState(null);
     const [timeLeft, setTimeLeft] = useState(null);
+    const [khSecurityWarning, setKhSecurityWarning] = useState('');
+
+    /* ── KNOWLEDGE HUB SECURITY CONTROLS (NO DB VIOLATION LOGGING) ── */
+    // 1. Keyboard shortcut blocking (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S)
+    useEffect(() => {
+        if (!currentQuiz || quizResult) return;
+        const onKey = (e) => {
+            const isCtrlShiftI = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i';
+            const isCtrlShiftJ = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'j';
+            const isCtrlShiftC = e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'c';
+            const isCtrlU = e.ctrlKey && e.key.toLowerCase() === 'u';
+            const isCtrlS = e.ctrlKey && e.key.toLowerCase() === 's';
+            const isF12 = e.key === 'F12' || e.keyCode === 123;
+
+            if (isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlU || isCtrlS || isF12) {
+                e.preventDefault();
+                e.stopPropagation();
+                setKhSecurityWarning('🔒 DevTools & shortcuts are disabled during practice tests!');
+                setTimeout(() => setKhSecurityWarning(''), 4000);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [currentQuiz, quizResult]);
+
+    // 2. Tab switch & window focus loss detection
+    useEffect(() => {
+        if (!currentQuiz || quizResult) return;
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                setKhSecurityWarning('⚠️ Tab switch detected! Please stay on the practice test screen.');
+                setTimeout(() => setKhSecurityWarning(''), 5000);
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [currentQuiz, quizResult]);
+
+    // 3. Back button & page unload protection
+    useEffect(() => {
+        if (!currentQuiz || quizResult) return;
+        window.history.pushState({ khActive: true }, '', window.location.href);
+        const handlePopState = () => {
+            window.history.pushState({ khActive: true }, '', window.location.href);
+            setKhSecurityWarning('⚠️ Navigation disabled during active practice test!');
+            setTimeout(() => setKhSecurityWarning(''), 4000);
+        };
+        const handleBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('popstate', handlePopState);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [currentQuiz, quizResult]);
 
     useEffect(() => {
         Promise.all([
@@ -442,6 +500,11 @@ export default function KnowledgeHub() {
                 <style>{CSS}</style>
                 <div className="quiz-screen-container">
                     <header className="quiz-header">
+                        {khSecurityWarning && (
+                            <div style={{ background: '#ef4444', color: '#ffffff', padding: '8px 16px', fontSize: '0.78rem', fontWeight: 700, textAlign: 'center', letterSpacing: '0.02em', display: 'flex', alignItems: 'center', justifyCenter: 'center', gap: 8 }}>
+                                {khSecurityWarning}
+                            </div>
+                        )}
                         <div className="quiz-header-top">
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                 <img src={logo} alt="" style={{ width: 28, height: 28, borderRadius: 6 }} />
@@ -469,15 +532,15 @@ export default function KnowledgeHub() {
                     <main className="quiz-main">
                         {quizResult ? (
                             <div className="quiz-question-card" style={{ textAlign: 'center', padding: '48px 32px' }}>
-                                <div style={{ display: 'inline-flex', padding: 16, background: 'rgba(99,102,241,0.08)', color: '#4f46e5', borderRadius: '50%', marginBottom: 20 }}>
+                                <div style={{ display: 'inline-flex', padding: 16, background: 'rgba(99,102,241,0.15)', color: '#818cf8', borderRadius: '50%', marginBottom: 20 }}>
                                     <Lucide.Award size={48} />
                                 </div>
-                                <h2 style={{ fontFamily: 'Outfit', fontSize: '1.8rem', fontWeight: 800, color: '#171717' }}>Practice Quiz Completed!</h2>
-                                <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#4f46e5', margin: '16px 0' }}>
+                                <h2 style={{ fontFamily: 'Outfit', fontSize: '1.8rem', fontWeight: 800, color: '#ffffff' }}>Practice Quiz Completed!</h2>
+                                <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#818cf8', margin: '16px 0' }}>
                                     {quizResult.percentage.toFixed(0)}%
                                 </div>
-                                <p style={{ color: '#52525b', fontSize: '0.9rem', marginBottom: 32 }}>
-                                    You got <span style={{ fontWeight: 700, color: '#171717' }}>{quizResult.score}</span> correct answers out of <span style={{ fontWeight: 700, color: '#171717' }}>{quizResult.total}</span> questions.
+                                <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: 32 }}>
+                                    You got <span style={{ fontWeight: 700, color: '#ffffff' }}>{quizResult.score}</span> correct answers out of <span style={{ fontWeight: 700, color: '#ffffff' }}>{quizResult.total}</span> questions.
                                 </p>
 
                                 <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
@@ -495,14 +558,14 @@ export default function KnowledgeHub() {
                             return (
                                 <div key={q.id} className="quiz-question-card">
                                     <div style={{ display: 'flex', gap: 12 }}>
-                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#f4f4f5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0 }}>
+                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(99,102,241,0.2)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0 }}>
                                             {idx + 1}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <p className="quiz-question-text">{q.text}</p>
 
                                             {q.image_url && (
-                                                <div style={{ background: '#f4f4f5', border: '1px solid #e5e5e5', borderRadius: 8, padding: 12, marginBottom: 16, display: 'inline-block' }}>
+                                                <div style={{ background: '#0D0E15', border: '1px solid #232636', borderRadius: 8, padding: 12, marginBottom: 16, display: 'inline-block' }}>
                                                     <img src={`${API_URL}${q.image_url}`} alt="" style={{ maxHeight: 200, objectFit: 'contain' }} />
                                                 </div>
                                             )}

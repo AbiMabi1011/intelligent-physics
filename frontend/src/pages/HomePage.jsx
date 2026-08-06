@@ -283,8 +283,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
           {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 bg-[#0F172A] p-0.5 shadow-md shrink-0 group-hover:border-blue-500 transition-colors">
+          <div className="flex items-center gap-3.5 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-[#0F172A] p-0.5 shadow-md shrink-0 group-hover:border-blue-500 transition-colors">
               <img src={logo} alt="IP" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div className="flex flex-col">

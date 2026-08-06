@@ -144,13 +144,13 @@ const StatCard = ({ label, value, icon, gradient, visible }) => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 62, position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', height: 68, position: 'relative', zIndex: 1 }}>
 
                 {/* Logo */}
-                <a href="#home" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
+                <a href="#home" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', flexShrink: 0 }}>
                     <div style={{ position: 'relative' }}>
                         <div style={{ position: 'absolute', inset: -2, borderRadius: 0, background: '#b91c1c', opacity: 0.7, filter: 'blur(3px)' }} />
-                        <div style={{ position: 'relative', width: 30, height: 30, borderRadius: 0, overflow: 'hidden', background: '#0a0a0a' }}>
+                        <div style={{ position: 'relative', width: 42, height: 42, borderRadius: 0, overflow: 'hidden', background: '#0a0a0a' }}>
                             <img src={logo} alt="IP" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
                     </div>
