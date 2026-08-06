@@ -153,6 +153,12 @@ const FAQS = [
   { q: 'How are results and answers processed?', a: 'Students submit answers via the Learning Hub. Assessment marks, correct answers, step-by-step explanations, and your rank in the batch are available immediately.' }
 ];
 
+const FALLBACK_SLIDES = [
+  { id: 's1', badge: 'PHYSICS ACADEMY', title: 'SRI LANKA PREMIER LMS PORTAL', subtitle: 'Covering the entire advanced level national curriculum in Sinhala and English mediums.', image_url: '' },
+  { id: 's2', badge: 'ENROLLMENT OPEN', title: 'THEORY & REVISION BATCHES', subtitle: 'Live lectures, weekly assessments, and interactive grading reports are now active.', image_url: '' },
+  { id: 's3', badge: 'FREE STUDY GUIDES', title: 'DOWNLOAD PAST PAPERS', subtitle: 'Archive repository containing structural essay papers and marking guides.', image_url: '' },
+];
+
 const IMG = url => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
@@ -206,7 +212,7 @@ export default function HomePage() {
       fetch(`${API_URL}/home-faqs`).then(r => (r.ok ? r.json() : [])).catch(() => []),
     ])
       .then(([sliders, ann, stats, teacherProf, syllabus, features, batches, testimonials, faqs]) => {
-        const activeSliders = (sliders || []).filter(s => s.is_active !== false && s.is_active !== 0).sort((a, b) => a.order_index - b.order_index);
+        const activeSliders = (sliders || []).filter(s => s.is_active !== false && s.is_active !== 0 && s.is_active !== '0').sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
         setSlides(activeSliders.length > 0 ? activeSliders : FALLBACK_SLIDES);
         setAnnouncements(ann || []);
         setHomeStats((stats || []).filter(s => s.is_active !== false && s.is_active !== 0));
@@ -412,15 +418,20 @@ export default function HomePage() {
             <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl overflow-hidden">
               {slides.length > 0 && (
                 <div className="space-y-3">
-                  {slides[currentSlide]?.image_url && (
-                    <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-700/60 bg-black/40 shadow-lg relative group">
+                  <div className="w-full aspect-video rounded-xl overflow-hidden border border-slate-700/60 bg-black/40 shadow-lg relative group flex items-center justify-center">
+                    {slides[currentSlide]?.image_url ? (
                       <img 
                         src={IMG(slides[currentSlide].image_url)} 
                         alt={slides[currentSlide]?.title || 'Hero Banner'} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-slate-850 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-4 text-center">
+                        <Lucide.Layers className="w-10 h-10 text-blue-500/60 mb-2" />
+                        <span className="text-xs font-bold text-slate-300 uppercase tracking-widest">{slides[currentSlide]?.title || 'INTELLIGENT PHYSICS'}</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between pt-1">
                     <span className="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 text-[9px] font-black uppercase tracking-wider inline-block">
                       {slides[currentSlide]?.badge || 'DIGITAL LMS PLATFORM'}

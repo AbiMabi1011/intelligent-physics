@@ -27,7 +27,7 @@ const ResultsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedResult, setSelectedResult] = useState(null);
+    const [selectedExamFilter, setSelectedExamFilter] = useState('');
 
     useEffect(() => {
         fetchResults();
@@ -48,18 +48,30 @@ const ResultsPage = () => {
         }
     };
 
-    const filteredResults = results.filter(r =>
-        r.student.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.quiz.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Extract unique Exam / Quiz Names for Category Filtering
+    const examCategories = Array.from(
+        new Set(results.map(r => r.quiz?.title).filter(Boolean))
+    ).sort();
 
-    const averageScore = results.length > 0
-        ? (results.reduce((acc, r) => acc + (r.score / r.total_questions), 0) / results.length * 100).toFixed(1)
+    // Filter results strictly by Exam Name & Search Term
+    const filteredResults = results.filter(r => {
+        const matchesCategory = !selectedExamFilter || r.quiz?.title === selectedExamFilter;
+        const matchesSearch = !searchTerm || (
+            r.student?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.student?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            r.quiz?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        return matchesCategory && matchesSearch;
+    });
+
+    // Average score dynamically calculated for currently active category
+    const categoryResults = selectedExamFilter ? results.filter(r => r.quiz?.title === selectedExamFilter) : results;
+    const averageScore = categoryResults.length > 0
+        ? (categoryResults.reduce((acc, r) => acc + (r.score / (r.total_questions || 1)), 0) / categoryResults.length * 100).toFixed(1)
         : 0;
 
     const getRank = (r) => {
-        const sameQuizResults = results.filter(item => item.quiz_id === r.quiz_id || item.quiz?.id === r.quiz?.id);
+        const sameQuizResults = results.filter(item => item.quiz_id === r.quiz_id || item.quiz?.id === r.quiz?.id || item.quiz?.title === r.quiz?.title);
         const higherScoresCount = sameQuizResults.filter(item => item.score > r.score).length;
         return {
             rank: higherScoresCount + 1,
@@ -76,7 +88,7 @@ const ResultsPage = () => {
                         <Activity size={32} className="text-[#10B981]" /> Exam Results
                     </h1>
                     <p className="text-sm text-slate-500 font-black uppercase tracking-[0.2em] mt-2 italic text-wrap">
-                        View and manage all student quiz scores and performance
+                        View and manage all student quiz scores categorized strictly by exam title
                     </p>
                 </div>
                 <button onClick={fetchResults} className="w-full lg:w-auto h-14 bg-white/5 hover:bg-white/10 text-white rounded-2xl px-10 transition-all border border-white/10 flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 shadow-xl">
@@ -89,7 +101,9 @@ const ResultsPage = () => {
                 <div className="md:col-span-8 admin-card group p-8 bg-gradient-to-br from-[#10B981]/10 to-transparent flex flex-col justify-between h-56 transition-all duration-500 hover:scale-[1.02]">
                     <div className="flex items-center justify-between">
                          <div>
-                            <p className="text-[10px] font-black text-[#10B981] uppercase tracking-[0.3em] mb-1">Overall Average Score</p>
+                            <p className="text-[10px] font-black text-[#10B981] uppercase tracking-[0.3em] mb-1">
+                                {selectedExamFilter ? `Average Score (${selectedExamFilter})` : 'Overall Average Score'}
+                            </p>
                             <h3 className="text-5xl font-black text-white tracking-tighter italic">{averageScore}%</h3>
                          </div>
                          <div className="h-16 w-16 rounded-3xl bg-[#10B981]/10 flex items-center justify-center text-[#10B981] shadow-2xl shadow-[#10B981]/20 group-hover:scale-110 transition-transform duration-700">
@@ -113,11 +127,63 @@ const ResultsPage = () => {
                             <Target size={28} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Attempts</p>
-                            <p className="text-4xl font-black text-white leading-none tracking-tighter mt-1">{results.length}</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                {selectedExamFilter ? 'Category Attempts' : 'Total Attempts'}
+                            </p>
+                            <p className="text-4xl font-black text-white leading-none tracking-tighter mt-1">{filteredResults.length}</p>
                         </div>
                     </div>
-                    <p className="text-[10px] text-slate-600 font-bold leading-relaxed uppercase tracking-widest">All students who have completed a quiz in this session.</p>
+                    <p className="text-[10px] text-slate-600 font-bold leading-relaxed uppercase tracking-widest">
+                        {selectedExamFilter ? `Submissions recorded for "${selectedExamFilter}"` : 'All student submissions across all exams.'}
+                    </p>
+                </div>
+            </div>
+
+            {/* EXAM CATEGORY & NAME FILTER BAR */}
+            <div className="bg-[#15171C] border border-[#23262D] rounded-[2rem] p-6 space-y-4 shadow-xl">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <Database size={18} className="text-[#656CFF]" />
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Filter by Exam Category</h3>
+                    </div>
+                    {selectedExamFilter && (
+                        <button
+                            onClick={() => setSelectedExamFilter('')}
+                            className="text-[10px] font-black text-rose-400 hover:text-rose-300 uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+                        >
+                            <X size={12} /> Clear Exam Filter
+                        </button>
+                    )}
+                </div>
+
+                {/* Horizontal Category Pill Buttons */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    <button
+                        onClick={() => setSelectedExamFilter('')}
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${
+                            !selectedExamFilter
+                                ? 'bg-[#656CFF] text-white border-[#656CFF] shadow-lg shadow-[#656CFF]/30'
+                                : 'bg-white/5 text-slate-400 hover:text-white border-white/10 hover:bg-white/10'
+                        }`}
+                    >
+                        All Exams ({results.length})
+                    </button>
+                    {examCategories.map((title) => {
+                        const count = results.filter(r => r.quiz?.title === title).length;
+                        return (
+                            <button
+                                key={title}
+                                onClick={() => setSelectedExamFilter(title)}
+                                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap border ${
+                                    selectedExamFilter === title
+                                        ? 'bg-[#10B981] text-white border-[#10B981] shadow-lg shadow-[#10B981]/30'
+                                        : 'bg-white/5 text-slate-400 hover:text-white border-white/10 hover:bg-white/10'
+                                }`}
+                            >
+                                {title} ({count})
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -126,7 +192,7 @@ const ResultsPage = () => {
                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-[#656CFF] transition-colors" size={20} />
                 <input
                     type="text"
-                    placeholder="Search by name, email, or quiz..."
+                    placeholder="Search by student name or email..."
                     className="w-full bg-[#15171C] border border-[#23262D] rounded-[2rem] pl-16 pr-8 py-5 text-sm font-black text-white placeholder:text-slate-600 focus:ring-4 focus:ring-[#10B981]/10 focus:border-[#10B981]/50 transition-all outline-none"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

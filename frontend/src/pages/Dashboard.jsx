@@ -19,7 +19,14 @@ const batchMatch = (t, c) => {
     if (list.includes('knowledge hub')) return true;
     return list.includes((c || '').trim().toLowerCase());
 };
-const imgSrc = u => u?.startsWith('/') ? `${API_URL}${u}` : u || '';
+
+const imgSrc = u => {
+    if (!u) return '';
+    if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:')) return u;
+    if (u.startsWith('/')) return `${API_URL}${u}`;
+    return `${API_URL}/${u}`;
+};
+
 const isNew = d => d && (Date.now() - new Date(d).getTime()) < 7 * 86400000;
 
 const isEnded = q => {
@@ -850,17 +857,34 @@ const Dashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {announcements.map((a, i) => (
                             <Reveal key={a.id} delay={i * 60}>
-                                <div className="rounded-none border border-[#d5d0c2] p-6 relative overflow-hidden flex transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
-                                    <div className="shrink-0 w-11 h-11 rounded-none border border-[#d5d0c2] bg-[#f4f0e6] text-[#0a0a0a] flex items-center justify-center">
-                                        <Megaphone size={20} />
-                                    </div>
-                                    <div className="ml-5 flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                            {isNew(a.created_at) && <span className="text-[9px] bg-[#b91c1c] text-[#f4f0e6] font-mono px-2 py-0.5 rounded-none font-bold">NEW NOTICE</span>}
-                                            <span className="text-[9px] font-mono text-[#6b6558] ml-auto">{a.created_at?.slice(0, 10)}</span>
+                                <div className="rounded-none border border-[#d5d0c2] p-6 relative overflow-hidden flex flex-col sm:flex-row gap-5 transition-all duration-300 bg-[#f9f6ee] hover:bg-[#ede9da] hover:border-[#0a0a0a] hover:-translate-y-0.5">
+                                    <div className="shrink-0 flex sm:flex-col items-center gap-3">
+                                        <div className="w-11 h-11 rounded-none border border-[#d5d0c2] bg-[#f4f0e6] text-[#0a0a0a] flex items-center justify-center">
+                                            <Megaphone size={20} />
                                         </div>
-                                        <h3 className="font-bold text-[#0a0a0a] leading-snug line-clamp-2 mb-1.5 transition-colors duration-300 group-hover:text-[#b91c1c]" style={{ fontFamily: "'Archivo', sans-serif" }}>{a.title}</h3>
-                                        <p className="text-xs text-[#6b6558] line-clamp-3 leading-relaxed font-semibold">{a.content}</p>
+                                    </div>
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                {isNew(a.created_at) && <span className="text-[9px] bg-[#b91c1c] text-[#f4f0e6] font-mono px-2 py-0.5 rounded-none font-bold">NEW NOTICE</span>}
+                                                <span className="text-[9px] font-mono text-[#6b6558] ml-auto">{a.created_at?.slice(0, 10)}</span>
+                                            </div>
+                                            <h3 className="font-bold text-[#0a0a0a] leading-snug text-base mb-1.5 transition-colors duration-300 group-hover:text-[#b91c1c]" style={{ fontFamily: "'Archivo', sans-serif" }}>{a.title}</h3>
+                                            <p className="text-xs text-[#6b6558] leading-relaxed font-semibold mb-3 whitespace-pre-wrap">{a.content}</p>
+                                        </div>
+
+                                        {/* Announcement Uploaded Image Display */}
+                                        {a.image_url && (
+                                            <div className="mt-3 rounded-none overflow-hidden border border-[#d5d0c2] bg-[#0a0a0a] max-h-64 flex items-center justify-center">
+                                                <a href={imgSrc(a.image_url)} target="_blank" rel="noreferrer" className="w-full block hover:opacity-95 transition-opacity">
+                                                    <img
+                                                        src={imgSrc(a.image_url)}
+                                                        alt={a.title}
+                                                        className="w-full h-auto max-h-64 object-contain mx-auto"
+                                                    />
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </Reveal>

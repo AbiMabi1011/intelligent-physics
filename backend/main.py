@@ -1730,50 +1730,95 @@ def update_quiz(quiz_id: int, quiz: schemas.QuizCreate, db: Session = Depends(ge
     if not db_quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
         
-    was_published = db_quiz.is_published
+    existing_results_count = db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz_id).count()
 
-    db_quiz.title = quiz.title
-    db_quiz.description = quiz.description
-    db_quiz.class_name = quiz.class_name
-    db_quiz.is_published = quiz.is_published
-    db_quiz.scheduled_time = quiz.scheduled_time
-    db_quiz.duration_minutes = quiz.duration_minutes
-    db_quiz.expiry_mode = quiz.expiry_mode
-    db_quiz.expiry_days = quiz.expiry_days
-    
-    # Reset rankings: delete old quiz results
-    db.query(models.QuizResult).filter(models.QuizResult.quiz_id == quiz_id).delete()
-
-    # Remove old questions
-    db.query(models.Question).filter(models.Question.quiz_id == quiz_id).delete()
-    
-    # Add new questions
-    for q in quiz.questions:
-        new_q = models.Question(
-            quiz_id=db_quiz.id,
-            text=q.text,
-            option_a=q.option_a,
-            option_b=q.option_b,
-            option_c=q.option_c,
-            option_d=q.option_d,
-            option_e=q.option_e,
-            correct_option=q.correct_option,
-            image_url=q.image_url,
-            option_a_image_url=q.option_a_image_url,
-            option_b_image_url=q.option_b_image_url,
-            option_c_image_url=q.option_c_image_url,
-            option_d_image_url=q.option_d_image_url,
-            option_e_image_url=q.option_e_image_url
-        )
-        db.add(new_q)
+    # If students have already taken this quiz, preserve old results and create a new exam version
+    if existing_results_count > 0:
+        db_quiz.is_published = False  # Archive old quiz version from new student attempts
         
-    db.commit()
-    db.refresh(db_quiz)
+        new_quiz = models.Quiz(
+            title=quiz.title,
+            description=quiz.description,
+            class_name=quiz.class_name,
+            is_published=quiz.is_published,
+            scheduled_time=quiz.scheduled_time,
+            duration_minutes=quiz.duration_minutes,
+            expiry_mode=quiz.expiry_mode,
+            expiry_days=quiz.expiry_days
+        )
+        db.add(new_quiz)
+        db.commit()
+        db.refresh(new_quiz)
 
-    if db_quiz.is_published and not was_published:
-        notify_students_of_quiz(db_quiz, db)
+        for q in quiz.questions:
+            new_q = models.Question(
+                quiz_id=new_quiz.id,
+                text=q.text,
+                option_a=q.option_a,
+                option_b=q.option_b,
+                option_c=q.option_c,
+                option_d=q.option_d,
+                option_e=q.option_e,
+                correct_option=q.correct_option,
+                image_url=q.image_url,
+                option_a_image_url=q.option_a_image_url,
+                option_b_image_url=q.option_b_image_url,
+                option_c_image_url=q.option_c_image_url,
+                option_d_image_url=q.option_d_image_url,
+                option_e_image_url=q.option_e_image_url
+            )
+            db.add(new_q)
 
-    return db_quiz
+        db.commit()
+        db.refresh(new_quiz)
+
+        if new_quiz.is_published:
+            notify_students_of_quiz(new_quiz, db)
+
+        return new_quiz
+
+    else:
+        # If no results exist yet, update quiz directly in place
+        was_published = db_quiz.is_published
+
+        db_quiz.title = quiz.title
+        db_quiz.description = quiz.description
+        db_quiz.class_name = quiz.class_name
+        db_quiz.is_published = quiz.is_published
+        db_quiz.scheduled_time = quiz.scheduled_time
+        db_quiz.duration_minutes = quiz.duration_minutes
+        db_quiz.expiry_mode = quiz.expiry_mode
+        db_quiz.expiry_days = quiz.expiry_days
+
+        # Remove old questions and insert new questions
+        db.query(models.Question).filter(models.Question.quiz_id == quiz_id).delete()
+
+        for q in quiz.questions:
+            new_q = models.Question(
+                quiz_id=db_quiz.id,
+                text=q.text,
+                option_a=q.option_a,
+                option_b=q.option_b,
+                option_c=q.option_c,
+                option_d=q.option_d,
+                option_e=q.option_e,
+                correct_option=q.correct_option,
+                image_url=q.image_url,
+                option_a_image_url=q.option_a_image_url,
+                option_b_image_url=q.option_b_image_url,
+                option_c_image_url=q.option_c_image_url,
+                option_d_image_url=q.option_d_image_url,
+                option_e_image_url=q.option_e_image_url
+            )
+            db.add(new_q)
+
+        db.commit()
+        db.refresh(db_quiz)
+
+        if db_quiz.is_published and not was_published:
+            notify_students_of_quiz(db_quiz, db)
+
+        return db_quiz
 
 @app.get("/quizzes", response_model=List[schemas.QuizResponse])
 def get_quizzes(db: Session = Depends(get_db)):
