@@ -122,15 +122,16 @@ const AdminLayout = () => {
 
             {/* Main content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                {/* Topbar */}
-                <Topbar
-                    onToggleSidebar={() => setSidebarOpen(prev => !prev)}
-                    displayName={user.full_name || user.email}
-                    onLogout={logout}
-                    theme={theme}
-                    onSelectTheme={setTheme}
-                    onToggleCustomizer={() => setCustomizerOpen(true)}
-                />
+                {/* Mobile Menu Toggle Header */}
+                <div className="lg:hidden flex items-center justify-between p-4 bg-[#15171C] border-b border-[#23262D]">
+                    <button
+                        onClick={() => setSidebarOpen(true)}
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white flex items-center gap-2 text-xs font-black uppercase tracking-wider"
+                    >
+                        <SidebarIcon size={18} /> Menu
+                    </button>
+                    <span className="text-xs font-black tracking-widest text-[#656CFF] uppercase">Admin Console</span>
+                </div>
 
                 {/* Page Content */}
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#0D0E12] p-4 sm:p-6 lg:p-8 pb-24 lg:pb-10">

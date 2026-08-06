@@ -1186,9 +1186,23 @@ def delete_home_ad(ad_id: int, db: Session = Depends(get_db)):
 
 # --- HOME STATS ENDPOINTS ---
 
+DEFAULT_HOME_STATS = [
+    {"value": "1,200+", "label": "ACTIVE STUDENTS", "icon": "🎓", "color": "#3b82f6", "bg": "rgba(59,130,246,.12)", "is_active": True, "order_index": 0},
+    {"value": "500+", "label": "SOLVED PAPERS", "icon": "📝", "color": "#6366f1", "bg": "rgba(99,102,241,.12)", "is_active": True, "order_index": 1},
+    {"value": "300+", "label": "LECTURE VIDEOS", "icon": "📹", "color": "#06b6d4", "bg": "rgba(6,182,212,.12)", "is_active": True, "order_index": 2},
+    {"value": "94%", "label": "PASS RATE (A/B)", "icon": "🏆", "color": "#10b981", "bg": "rgba(16,185,129,.12)", "is_active": True, "order_index": 3},
+]
+
 @app.get("/home-stats", response_model=List[schemas.HomeStatResponse])
 def get_home_stats(db: Session = Depends(get_db)):
-    return db.query(models.HomeStat).order_by(models.HomeStat.order_index).all()
+    stats = db.query(models.HomeStat).order_by(models.HomeStat.order_index).all()
+    if not stats:
+        for s in DEFAULT_HOME_STATS:
+            db_stat = models.HomeStat(**s)
+            db.add(db_stat)
+        db.commit()
+        stats = db.query(models.HomeStat).order_by(models.HomeStat.order_index).all()
+    return stats
 
 @app.post("/home-stats", response_model=schemas.HomeStatResponse)
 def create_home_stat(stat: schemas.HomeStatCreate, db: Session = Depends(get_db)):
@@ -1215,6 +1229,271 @@ def delete_home_stat(stat_id: int, db: Session = Depends(get_db)):
     if not db_stat:
         raise HTTPException(status_code=404, detail="Stat not found")
     db.delete(db_stat)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- TEACHER PROFILE ENDPOINTS ---
+@app.get("/teacher-profile", response_model=Optional[schemas.TeacherProfileResponse])
+def get_teacher_profile(db: Session = Depends(get_db)):
+    profile = db.query(models.TeacherProfile).first()
+    if not profile:
+        profile = models.TeacherProfile(
+            name="Mr. R. Raakulan",
+            title="LEAD LECTURER",
+            credentials="B.Sc. Physics · University of Jaffna",
+            bio_text="Physics Teacher at New Science Hall (Tamil and English Medium classes). A dedicated tutor for Advanced Level Physics students with a proven record of helping 75% of students pass while sparking a genuine interest in learning.",
+            mediums="Tamil and English Medium classes"
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    return profile
+
+@app.post("/teacher-profile", response_model=schemas.TeacherProfileResponse)
+@app.put("/teacher-profile", response_model=schemas.TeacherProfileResponse)
+def save_teacher_profile(data: schemas.TeacherProfileCreate, db: Session = Depends(get_db)):
+    profile = db.query(models.TeacherProfile).first()
+    if not profile:
+        profile = models.TeacherProfile(**data.dict())
+        db.add(profile)
+    else:
+        for k, v in data.dict().items():
+            setattr(profile, k, v)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+# --- SYLLABUS UNITS ENDPOINTS ---
+DEFAULT_SYLLABUS = [
+    {"topic": "Measurement & Units", "icon": "Ruler", "desc": "SI system, dimensions, vector analysis, and error propagation.", "subtopics_json": '["SI Units & Dimensions","Errors & Uncertainty","Vector Analysis"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 0},
+    {"topic": "Mechanics", "icon": "Activity", "desc": "Kinematics, Newton's Laws, Work-Energy, Circular motion, and Momentum.", "subtopics_json": '["Kinematics & Motion","Newton\'s Laws","Work, Energy & Power"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 1},
+    {"topic": "Oscillations & Waves", "icon": "Radio", "desc": "Simple harmonic motion, wave mechanics, sound resonance, and optics.", "subtopics_json": '["Simple Harmonic Motion","Wave Interference","Optics & Resonance"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 2},
+    {"topic": "Thermal Physics", "icon": "Flame", "desc": "Kinetic theory of gases, thermodynamics laws, and heat transfer.", "subtopics_json": '["Thermal Expansion","Thermodynamics","Gas Laws"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 3},
+    {"topic": "Gravitational & Electrostatic Fields", "icon": "Globe", "desc": "Field theory, potential energy, orbital dynamics, and Coulomb's law.", "subtopics_json": '["Gravitational Fields","Electrostatics","Potential Energy"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 4},
+    {"topic": "Electricity & Magnetism", "icon": "Zap", "desc": "Current electricity, circuits, magnetic induction, and AC circuits.", "subtopics_json": '["Current Electricity","Magnetic Fields","Electromagnetic Induction"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 5},
+    {"topic": "Electronics & Modern Physics", "icon": "Cpu", "desc": "Semiconductors, logic gates, photoelectric effect, and nuclear physics.", "subtopics_json": '["Semiconductors","Photoelectric Effect","Nuclear Physics"]', "color": "border-blue-200 bg-blue-50/20 hover:border-blue-400 hover:shadow-blue-500/5", "order_index": 6},
+]
+
+@app.get("/syllabus-units", response_model=List[schemas.SyllabusUnitResponse])
+def get_syllabus_units(db: Session = Depends(get_db)):
+    units = db.query(models.SyllabusUnit).order_by(models.SyllabusUnit.order_index).all()
+    if not units:
+        for u in DEFAULT_SYLLABUS:
+            db_u = models.SyllabusUnit(**u)
+            db.add(db_u)
+        db.commit()
+        units = db.query(models.SyllabusUnit).order_by(models.SyllabusUnit.order_index).all()
+    return units
+
+@app.post("/syllabus-units", response_model=schemas.SyllabusUnitResponse)
+def create_syllabus_unit(unit: schemas.SyllabusUnitCreate, db: Session = Depends(get_db)):
+    new_unit = models.SyllabusUnit(**unit.dict())
+    db.add(new_unit)
+    db.commit()
+    db.refresh(new_unit)
+    return new_unit
+
+@app.put("/syllabus-units/{unit_id}", response_model=schemas.SyllabusUnitResponse)
+def update_syllabus_unit(unit_id: int, unit: schemas.SyllabusUnitCreate, db: Session = Depends(get_db)):
+    db_unit = db.query(models.SyllabusUnit).filter(models.SyllabusUnit.id == unit_id).first()
+    if not db_unit:
+        raise HTTPException(status_code=404, detail="Syllabus unit not found")
+    for k, v in unit.dict().items():
+        setattr(db_unit, k, v)
+    db.commit()
+    db.refresh(db_unit)
+    return db_unit
+
+@app.delete("/syllabus-units/{unit_id}")
+def delete_syllabus_unit(unit_id: int, db: Session = Depends(get_db)):
+    db_unit = db.query(models.SyllabusUnit).filter(models.SyllabusUnit.id == unit_id).first()
+    if not db_unit:
+        raise HTTPException(status_code=404, detail="Syllabus unit not found")
+    db.delete(db_unit)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- LMS FEATURES ENDPOINTS ---
+DEFAULT_LMS_FEATURES = [
+    {"icon": "Video", "title": "1080p HD Live & Recorded Classes", "desc": "Access high-definition recorded lectures anytime with chapter markers.", "color": "border-blue-200 bg-blue-50/30 hover:border-blue-400", "order_index": 0},
+    {"icon": "FileText", "title": "Past Papers & Model Schemes", "desc": "Comprehensive paper archive with detailed step-by-step marking schemes.", "color": "border-blue-200 bg-blue-50/30 hover:border-blue-400", "order_index": 1},
+    {"icon": "BookOpen", "title": "Adaptive Physics Quizzes", "desc": "Practice topic-wise timed quizzes with instant AI feedback.", "color": "border-blue-200 bg-blue-50/30 hover:border-blue-400", "order_index": 2},
+    {"icon": "Award", "title": "Rank Tracking & Score Analytics", "desc": "Track performance against island-wide batch rankings.", "color": "border-blue-200 bg-blue-50/30 hover:border-blue-400", "order_index": 3},
+]
+
+@app.get("/lms-features", response_model=List[schemas.LmsFeatureResponse])
+def get_lms_features(db: Session = Depends(get_db)):
+    feats = db.query(models.LmsFeature).order_by(models.LmsFeature.order_index).all()
+    if not feats:
+        for f in DEFAULT_LMS_FEATURES:
+            db_f = models.LmsFeature(**f)
+            db.add(db_f)
+        db.commit()
+        feats = db.query(models.LmsFeature).order_by(models.LmsFeature.order_index).all()
+    return feats
+
+@app.post("/lms-features", response_model=schemas.LmsFeatureResponse)
+def create_lms_feature(feature: schemas.LmsFeatureCreate, db: Session = Depends(get_db)):
+    new_feat = models.LmsFeature(**feature.dict())
+    db.add(new_feat)
+    db.commit()
+    db.refresh(new_feat)
+    return new_feat
+
+@app.put("/lms-features/{feature_id}", response_model=schemas.LmsFeatureResponse)
+def update_lms_feature(feature_id: int, feature: schemas.LmsFeatureCreate, db: Session = Depends(get_db)):
+    db_feat = db.query(models.LmsFeature).filter(models.LmsFeature.id == feature_id).first()
+    if not db_feat:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    for k, v in feature.dict().items():
+        setattr(db_feat, k, v)
+    db.commit()
+    db.refresh(db_feat)
+    return db_feat
+
+@app.delete("/lms-features/{feature_id}")
+def delete_lms_feature(feature_id: int, db: Session = Depends(get_db)):
+    db_feat = db.query(models.LmsFeature).filter(models.LmsFeature.id == feature_id).first()
+    if not db_feat:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    db.delete(db_feat)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- HOME BATCHES ENDPOINTS ---
+DEFAULT_HOME_BATCHES = [
+    {"name": "2025 A/L Physics Batch", "status": "Active", "seats_left": "Open", "schedule": "Weekend Classes & Online", "description": "Comprehensive theory completion and paper practice for 2025 A/L students.", "features_json": '["Full Theory & Revision","Monthly Model Papers","Recorded Video Access"]', "color": "border-[#656CFF] bg-[#656CFF]/10", "enroll_link": "/login", "order_index": 0},
+    {"name": "2026 A/L Physics Batch", "status": "Active", "seats_left": "Open", "schedule": "Weekday & Weekend Sessions", "description": "Foundational theory, problem-solving workshops, and continuous assessments.", "features_json": '["Unit-by-Unit Fundamentals","Interactive Quizzes","Recorded Video Access"]', "color": "border-blue-500 bg-blue-500/10", "enroll_link": "/login", "order_index": 1},
+    {"name": "2027 A/L Physics Batch", "status": "Active", "seats_left": "Open", "schedule": "Starter Sessions", "description": "Introduction to Advanced Level Physics concepts and analytical thinking.", "features_json": '["Basic Measurement & Vectors","Foundational Practice","Recorded Video Access"]', "color": "border-purple-500 bg-purple-500/10", "enroll_link": "/login", "order_index": 2},
+]
+
+@app.get("/home-batches", response_model=List[schemas.HomeBatchResponse])
+def get_home_batches(db: Session = Depends(get_db)):
+    batches = db.query(models.HomeBatch).order_by(models.HomeBatch.order_index).all()
+    if not batches:
+        for b in DEFAULT_HOME_BATCHES:
+            db_b = models.HomeBatch(**b)
+            db.add(db_b)
+        db.commit()
+        batches = db.query(models.HomeBatch).order_by(models.HomeBatch.order_index).all()
+    return batches
+
+@app.post("/home-batches", response_model=schemas.HomeBatchResponse)
+def create_home_batch(batch: schemas.HomeBatchCreate, db: Session = Depends(get_db)):
+    new_batch = models.HomeBatch(**batch.dict())
+    db.add(new_batch)
+    db.commit()
+    db.refresh(new_batch)
+    return new_batch
+
+@app.put("/home-batches/{batch_id}", response_model=schemas.HomeBatchResponse)
+def update_home_batch(batch_id: int, batch: schemas.HomeBatchCreate, db: Session = Depends(get_db)):
+    db_batch = db.query(models.HomeBatch).filter(models.HomeBatch.id == batch_id).first()
+    if not db_batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    for k, v in batch.dict().items():
+        setattr(db_batch, k, v)
+    db.commit()
+    db.refresh(db_batch)
+    return db_batch
+
+@app.delete("/home-batches/{batch_id}")
+def delete_home_batch(batch_id: int, db: Session = Depends(get_db)):
+    db_batch = db.query(models.HomeBatch).filter(models.HomeBatch.id == batch_id).first()
+    if not db_batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    db.delete(db_batch)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- TESTIMONIALS ENDPOINTS ---
+DEFAULT_TESTIMONIALS = [
+    {"quote": "Mr. Raakulan made complex mechanics and field theory so clear. My physics grade improved from C to A!", "name": "K. Thivyan", "result": "District Rank 04 (A/L 2024)", "stars": 5, "order_index": 0},
+    {"quote": "The paper schemes and structured quizzes in the LMS gave me the confidence to score top marks.", "name": "S. Nitharsan", "result": "District Rank 12 (A/L 2024)", "stars": 5, "order_index": 1},
+]
+
+@app.get("/home-testimonials", response_model=List[schemas.TestimonialResponse])
+def get_home_testimonials(db: Session = Depends(get_db)):
+    tests = db.query(models.Testimonial).order_by(models.Testimonial.order_index).all()
+    if not tests:
+        for t in DEFAULT_TESTIMONIALS:
+            db_t = models.Testimonial(**t)
+            db.add(db_t)
+        db.commit()
+        tests = db.query(models.Testimonial).order_by(models.Testimonial.order_index).all()
+    return tests
+
+@app.post("/home-testimonials", response_model=schemas.TestimonialResponse)
+def create_home_testimonial(test: schemas.TestimonialCreate, db: Session = Depends(get_db)):
+    new_t = models.Testimonial(**test.dict())
+    db.add(new_t)
+    db.commit()
+    db.refresh(new_t)
+    return new_t
+
+@app.put("/home-testimonials/{testimonial_id}", response_model=schemas.TestimonialResponse)
+def update_home_testimonial(testimonial_id: int, test: schemas.TestimonialCreate, db: Session = Depends(get_db)):
+    db_t = db.query(models.Testimonial).filter(models.Testimonial.id == testimonial_id).first()
+    if not db_t:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    for k, v in test.dict().items():
+        setattr(db_t, k, v)
+    db.commit()
+    db.refresh(db_t)
+    return db_t
+
+@app.delete("/home-testimonials/{testimonial_id}")
+def delete_home_testimonial(testimonial_id: int, db: Session = Depends(get_db)):
+    db_t = db.query(models.Testimonial).filter(models.Testimonial.id == testimonial_id).first()
+    if not db_t:
+        raise HTTPException(status_code=404, detail="Testimonial not found")
+    db.delete(db_t)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+# --- HOME FAQS ENDPOINTS ---
+DEFAULT_FAQS = [
+    {"question": "How can I join the A/L Physics classes?", "answer": "Click on LEARNING HUB in the top navigation bar or log in with your credentials to access live sessions and materials.", "order_index": 0},
+    {"question": "Are both Tamil and English Medium classes available?", "answer": "Yes, classes and study materials are available for both Tamil Medium and English Medium students.", "order_index": 1},
+    {"question": "Can I access recorded video lectures if I miss a class?", "answer": "Yes, all lectures are recorded in 1080p HD and available on demand in the Knowledge Hub.", "order_index": 2},
+]
+
+@app.get("/home-faqs", response_model=List[schemas.HomeFaqResponse])
+def get_home_faqs(db: Session = Depends(get_db)):
+    faqs = db.query(models.HomeFaq).order_by(models.HomeFaq.order_index).all()
+    if not faqs:
+        for f in DEFAULT_FAQS:
+            db_f = models.HomeFaq(**f)
+            db.add(db_f)
+        db.commit()
+        faqs = db.query(models.HomeFaq).order_by(models.HomeFaq.order_index).all()
+    return faqs
+
+@app.post("/home-faqs", response_model=schemas.HomeFaqResponse)
+def create_home_faq(faq: schemas.HomeFaqCreate, db: Session = Depends(get_db)):
+    new_faq = models.HomeFaq(**faq.dict())
+    db.add(new_faq)
+    db.commit()
+    db.refresh(new_faq)
+    return new_faq
+
+@app.put("/home-faqs/{faq_id}", response_model=schemas.HomeFaqResponse)
+def update_home_faq(faq_id: int, faq: schemas.HomeFaqCreate, db: Session = Depends(get_db)):
+    db_faq = db.query(models.HomeFaq).filter(models.HomeFaq.id == faq_id).first()
+    if not db_faq:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    for k, v in faq.dict().items():
+        setattr(db_faq, k, v)
+    db.commit()
+    db.refresh(db_faq)
+    return db_faq
+
+@app.delete("/home-faqs/{faq_id}")
+def delete_home_faq(faq_id: int, db: Session = Depends(get_db)):
+    db_faq = db.query(models.HomeFaq).filter(models.HomeFaq.id == faq_id).first()
+    if not db_faq:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    db.delete(db_faq)
     db.commit()
     return {"message": "Deleted successfully"}
 

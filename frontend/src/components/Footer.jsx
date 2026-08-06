@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Youtube, Facebook, ChevronRight, Send, Instagram } from 'lucide-react';
 import logo from '../assets/logo.jpeg';
+import applomicLogo from '../assets/applomic.png';
 
 export default function Footer() {
     const navigate = useNavigate();
@@ -261,11 +262,15 @@ export default function Footer() {
                                     <Send size={12} />
                                 </button>
                             </form>
-                            <div className="flex flex-col items-center md:items-start gap-1 mt-1">
-                                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Email Us</span>
-                                <a href="mailto:info@intelligentphysics.lk" className="text-slate-350 hover:text-emerald-400 text-sm font-semibold flex items-center gap-1.5 transition-colors">
+                            <div className="flex flex-col items-center md:items-start gap-2 mt-1">
+                                <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Contact Us</span>
+                                <a href="mailto:intelligentphysics02@gmail.com" className="text-slate-350 hover:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-colors">
                                     <Mail size={14} />
-                                    <span>info@intelligentphysics.lk</span>
+                                    <span>intelligentphysics02@gmail.com</span>
+                                </a>
+                                <a href="https://wa.me/94754536737" target="_blank" rel="noreferrer" className="text-slate-350 hover:text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                    <span>📱</span>
+                                    <span>WhatsApp: 0754536737</span>
                                 </a>
                             </div>
                         </div>
@@ -288,14 +293,14 @@ export default function Footer() {
                         href="https://applomic.com"
                         target="_blank"
                         rel="noreferrer"
-                        className="group flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-900 bg-[#070b13] hover:border-slate-800/80 hover:bg-[#0a0f1b] hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 no-underline"
+                        className="group flex items-center gap-3 px-4 py-2 rounded-xl border border-slate-800 bg-[#070b13] hover:border-slate-700 hover:bg-[#0a0f1b] hover:shadow-lg transition-all duration-300 no-underline"
                     >
-                        <div className="w-5.5 h-5.5 rounded-md bg-gradient-to-br from-[#656CFF] to-[#ef4444] flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
-                            <span className="text-white font-black text-[10px] leading-none">A</span>
+                        <div className="w-6 h-6 rounded-md overflow-hidden bg-white/5 p-0.5 flex items-center justify-center shrink-0">
+                            <img src={applomicLogo} alt="Applomic" className="w-full h-full object-contain" />
                         </div>
                         <div className="flex flex-col leading-none text-left">
                             <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500 group-hover:text-slate-400 transition-colors">Powered by</span>
-                            <span className="text-[14px] font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#656CFF] to-[#ef4444] group-hover:from-[#7c82ff] group-hover:to-[#ff6b6b] transition-all">
+                            <span className="text-[14px] font-extrabold tracking-tight text-white group-hover:text-blue-400 transition-all">
                                 Applomic
                             </span>
                         </div>
